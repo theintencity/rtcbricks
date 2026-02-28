@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="user-roster.js"></script>
+    <script type="text/javascript" src="web-assets.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
+    <style type="text/css">
+        body {
+            position: absolute; width: 100%; height: 100%;
+            display: flex; flex-flow: row wrap;
+        }
+        user-roster {
+            width: 200px; height: 300px;
+            margin: 1ch;
+        }
+    </style>
+</head>
+<body>
+    <communicator-icons id="icons"></communicator-icons>
+    <shared-storage id="storage" src="local"></shared-storage>
+
+    <user-roster-data id="data1" for-storage="storage" self="alice" path="sessions/contacts123"></user-roster-data>
+    <user-roster-data id="data2" for-storage="storage" self="bob" path="sessions/contacts123"></user-roster-data>
+    <user-roster-data id="data3" for-storage="storage" self="ethan" path="sessions/contacts123"></user-roster-data>
+
+    <user-roster for-data="data1" for-icons="icons"></user-roster>
+    <user-roster for-data="data2" for-icons="icons" order="name" action="always"></user-roster>
+    <user-roster for-data="data3" order="name"></user-roster>
+
+    <script type="text/javascript">
+        setTimeout(() => {
+            [
+                {id: "alice", name: "Alice", status: "available", message: "What's up?", audio: true, video: true, contact: true},
+                {id: "bob", name: "Bob", status: "busy", message: "Sunny side up", video: true, contact: true},
+                {id: "carol", name: "Carol", status: "idle", audio: true, publish_video: true},
+                {id: "dan", name: "Dan", status: "available", audio: true},
+                {id: "ethan", name: "Ethan", status: "available", chatting: true},
+            ].forEach(item => {
+                const data = JSON.parse(JSON.stringify(item));
+                const id = data.id;
+                delete data.id;
+                document.querySelector("shared-storage").update("sessions/contacts123/" + id, true, data);
+            });
+        }, 500);
+    </script>
+</body>
+</html>

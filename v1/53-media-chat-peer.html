@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="storage-stream.js"></script>
+    <script type="text/javascript" src="peer-storage.js"></script>
+    <script type="text/javascript" src="text-chat.js"></script>
+    <script type="text/javascript" src="text-chat-bubbles.js"></script>
+    <script type="text/javascript" src="user-roster.js"></script>
+    <script type="text/javascript" src="media-chat.js"></script>
+    <script type="text/javascript" src="flex-box.js"></script>
+    <script type="text/javascript" src="web-assets.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        media-chat {
+            width: 200px; height: 400px;
+            display: inline-block;
+            border: solid 1px lightgrey;
+            margin: 10px;
+        }
+        video-io > span {
+            color: rgba(255,255,255,0.5); 
+            font-size: 10px; font-family: sans-serif;
+            text-shadow: 0 0 3px rgba(0,0,0,0.3);
+        }
+        text-feed {
+            font-size: 12px; line-height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <alert-sounds id="sounds"></alert-sounds>
+    <yahoo-smileys id="smileys"></yahoo-smileys>
+    <shared-storage id="storage1"></shared-storage>
+    <shared-storage id="storage2"></shared-storage>
+    <shared-storage id="storage3"></shared-storage>
+    <shared-storage id="storage4"></shared-storage>
+
+    <media-chat-data id="data1" for-storage="storage1" self="alice" displayname="Alice" path="sessions/conf123"></media-chat-data>
+    <media-chat for-data="data1">
+        <toolbar-buttons slot="buttons">
+            <span>Weekly status sync</span>
+            <button name="audio" toggle title="start/stop an audio call" show-if="calltype!='video'"></button>
+            <button name="video" toggle title="start/stop a video call" show-if="calltype!='audio'"></button>
+            <button name="clear" title="clear the text chat history"></button>
+        </toolbar-buttons>
+        <flex-box slot="videos"></flex-box>
+        <user-roster slot="roster"></user-roster>
+        <text-chat slot="chat">
+            <text-feed for-smileys="smileys" for-sounds="sounds"></text-feed>
+        </text-chat>
+    </media-chat>
+    <media-chat-data id="data2" for-storage="storage2" self="bob" displayname="Bob" path="sessions/conf123"></media-chat-data>
+    <media-chat for-data="data2" videos-ratio="1.333">
+        <toolbar-buttons slot="buttons">
+            <span>Weekly sync</span>
+            <button name="audio" toggle title="start/stop an audio call" show-if="calltype!='video'"></button>
+            <button name="video" toggle title="start/stop a video call" show-if="calltype!='audio'"></button>
+            <button name="clear" title="clear the text chat history"></button>
+        </toolbar-buttons>
+        <flex-box slot="videos"></flex-box>
+        <text-chat slot="chat" showtyping="true">
+            <text-feed for-smileys="smileys" for-sounds="sounds"></text-feed>
+        </text-chat>
+    </media-chat>
+    <media-chat-data id="data3" for-storage="storage3" self="carol" displayname="Carol" path="sessions/conf123"></media-chat-data>
+    <media-chat for-data="data3">
+        <toolbar-buttons slot="buttons">
+            <span>Status sync</span>
+            <button name="audio" toggle title="start/stop an audio call" show-if="calltype!='video'"></button>
+            <button name="video" toggle title="start/stop a video call" show-if="calltype!='audio'"></button>
+            <button name="menu" title="more actions"></button>
+        </toolbar-buttons>
+        <overlay-menu slot="menu">
+            <span name="microphone" toggle="true" checked="true">Microphone</span>
+            <span name="camera" toggle="true" checked="true">Webcam</span>
+            <span name="clear">Clear text chat</span>
+        </overlay-menu>
+        <user-roster slot="roster"></user-roster>
+        <flex-box slot="videos"></flex-box>
+        <text-chat slot="chat" input="false">
+            <text-feed-bubbles input="true" showtyping="true"></text-feed-bubbles>
+        </text-chat>
+    </media-chat>
+    <media-chat-data id="data4" for-storage="storage4" self="dave" displayname="Dave" path="sessions/conf123"></media-chat-data>
+    <media-chat for-data="data4">
+        <toolbar-buttons slot="buttons">
+            <span>Status sync</span>
+            <button name="audio" toggle title="start/stop an audio call" show-if="calltype!='video'"></button>
+            <button name="video" toggle title="start/stop a video call" show-if="calltype!='audio'"></button>
+        </toolbar-buttons>
+        <user-roster slot="roster"></user-roster>
+        <flex-box slot="videos"></flex-box>
+        <text-chat slot="chat" input="false">
+            <text-feed-bubbles input="true" showtyping="true"></text-feed-bubbles>
+        </text-chat>
+    </media-chat>
+
+    <script type="text/javascript">
+
+        const storage1 = document.querySelector("#storage1");
+        const storage2 = document.querySelector("#storage2");
+        const storage3 = document.querySelector("#storage3");
+        const storage4 = document.querySelector("#storage4");
+        const type = "fullmesh";
+        PeerNetworkImpl.connectall(type, storage1, storage2, storage3, storage4).catch((error) => console.warn(error));
+
+        const streams = {};
+
+        [].slice.call(document.querySelectorAll("media-chat")).forEach(item => {
+            item.addEventListener("addvideo", event => {
+                const {video, id} = event;
+                console.log("creating stream for " + id);
+                let stream = document.createElement("storage-stream");
+                stream.path = "streams/video-" + id;
+                stream.storage = item.data.storage;
+                video.srcObject = stream;
+            });
+
+            item.addEventListener("removevideo", event => {
+                const {video, id} = event;
+                console.log("deleting stream for " + id);
+            });
+        });
+    </script>
+</body>
+</html>

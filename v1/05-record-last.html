@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+    video, video-io {
+        width: 240px; height: 180px;
+        background: transparent;
+    }
+    input[type="checkbox"]:after {
+        content: attr(value);
+        margin-left: 16px;
+    }
+    input[type="checkbox"] {
+        margin-right: 60px;
+    }
+    </style>
+</head>
+<body>
+    <named-stream id="stream"></named-stream>
+    <video-io for="stream"></video-io>
+    <video-io for="stream" recordmax="-30" sound="false"></video-io>
+    <video autoplay></video>
+    <div>
+        <button>Connect</button>
+        <button>Record</button>
+        <button>Play</button>
+    </div>
+    <script type="text/javascript">
+let [video1, video2, player, button0, button1, button3] = 
+    ["video-io:nth-of-type(1)", "video-io:nth-of-type(2)", "video", "button:nth-of-type(1)", "button:nth-of-type(2)", "button:nth-of-type(3)"].map(selector => document.querySelector(selector));
+let recordeddata = null;
+
+button0.onclick = e => {
+    let button = e.currentTarget;
+    if (button.innerText == "Connect") {
+        button.innerText = "Hangup";
+        video1.publish = video2.subscribe = true;
+    } else {
+        button.innerText = "Connect";
+        video1.publish = video2.subscribe = false;
+    }
+};
+button1.onclick = e => {
+    let button = e.currentTarget;
+    if (button.innerText == "Record") {
+        recordeddata = null;
+        video2.record = true;
+        button.innerText = "Stop";
+    } else {
+        video2.record = false;
+        button.innerText = "Record";
+    }
+};
+button3.onclick = e => {
+    let blob = video2.recordeddata;
+    if (!blob) {
+        blob = recordeddata;
+    } else {
+        recordeddata = blob;
+    }
+    if (blob) {
+        Promise.resolve(blob).then(blob => {
+            const url = URL.createObjectURL(blob);
+            player.src = url;
+            player.controls = true;
+        });
+    }
+};
+    </script>
+</body>
+</html>

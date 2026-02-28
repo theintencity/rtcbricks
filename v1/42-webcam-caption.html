@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+    <named-stream id="stream"></named-stream>
+    <video-io id="video1" microphone="false" controls></video-io>
+    <video-io id="video2" autoenable="true" controls></video-io>
+    <video-io id="video3" controls></video-io>
+    <video-mix id="mixer">
+        <script for="video1" type="text/plain">
+            let ctx = canvas.getContext("2d");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            let text = (new Date()).toLocaleString();
+            ctx.font = "24px serif";
+            ctx.fillStyle = "#ffffff";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            ctx.fillText(text, 320, 10, 640);
+        </script>
+    </video-mix>
+    <script type="text/javascript">
+        let [video1, video2, video3, mixer, stream] = ["video1", "video2", "video3", "mixer", "stream"].map(id => document.getElementById(id));
+
+        video2.input = mixer;
+        mixer.input = [video1];
+        video2.srcObject = video3.srcObject = stream;
+        video1.publish = video2.publish = video3.subscribe = true;
+    </script>
+</body>
+</html>

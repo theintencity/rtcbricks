@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<!-- based on https://google.github.io/mediapipe/solutions/selfie_segmentation -->
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+    <named-stream id="stream"></named-stream>
+    <img id="background" style="visibility: hidden; width: 0; height: 0;" src="43-background.jpg"/>
+    <video-io id="video1" microphone="false" controls></video-io>
+    <video-io id="video2" autoenable="true" controls style="background: grey; --preview-transform: scaleX(-1);"></video-io>
+    <video-io id="video3" autoenable="true" controls style="--preview-transform: scaleX(-1);"></video-io>
+    <video-io id="video4" autoenable="true" controls style="--preview-transform: scaleX(-1);"></video-io>
+    <video-io id="video5" autoenable="true" controls style="--preview-transform: scaleX(-1);"></video-io>
+    <video-mix id="mixer"></video-mix>
+    <script type="text/javascript">
+        window.onload = async () => {
+            let [video1, video2, mixer, background] = ["video1", "video2", "mixer", "background"].map(id => document.getElementById(id));
+            let [canvas3, canvas4, canvas5] = [3,4,5].map(index => document.createElement("canvas"));
+            video3.input = canvas3.captureStream();
+            video4.input = canvas4.captureStream();
+            video5.input = canvas5.captureStream();
+
+            video2.input = mixer;
+            mixer.input = [video1];
+            video1.publish = video2.publish = video3.publish = video4.publish = video5.publish = true;
+
+            let results = null;
+
+            const selfieSegmentation = new SelfieSegmentation({locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
+            }});
+            selfieSegmentation.setOptions({
+                modelSelection: 1,
+            });
+
+            let queue = [];
+            let avg = null;
+            let last = Date.now();
+
+            mixer.addEventListener("frame", async (event) => {
+                let video = event.videos[0];
+                //console.log("frame received");
+                if (video && video.videoWidth && video.videoHeight) {
+                    if (queue.length == 0) {
+                        const t0 = window.performance?.now();
+                        const promise = new Promise((resolve, reject) => { queue.push(resolve); });
+                        await selfieSegmentation.send({image: video});
+                        const results = await promise;
+                        processResult(results);
+                        const t1 = window.performance?.now();
+                        const d = t1 - t0;
+                        if (avg === null) {
+                            avg = d;
+                        } else {
+                            avg = (0.95)*avg + (0.5)*d;
+                        }
+                        
+                        if (Date.now() - last > 1000) {
+                            console.log(Math.round(t1-t0));
+                            last = Date.now();
+                        }
+                    }
+                }
+            });
+            selfieSegmentation.onResults(results => {
+                if (queue.length > 0) {
+                    const resolve = queue.shift();
+                    resolve(results);
+                }
+            });
+
+            function processResult(results) {
+                const  width = video1.videoWidth, height = video1.videoHeight;
+                if (width && height) {
+                    // mask print
+                    const mask = mixer._canvas;
+                    const video = results.image;
+
+                    mask.width = width; mask.height = height;
+                    const canvasCtx = mask.getContext("2d");
+                    canvasCtx.save();
+
+                    canvasCtx.clearRect(0, 0, width, height);
+                    canvasCtx.drawImage(results.segmentationMask, 0, 0, width, height);
+
+                    canvasCtx.globalCompositeOperation = 'source-out';
+                    canvasCtx.fillStyle = '#FFFFFFFF';
+                    canvasCtx.fillRect(0, 0, width, height);
+
+                    // canvasCtx.globalCompositeOperation = 'destination-atop';
+                    // canvasCtx.drawImage(results.image, 0, 0, width, height);
+
+                    canvasCtx.restore();
+
+
+                    // blur background
+                    let bg = document.createElement("canvas");
+                    bg.width = width; bg.height = height;
+                    bgctx = bg.getContext("2d");
+                    bgctx.globalCompositeOperation = "source-over";
+                    //bgctx.filter = "blur(2px)";
+                    bgctx.drawImage(mask, 0, 0);
+                    //bgctx.filter = "none";
+                    bgctx.globalCompositeOperation = "source-out";
+                    bgctx.drawImage(video, 0, 0);
+
+                    let ctx = canvas3.getContext("2d");
+                    canvas3.width = width;
+                    canvas3.height = height;
+                    ctx.filter = "blur(10px)";
+                    ctx.drawImage(video, 0, 0);
+                    ctx.filter = "none";
+                    ctx.drawImage(bg, 0, 0);
+
+                    // remove background
+                    ctx = canvas4.getContext("2d");
+                    canvas4.width = width;
+                    canvas4.height = height;
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.drawImage(bg, 0, 0); 
+
+                    // virtual background
+                    bg = document.createElement("canvas");
+                    bg.width = width; bg.height = height;
+                    bgctx = bg.getContext("2d");
+                    bgctx.globalCompositeOperation = "source-over";
+                    //bgctx.filter = "blur(2px)";
+                    bgctx.drawImage(mask, 0, 0);
+                    //bgctx.filter = "none";
+                    bgctx.globalCompositeOperation = "source-out";
+                    bgctx.drawImage(video, 0, 0);
+
+                    ctx = canvas5.getContext("2d");
+                    canvas5.width = width;
+                    canvas5.height = height;
+                    ctx.drawImage(background, 0, 0);
+                    ctx.drawImage(bg, 0, 0);
+
+                }
+            }
+        };
+    </script>
+</body>
+</html>

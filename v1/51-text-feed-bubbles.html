@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="text-chat.js"></script>
+    <script type="text/javascript" src="text-chat-bubbles.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        body {
+            position: absolute; width: 100%; height: 100%;
+        }
+        text-feed-bubbles {
+            position: absolute; width: 100%; height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <text-feed-bubbles>
+        <text-item-bubbles class="chat" mine="false" place="left" 
+            arrow="c-upper" icon="circle" hasicon="true" haslabel="true"
+            from="Bob" fromid="bob">
+            Hello, how are you?
+        </text-item-bubbles>
+        <text-item-bubbles class="chat" mine="true" place="right" 
+            arrow="c-lower" icon="square" hasicon="true" haslabel="false"
+            from="Alice" fromid="alice"
+            style="--background-color-self: lightblue;">
+            Where are you? Are you <b>around</b>?
+        </text-item-bubbles>
+        <text-item-bubbles class="info">
+            This is a system message
+        </text-item-bubbles>
+        <text-item-bubbles class="chat" mine="false" place="left" 
+            arrow="p-upper" icon="none" hasicon="false" haslabel="false"
+            from="Bob" fromid="bob"
+            style="--background-color-other: lightgreen;">
+            check this out.<br/>
+            <img src="51-text-chat-face1.jpg" width="30">
+        </text-item-bubbles>
+        <div style="text-align: right; margin: 10px;">
+            This div is with embedded content <b>image</b><br/>
+            <img src="51-text-chat-face1.jpg" style="zoom: 0.2;">
+        </div>
+    </text-feed-bubbles>
+</body>
+</html>

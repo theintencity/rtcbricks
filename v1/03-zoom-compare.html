@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        video-io {
+            display: inline-block;
+        }
+        div.second video-io, div.third video-io {
+            width: 160px; height: 120px;
+        }
+        video-io > span {
+            color: white;
+            text-shadow: 0 0 2px rgba(0,0,0,0.7);
+        }
+        div {
+            position: absolute; display: flex; flex-flow: column nowrap;
+            margin: 4px;
+        }
+        div > span {
+            width: 100%; border: solid 1px lightgrey; box-sizing: border-box; 
+        }
+        div.first {
+            left: 0px; width: 320px;
+        }
+        div.second, div.third {
+            width: 160px; left: 330px;
+        }
+        div.third {
+            top: 150px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="first">
+        <span>320x240, no zoom</span>
+        <video-io controls publish="true">
+            <span slot="header">Hello there!</span>
+            <span slot="footer" style="margin-left: 40%; line-height: 30px;">What's up?</span>
+        </video-io>
+    </div>
+    <div class="second">
+        <span>160x120, no zoom</span>
+        <video-io controls publish="true">
+            <span slot="header">Hello there!</span>
+            <span slot="footer" style="margin-left: 40%; line-height: 30px;">What's up?</span>
+        </video-io>
+    </div>
+    <div class="third">
+        <span>160x120, zoom=0.5</span>
+        <video-io controls publish="true" zoom="0.5">
+            <span slot="header">Hello there!</span>
+            <span slot="footer" style="margin-left: 40%; line-height: 30px;">What's up?</span>
+        </video-io>
+    </div>
+</body>
+</html>

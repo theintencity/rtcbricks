@@ -1,0 +1,285 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="flex-box.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+body {
+    position: absolute; width: 100%; height: 100%;
+    padding: 10px; box-sizing: border-box;
+    display: flex; flex-flow: row nowrap;
+}
+body > * {
+    position: relative;
+}
+body > :not(:first-child) {
+    margin-left: 10px;
+}
+select, input, flex-box {
+    display: block;
+}
+div.buttons {
+    display: flex; flex-flow: column nowrap;
+}
+div.buttons > div {
+    display: flex; flex-flow: row nowrap;
+    justify-content: flex-end;
+}
+div.buttons > div > :not(:first-child) {
+    margin-left: 10px;
+}
+div.buttons > div:not(:first-child) {
+    margin-top: 10px;
+}
+
+button:after {
+    content: attr(class);
+}
+body[select="insert"] div.buttons > div > :not(button.insert),
+body[select="remove"] div.buttons > div > :not(button.remove),
+body[select="hide"] div.buttons > div > :not(button.hide) {
+    pointer-events: none;
+    opacity: 0.4;
+}
+body[select="insert"] div.buttons > div > button.insert:after,
+body[select="remove"] div.buttons > div > button.remove:after,
+body[select="hide"] div.buttons > div > button.hide:after {
+    content: "cancel";
+}
+
+flex-box {
+    background-color: black;
+    border: solid 1px black;
+}
+flex-box > div { 
+    color: black; background-color: white;
+    border: solid 1px black; box-sizing: border-box;
+    display: flex; justify-content: center; align-items: center;
+    font-family: sans-serif; font-size: 0.8rem;
+    user-select: none;
+}
+
+body[select] flex-box > div:hover {
+    cursor: pointer;
+    background-color: rgba(255,255,255,0.5);
+}
+    </style>
+</head>
+<body>
+    <div class="buttons">
+        <div>
+            <label>display</label>
+            <select class="display">
+                <option selected>flex</option>
+                <option>grid</option>
+                <option>inline-block</option>
+                <option>pip</option>
+                <option>page</option>
+                <option>line</option>
+            </select>
+        </div>
+        <div>
+            <label>size</label>
+            <select class="size">
+                <option selected>320x240</option>
+                <option>320x180</option>
+                <option>400x200</option>
+                <option>240x240</option>
+                <option>150x300</option>
+                <option>400x100</option>
+            </select>
+        </div>
+        <div>
+            <label>ratio</label>
+            <select class="ratio">
+                <option selected>16:9</option>
+                <option>4:3</option>
+                <option>1:1</option>
+            </select>
+        </div>
+        <div>
+            <label>transition</label>
+            <input type="checkbox" class="transition" checked/>
+        </div>
+        <div>
+            <label>debug</label>
+            <input type="checkbox" class="debug" />
+        </div>
+        <div>
+            <label>item type</label>
+            <select class="type">
+                <option value="h" selected>horizontal</option>
+                <option value="v">vertical</option>
+            </select>
+        </div>
+        <div>
+            <label>item float</label>
+            <select class="float">
+                <option selected>top left</option>
+                <option>top right</option>
+                <option>bottom left</option>
+                <option>bottom right</option>
+                <option>top</option>
+                <option>bottom</option>
+                <option>left</option>
+                <option>right</option>
+            </select>
+        </div>
+        <div>
+            <button class="append" title="add a box at the end"></button>
+            <button class="insert" title="select a box to insert before"></button>
+        </div>
+        <div>
+            <button class="remove" title="select a box to remove"></button>
+            <button class="random" title="remove a random box"></button>
+        </div>
+        <div>
+            <button class="hide" title="select a box to hide"></button>
+            <button class="show" title="show all hidden boxes"></button>
+        </div>
+    </div>                    
+    <flex-box display="flex"></flex-box>
+
+    <script type="text/javascript">
+const flexbox = document.querySelector("flex-box");
+const items = "hhhvHvhh".split(""); // 8 items.
+
+let count = items.length;
+items.forEach((type, index) => {
+    flexbox.appendChild(get_append_item(type, type == type.toUpperCase() ? "" : false, index+1));
+});
+
+
+function get_append_item(type, float, label) {
+    const div = document.createElement("div");
+    div.innerText = "" + label;
+    const attrs = type == "v" ? 
+        {width: 180, height: 320, "min-ratio": "9:16", "max-ratio": "1:1"} :
+        {width: 320, height: 180, "min-ratio": "1:1", "max-ratio": "16:9"}; 
+    if (float !== false) {
+        attrs.float = float;
+    }
+    for (let name in attrs) {
+        div.setAttribute(name, attrs[name]);
+    }
+    //flexbox.appendChild(div);
+
+    div.onclick = () => {
+        if (document.body.hasAttribute("select")) {
+            const select = document.body.getAttribute("select");
+            document.body.removeAttribute("select");
+            on_selected(div, select);
+        }
+    };
+
+    return div;
+}
+
+const onsizechange = document.querySelector("select.size").onchange = event => {
+    const [width, height] = document.querySelector("select.size").value.split('x').map(str => parseInt(str));
+    flexbox.style.width = width + 'px';
+    flexbox.style.height = height + 'px';
+};
+setTimeout(() => {
+    onsizechange();
+});
+document.querySelector("select.display").onchange = event => {
+    flexbox.setAttribute("display", event.currentTarget.value);
+};
+document.querySelector("select.float").onchange = event => {
+    const float = flexbox.querySelector("div[float]");
+    if (float) {
+        float.setAttribute("float", event.currentTarget.value);
+    }
+};
+document.querySelector("select.ratio").onchange = event => {
+    flexbox.setAttribute("ratio", event.currentTarget.value);
+};
+document.querySelector("input.transition").onclick = event => {
+    if (event.currentTarget.checked) 
+        flexbox.removeAttribute("transition");
+    else
+        flexbox.setAttribute("transition", "none");
+};
+document.querySelector("input.debug").onclick = event => {
+    if (event.currentTarget.checked) 
+        flexbox.setAttribute("debug", "true");
+    else
+        flexbox.removeAttribute("debug");
+};
+
+document.querySelector("button.append").onclick = event => {
+    const type = document.querySelector("select.type").value;
+    const div = get_append_item(type, false, ++count);
+    flexbox.appendChild(div);
+};
+document.querySelector("button.insert").onclick = event => {
+    if (document.body.hasAttribute("select")) {
+        document.body.removeAttribute("select");
+    } else {
+        document.body.setAttribute("select", "insert");
+    }
+};
+document.querySelector("button.remove").onclick = event => {
+    if (document.body.hasAttribute("select")) {
+        document.body.removeAttribute("select");
+    } else {
+        document.body.setAttribute("select", "remove");
+    }
+};
+document.querySelector("button.random").onclick = event => {
+    if (flexbox.children.length) {
+        const div = flexbox.children[Math.floor(Math.random() * flexbox.children.length)];
+        flexbox.removeChild(div);
+    }
+};
+document.querySelector("button.hide").onclick = event => {
+    if (document.body.hasAttribute("select")) {
+        document.body.removeAttribute("select");
+    } else {
+        document.body.setAttribute("select", "hide");
+    }
+};
+document.querySelector("button.show").onclick = event => {
+    [].slice.call(flexbox.querySelectorAll("div")).forEach(div => div.removeAttribute("hidden"));
+};
+
+function on_selected(div, type) {
+    if (type == "insert") {
+        const type = document.querySelector("select.type").value;
+        flexbox.insertBefore(get_append_item(type, false, ++count), div);
+    } else if (type == "remove") {
+        flexbox.removeChild(div);
+    } else if (type == "hide") {
+        div.setAttribute("hidden", "");
+    }
+}
+
+// // animate fade in or out.
+// function animate(el, remove, callback) {
+//     if (!remove) {// fade in
+//         el.style.opacity = 0;
+//         el.style.transition = "opacity 0.3s linear 0.1s";
+//         setTimeout(()=> {
+//             el.style.opacity = 1;
+//             setTimeout(() => {
+//                 el.style.transition = "";
+//             }, 400);
+//         });
+//     } else {
+//         el.style.transition = "opacity 0.3s linear";
+//         el.style.opacity = 0;
+//         setTimeout(() => {
+//             el.style.transition = "";
+//             callback();
+//         }, 300);
+//     }
+// }
+document.querySelector("flex-box").addEventListener("change", event => {
+    const showing = event.detail.visible.map(item => item.innerText).join(", ");
+    const hiding = event.detail.hidden.map(item => item.innerText).join(", ");
+    console.log("showing=" + showing + " hiding=" + hiding);
+});
+    </script>
+</body>
+</html>

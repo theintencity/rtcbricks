@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+    <video-io id="video1" controls autoenable="true"></video-io>
+    <video-io id="video2" controls></video-io>
+    <script type="text/javascript">
+        const video1 = document.querySelector("#video1"),
+              video2 = document.querySelector("#video2");
+
+        video1.addEventListener("data", e => video2.apply(e.data));
+        video2.addEventListener("data", e => video1.apply(e.data));
+
+        video1.publish = video2.subscribe = true;
+    </script>
+</body>
+</html>

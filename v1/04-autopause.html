@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        div.table {
+            display: table;
+        }
+        div.table > div {
+            display: table-row;
+        }
+        div.table > div > div {
+            display: table-cell;
+            padding: 1ch;
+        }
+    </style>
+</head>
+<body>
+    <named-stream id="stream"></named-stream>
+    <div class="table">
+        <div>
+            <div><video-io id="video1" controls autoenable="true" autopause="true" microphone="false" for="stream" publish="true"></video-io></div>
+            <div><video-io id="video2" for="stream" subscribe="true"></video-io></div>
+        </div>
+    </div>
+</body>
+</html>

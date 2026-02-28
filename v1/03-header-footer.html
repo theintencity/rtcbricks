@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        video-io > span {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <video-io controls publish="true">
+        <span slot="header">Queen Elsa</span>
+        <span slot="footer" style="margin-left: 40%; line-height: 30px;"></span>
+        <span slot="controls" onclick="alert('clicked');"><button>Click me</button></span>
+    </video-io>
+    <script type="text/javascript">
+        let video = document.querySelector("video-io");
+        video.addEventListener("propertychange", e => {
+            if (e.property == "playing") {
+                video.querySelector('span[slot="footer"]').innerText = "Playing: " + e.newValue;
+            }
+        });
+    </script>
+</body>
+</html>

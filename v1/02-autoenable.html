@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+    <video-io controls microphone="false" autoenable="true" publish="true"></video-io>
+    <button>reset autoenable</button>
+    <script type="text/javascript">
+        let video = document.querySelector("video-io");
+        let button = document.querySelector("button");
+        button.addEventListener("click", e => {
+            if (button.innerText == "reset autoenable") {
+                button.innerText = "set autoenable";
+                video.autoenable = false;
+            } else {
+                button.innerText = "reset autoenable";
+                video.autoenable = true;
+            }
+        });
+    </script>
+</body>
+</html>

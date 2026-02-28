@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="user-roster.js"></script>
+    <script type="text/javascript" src="web-assets.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
+    <style type="text/css">
+        body {
+            position: absolute; width: 100%; height: 100%;
+            display: flex; flex-flow: row wrap;
+        }
+        user-roster {
+            width: 200px; height: 300px;
+            margin: 1ch;
+            border: solid 1px lightgrey;
+        }
+
+        div.content {
+            display: flex; flex-flow: row nowrap;
+            width: 100%; height: 100%; align-items: flex-start;
+        }
+    </style>
+</head>
+<body>
+    <communicator-icons id="icons"></communicator-icons>
+    <shared-storage id="storage" src="local"></shared-storage>
+    <user-roster-data id="data" for-storage="storage" self="alice" path="sessions/list123"></user-roster-data>
+
+    <div class="content">
+        <user-roster for-data="data"></user-roster>
+        <table>
+            <tr><td>controls</td><td>
+                <input name="controls" type="checkbox" checked />
+                <span>allow set status</span>
+            </td></tr>
+            <tr><td>action</td><td>
+                <select name="action">
+                    <option>hover</option>
+                    <option>always</option>
+                </select>
+            </td></tr>
+            <tr><td>contact</td><td>
+                <input name="contact" type="checkbox" checked />
+                <span>show add/remove contact</span>
+            </td></tr>
+            <tr><td>audio</td><td>
+                <input name="audio" type="checkbox" checked />
+                <span>show change audio</span>
+            </td></tr>
+            <tr><td>video</td><td>
+                <input name="video" type="checkbox" checked />
+                <span>show change video</span>
+            </td></tr>
+            <tr><td>icons</td><td>
+                <input class="icons" type="checkbox" />
+                <span>uses communicator-icons</span>
+            </td></tr>
+            <tr><td>filter</td><td>
+                <input name="filter" type="text" placeholder="search" />
+            </td></tr>
+            <tr><td>random</td><td>
+                <input class="random" type="checkbox" />
+                <span>randomly change status</span>
+        </table>
+    </div>
+
+    <script type="text/javascript">
+        const roster = document.querySelector("user-roster");
+        const data = [
+                {id: "alice", name: "Alice", status: "available", audio: true, video: true, contact: true},
+                {id: "bob", name: "Bob", status: "busy", message: "Sunny side up", video: true, contact: true},
+                {id: "carol", name: "Carol", status: "idle", message: "Home again!", audio: true, publish_video: true},
+                {id: "dan", name: "Dan", status: "available", audio: true},
+                {id: "ethan", name: "Ethan", status: "available", chatting: true},
+            ];
+        setTimeout(() => {
+            data.forEach(item => {
+                const data = JSON.parse(JSON.stringify(item));
+                const id = data.id;
+                delete data.id;
+                document.querySelector("shared-storage").update("sessions/list123/" + id, true, data);
+            });
+        }, 500);
+        [].slice.call(document.querySelectorAll("input[name]")).forEach(input => {
+            if (input.type == "checkbox") {
+                input.onclick = event => {
+                    const name = event.currentTarget.getAttribute("name");
+                    roster[name] = event.currentTarget.checked;
+                };
+            } else if (input.type == "text") {
+                input.onkeyup = event => {
+                    const name = event.currentTarget.getAttribute("name");
+                    const input = event.currentTarget;
+                    setTimeout(() => {
+                        roster[name] = input.value;
+                    });
+                };
+            }
+        });
+        document.querySelector("select[name='action']").onchange = event => {
+            roster.action = event.currentTarget.value;
+        };
+        document.querySelector("input.icons").onclick = event => {
+            roster.icons = roster.icons ? null : document.querySelector("communicator-icons");
+        };
+
+        let timer = null;
+        document.querySelector("input.random").onclick = event => {
+            if (!timer) {
+                timer = setInterval(() => randomchange(), 4000);
+            } else {
+                clearInterval(timer);
+                timer = null;
+            }
+        };
+        function randomchange() {
+            const user = data[1+Math.floor((data.length-1)*Math.random())].id;
+            const statuses = ["available", "busy", "invisible", "idle"];
+            const status = statuses[Math.floor(statuses.length*Math.random())];
+            console.log("setting " + user + ".status=" + status);
+            document.querySelector("shared-storage").update("sessions/list123/" + user, true, {status: status}, true);
+        }
+    </script>
+</body>
+</html>

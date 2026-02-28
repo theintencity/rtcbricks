@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="split-stream.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        div.table {
+            display: table;
+        }
+        div.table > div {
+            display: table-row;
+        }
+        div.table > div > div {
+            display: table-cell;
+            padding: 1ch;
+        }
+    </style>
+</head>
+<body>
+
+    <split-stream id="stream1">
+        <named-stream id="stream2"></named-stream>
+        <named-stream id="stream3"></named-stream>
+    </split-stream>
+
+    <div class="table">
+        <div>
+            <div><video-io id="video1" controls for="stream1"></video-io></div>
+            <div><video-io id="video2" controls for="stream2"></video-io></div>
+            <div><video-io id="video3" controls for="stream3"></video-io></div>
+        </div>
+        <div>
+            <div><button id="button1">publish</button></div>
+            <div><button id="button2">subscribe</button></div>
+            <div><button id="button3">subscribe</button></div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        let [video1, video2, video3, stream1, stream2, stream3, button1, button2, button3] = 
+            "video1, video2, video3, stream1, stream2, stream3, button1, button2, button3".split(", ")
+                .map(id => document.querySelector("#" + id));
+
+        button1.onclick = button2.onclick = button3.onclick = e => {
+            let button = e.currentTarget;
+            let video = document.querySelector(button.id.replace(/button/, '#video'));
+            if (button.innerText == "stop") {
+                if (button.id == "button1") {
+                    button.innerText = "publish";
+                    video.publish = false;
+                } else {
+                    button.innerText = "subscribe";
+                    video.subscribe = false;
+                }
+            } else {
+                button.innerText = "stop";
+                if (button.id == "button1") {
+                    video.publish = true;
+                } else {
+                    video.subscribe = true;
+                }
+            }
+        };
+    </script>
+</body>
+</html>

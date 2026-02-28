@@ -1,0 +1,590 @@
+<!doctype html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="rich-text-editor.css">
+    <script type="text/javascript" src="rich-text-editor.js"></script>
+
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="text-chat.js"></script>
+    <script type="text/javascript" src="text-chat-bubbles.js"></script>
+    <script type="text/javascript" src="user-roster.js"></script>
+    <script type="text/javascript" src="flex-box.js"></script>
+    <script type="text/javascript" src="media-chat.js"></script>
+    <script type="text/javascript" src="shared-editor.js"></script>
+    <script type="text/javascript" src="web-assets.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        body {
+            position: absolute; width: 100%; height: 100%;
+            display: flex; flex-flow: row nowrap;
+        }
+        body > * {
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        div.controls {
+            padding: 10px;
+            border-right: solid 1px lightgrey;
+            display: flex; flex-flow: column nowrap;
+            width: 320px; overflow: auto;
+        }
+        div.controls::-webkit-scrollbar {
+            width: 2px;
+            height: 2px;
+        }
+        div.controls::-webkit-scrollbar-thumb {
+            background-color: darkgrey;
+        }
+        div.controls::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
+
+        span.title {
+            font-family: monospace;
+            font-weight: bold;
+            margin-top: 4px;
+            width: 100%;
+        }
+
+        body > div.view {
+            flex: 1;
+            position: relative; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+        }
+        media-chat {
+            position: absolute;
+            border: solid 1px lightgrey;
+            resize: both;
+        }
+        media-chat[display="hangout"], media-chat[display="videocity"] {
+            width: 600px; height: 400px;
+        }
+        media-chat[display="filmstrip"], media-chat[display="messenger"] {
+            width: 200px; height: 400px;
+        }
+        video-io > span {
+            color: rgba(255,255,255,0.5); 
+            font-size: 10px; font-family: sans-serif;
+            text-shadow: 0 0 3px rgba(0,0,0,0.3);
+        }
+        text-feed {
+            font-size: 12px; line-height: 16px;
+        }
+
+        div.input {
+            width: calc(100% - 20px);
+        }
+        div.input > * {
+            margin-top: 4px;
+        }
+        div.input input, div.input select {
+            width: 70px; height: 24px; box-sizing: border-box;
+        }
+        div.input textarea {
+            width: 100%;
+            resize: none;
+        }
+        div.form {
+            flex: 1;
+            display: grid;
+            align-content: flex-start;
+            justify-items: flex-end;
+            grid-template-columns: 1fr 100px;
+            grid-gap: 4px;
+        }
+        div.form label {
+            align-self: flex-end;
+            white-space: nowrap;
+        }
+        div.form input[type="text"], div.form select {
+            width: 100px;
+            text-align: left;
+            box-sizing: border-box;
+            height: 20px;
+        }
+        div.form > input[type="checkbox"] {
+            margin-right: calc(100% - 20px);
+        }
+        div.form input[type="number"] {
+            width: 40px; height: 20px;
+            box-sizing: border-box;
+        }
+        div.form > div.horizontal {
+            display: flex; flex-flow: row nowrap;
+            margin-right: calc(100% - 60px);
+        }
+        div.form > a {
+            color: #66f;
+            font-style: italic;
+            cursor: pointer;
+        }
+
+        shared-storage, alert-sounds, yahoo-smileys, chat-images, media-chat-data {
+            display: none; visibility: hidden;
+        }
+
+        shared-editor {
+            height: 80px;
+        }
+    </style>
+</head>
+<body>
+    <alert-sounds id="sounds"></alert-sounds>
+    <yahoo-smileys id="smileys"></yahoo-smileys>
+    <shared-storage id="storage1" src="local"></shared-storage>
+
+    <div class="controls">
+        <div class="form"></div>
+        <div class="input">
+            <input class="fromid" type="text" value="alice" placeholder="Sender id"/>
+            <input class="from" type="text" value="Alice" placeholder="Sender displayname"/>
+            <select class="type"><option value="text/plain">text</option><option value="text/html">html</option></select>
+            <textarea class="text" placeholder="Enter message..."></textarea>
+        </div>
+    </div>
+
+    <media-chat-data id="data1" for-storage="storage1" self="bob" displayname="Bob" path="sessions/conf789"></media-chat-data>
+    <div class="view">
+        <media-chat for-data="data1" display="hangout">
+            <toolbar-buttons slot="buttons">
+                <span>My Meeting</span>
+                <button name="roster" hidden toggle title="show/hide user roster" show-if="display=='videocity'"></button>
+                <button name="chat" hidden toggle title="show/hide text chat" show-if="display=='videocity'"></button>
+                <button name="audio" toggle title="start/stop an audio call" show-if="calltype != 'video'"></button>
+                <button name="video" toggle title="start/stop a video call" show-if="calltype != 'audio'"></button>
+                <button name="camera" hidden toggle selected title="toggle webcam"></button>
+                <button name="microphone" hidden toggle selected title="toggle microphone"></button>
+                <volume-level name="miclevel" hidden title="adjust microphone gain" show-if="selfvideo"></volume-level>
+                <button name="sound" hidden toggle selected title="toggle speaker sound"></button>
+                <volume-level name="soundlevel" hidden title="adjust speaker volume" show-if="othervideos"></volume-level>
+                <button name="clear" hidden title="clear text chat"></button>
+                <button name="settings" hidden title="device selection"></button>
+                <button name="screenshare" hidden toggle title="Share screen or window"></button>
+                <button name="layout" hidden title="change layout"></button>
+                <button name="fullscreen" hidden toggle title="toggle fullscreen"></button>
+                <button name="menu" title="more actions" show-if="hasmenu"></button>
+            </toolbar-buttons>
+            <overlay-menu slot="menu">
+                <span name="microphone" toggle="true" checked="true">Microphone</span>
+                <span name="camera" toggle="true" checked="true">Webcam</span>
+                <span name="screenshare" toggle show-if="display == 'videocity' || display == 'messenger' && calltype == 'video' || display != 'messenger' && calltype != 'none'">Share screen</span>
+                <span name="clear">Clear text chat</span>
+                <span name="popout" show-if="!popout && (display == 'messenger' && calltype == 'video' || display == 'hangout' && calltype != 'none')">Popout videos</span>
+                <span name="settings" hidden>Settings</span>
+                <span name="layout" hidden>Change layout</span>
+                <span name="fullscreen" toggle>Full screen</span>
+            </overlay-menu>
+            <user-roster slot="roster"></user-roster>
+            <text-chat slot="chat" for-smileys="smileys" for-sounds="sounds" showtyping="false" minsize="100x200">
+                <text-feed-bubbles arrow="c-lower" showtyping="true" showself="true" selfright="true" grouped="true" icon="circle" label="other"></text-feed-bubbles>
+            </text-chat>
+            <flex-box slot="videos"></flex-box>
+        </media-chat>
+        <shared-editor slot="inputarea" disabled="fontsize,background,code,abbr,upload,download,pointer,lock,close,resize" wraptext="true"></shared-editor>
+    </div>
+
+    <script type="text/javascript">
+
+        const storage = document.querySelector("shared-storage");
+        const media = document.querySelector("media-chat");
+        const data = document.querySelector("media-chat-data");
+        const path = data.getAttribute("path");
+        const self = data.getAttribute("self");
+        const form = document.querySelector("div.form");
+        const chat = document.querySelector("text-chat");
+        const editor = document.querySelector("shared-editor");
+        const view = document.querySelector("div.view");
+
+        editor.parentNode.removeChild(editor);
+
+        let display = media.display;
+
+        const on_change = event => {
+            // const r1 = chat.getBoundingClientRect();
+            // const r2 = view.getBoundingClientRect();
+            // const r3 = {width: r1.width-1, height: 80-1, left: r1.left - r2.left, top: r1.top - r2.top + r1.height};
+            // //console.log("r3=", JSON.stringify(r3));
+            // editor.style.top = `${r3.top}px`;
+            // editor.style.left = `${r3.left}px`;
+            // editor.style.width = `${r3.width}px`;
+            // editor.style.height = `${r3.height}px`;
+            // editor.style.display = media.display != "videocity" && media.showchat ? "" : "none";
+            // editor.dispatchEvent(new Event("change"));
+            // if (event) {
+            //     setTimeout(() => {
+            //         on_change();
+            //     }, 500);
+            // }
+
+            if (display != media.display) {
+                console.log("change in display", display, "to", media.display);
+                const old = display == "messenger" || display == "filmstrip";
+                const value = media.display == "messenger" || media.display == "filmstrip";
+                if (old != value) {
+                    media.style.height = "400px";
+                    media.style.width = value ? "200px" : "600px";
+                }
+                display = media.display;
+            }
+            editor._applyPosition();
+            if (event) {
+                setTimeout(() => editor._applyPosition(), 500);
+            }
+        }
+        media.addEventListener("change", on_change);
+        on_change();
+
+        editor.addEventListener("enter", event => {
+            const editor = event.currentTarget;
+            let text = editor.content;
+            setTimeout(() => { // so that enter is processed.
+                editor.content = "";
+            });
+            let type = "text/html";
+            // const hex = text.split("")
+            //     .map(c => c.charCodeAt(0).toString(16).padStart(2, "0"))
+            //     .join(" ");
+            // console.log(text + "\n" + hex);
+            const match = text.match(/^<p>([\s\S]*)<\/p>$/m);
+            if (match) {
+                text = match[1];
+            }
+            if (text.indexOf("<") < 0) {
+                type = undefined;
+                const t = document.createElement("textarea");
+                t.innerHTML = text;
+                text = t.value; // unescape entities, but keep tags if any.
+            }
+            editor.dispatchEvent(Object.assign(new Event("textinput"), {data: {type, text}}));
+        });
+
+
+        const objects = {
+            //data: document.querySelector("media-chat-data"),
+            media: document.querySelector("media-chat"),
+            include: [].slice.call(document.querySelectorAll("media-chat > *")).concat(editor),
+            buttons: document.querySelector("toolbar-buttons"),
+            menu: document.querySelector("overlay-menu"),
+            videos: document.querySelector("flex-box"),
+            roster: document.querySelector("user-roster"),
+            chat: document.querySelector("text-chat"),
+            feed: document.querySelector("text-feed-bubbles"),
+        };
+
+
+        const ignored = ["for-data", "for-storage", "self", "path", "displayname", "persistent", "ready"];
+        const allowed = {"for-sounds": ["sounds", ""], "for-smileys": ["smileys", ""], "for-images": ["images", ""]};
+
+        Object.entries(objects)
+            .forEach(([space, media]) => {
+                const span1 = document.createElement("span");
+                span1.className = "title";
+                span1.innerText = space == "include" ? space : media.localName;
+                form.appendChild(span1);
+
+                if (space == "buttons" || space == "menu" || space == "include") {
+                    const link = document.createElement("a");
+                    const items = [];
+
+                    link.innerText = "re-order";
+                    link.onclick = event => {
+                        event.preventDefault();
+                        if (space != "include") {
+                            items.forEach(({child, input1}) => {
+                                const order = parseInt(input1.value);
+                                child.style.order = "" + (!isNaN(order) ? order : "");
+                            });
+                        } else {
+                            const parent = objects.media;
+                            const orders = [];
+                            items.forEach(({child, input1}) => {
+                                if (child.parentNode) {
+                                    const order = parseInt(input1.value);
+                                    orders.push({order, child});
+                                    parent.removeChild(child);
+                                }
+                            });
+                            orders.sort((a,b) => { return a.order - b.order; });
+                            // console.log(orders);
+                            orders.forEach(({child}) => {
+                                parent.appendChild(child);
+                            });
+                        }
+                    };
+                    form.appendChild(link);
+
+                    [].slice.call(space == "include" ? media : media.querySelectorAll("button,span,volume-level")).forEach((child, index) => {
+                        const name = child.getAttribute("name") || child.localName;
+                        const label = document.createElement("label");
+                        label.innerText = name;
+                        const div = document.createElement("div");
+                        div.className = "horizontal";
+
+                        const input = document.createElement("input");
+                        input.type = "checkbox";
+                        input.checked = space == "include" ? child.parentNode : !child.hasAttribute("hidden");
+                        input.setAttribute("title", "show/hide " + name);
+                        input.onclick = event => {
+                            if (space == "include" && name == "shared-editor") {
+                                if (input.checked) {
+                                    objects.chat.appendChild(child);
+                                } else {
+                                    view.appendChild(child);
+                                }
+                            } else if (space == "include") {
+                                const parent = objects.media;
+                                if (child.parentNode) {
+                                    parent.removeChild(child);
+                                } else {
+                                    const orders = [];
+                                    const child0 = child;
+                                    items.forEach(({child, input1}) => {
+                                        if (child.parentNode || child === child0) {
+                                            const order = parseInt(input1.value);
+                                            orders.push({order, child});
+                                        }
+                                    });
+                                    orders.sort((a,b) => { return a.order - b.order; });
+                                    const index = orders.findIndex(({child}) => child === child0);
+
+                                    parent.insertBefore(child, index < orders.length - 1 ? orders[index+1].child : null);
+                                }
+                            } else {
+                                if (child.hasAttribute("hidden"))
+                                    child.removeAttribute("hidden");
+                                else 
+                                    child.setAttribute("hidden", "");
+                            }
+                        };
+                        div.appendChild(input);
+                        if (name != "shared-editor") {
+                            const input1 = document.createElement("input");
+                            input1.type = "number";
+                            input1.setAttribute("title", "order of this item");
+                            input1.value = index;
+                            div.appendChild(input1);
+                            items.push({child, input1});
+                        }
+
+                        form.appendChild(label);
+                        form.appendChild(div);
+                    });
+                    return;
+                }
+
+                form.appendChild(document.createElement("span"));
+
+                const metadata = media.constructor.metadata || {};
+
+                Object.entries(metadata.properties || {})
+                    .filter(([name, prop]) => prop.type == "bool" || prop.type == "string")
+                    .filter(([name, prop]) => {
+                        return ignored.indexOf(name) < 0;
+                    })
+                    .forEach(([name, prop]) => {
+                        const label = document.createElement("label");
+                        label.innerText = name;
+                        let control;
+                        if (prop.allowed || allowed[name]) {
+                            const select = control = document.createElement("select");
+                            (prop.allowed || allowed[name]).forEach(value => {
+                                const option = document.createElement("option");
+                                option.innerText = value;
+                                select.appendChild(option);
+                            });
+                            if (media[name] !== undefined) {
+                                select.value = media[name];
+                            }
+                            select.onchange = event => {
+                                if (name.indexOf("-") < 0) {
+                                    media[name] = select.value;
+                                } else {
+                                    media.setAttribute(name, select.value);
+                                }
+                            };
+                        } else {
+                            const input = control = document.createElement("input");
+                            input.type = prop.type == "bool" ? "checkbox" : "text";
+                            if (prop.type == "bool") {
+                                input.checked = media[name];
+                                input.onclick = event => {
+                                    media[name] = input.checked;
+                                };
+                            } else {
+                                input.value = media[name] || "";
+                                input.onkeyup = event => {
+                                    if (event.key == "Enter") {
+                                        if (name.indexOf("-") < 0) {
+                                            media[name] = input.value;
+                                        } else {
+                                            media.setAttribute(name, input.value);
+                                        }
+                                    }
+                                };
+                            }
+                        }
+                        control.setAttribute("name", name);
+                        control.setAttribute("title", prop.desc);
+
+                        if (prop.readOnly) {
+                            control.disabled = true;
+                        }
+
+                        form.appendChild(label);
+                        form.appendChild(control);
+
+                    });
+                Object.entries(metadata.styles || {})
+                    .forEach(([name, prop]) => {
+                        const label = document.createElement("label");
+                        label.innerText = name;
+                        const input = document.createElement("input");
+                        input.type = "text";
+                        input.setAttribute("placeholder", prop.default || "");
+                        input.value = media.style.getPropertyValue(name) || "";
+                        input.onkeyup = event => {
+                            if (event.key == "Enter") {
+                                //console.log("setting style", input.value, name);
+                                media.style.setProperty(name, input.value);
+                            }
+                        };
+                        input.setAttribute("name", name);
+                        input.setAttribute("title", prop.desc);
+
+                        form.appendChild(label);
+                        form.appendChild(input);
+
+                    });
+            });
+
+        const streams = {};
+
+        media.addEventListener("addvideo", event => {
+            const {video, id} = event;
+            let stream = streams[id];
+            if (!stream) {
+                console.log("creating stream for " + id);
+                stream = streams[id] = document.createElement("named-stream");
+                stream._refcount = 1;
+            } else {
+                stream._refcount += 1;
+            }
+            video.srcObject = stream;
+        });
+
+        media.addEventListener("removevideo", event => {
+            const {video, id} = event;
+            let stream = streams[id];
+            if (stream) {
+                stream._refcount -= 1;
+                if (!stream._refcount) {
+                    console.log("deleting stream for " + id);
+                    delete streams[id];
+                }
+            }
+        });
+
+        media.addEventListener("calltype", event => {
+            const control = document.querySelector('div.controls [name="calltype"]');
+            control.value = event.currentTarget.calltype;
+        });
+
+        chat.addEventListener("sending", event => {
+            event.data.icon = "http:51-text-chat-face1.jpg";
+        });
+
+        // update user roster data
+        storage.update(path + "/users/alice", true, {name: "Alice", status: "available"});
+        storage.update(path + "/users/carol", true, {name: "Carol", status: "available"});
+        storage.update(path + "/users/dave", true, {name: "Dave", status: "available"});
+
+        // update text chat data
+        const items = [
+            ["alice", "Alice", "Hello there!"], 
+            ["carol", "Carol", "Hi"], 
+            ["dave", "Dave", {text: "Hola!!", icon: "http:51-text-chat-face2.jpg"}], 
+            ["dave", "Dave", {text: "What's up?", icon: "http:51-text-chat-face2.jpg"}], 
+            ["bob", "Bob", {text: "What's the plan?", icon: "http:51-text-chat-face1.jpg"}],
+            ["bob", "Bob", {text: "Let's watch <b>You've got mail!</b>", type: "text/html", icon: "http:51-text-chat-face1.jpg"}],
+            ["carol", "Carol", "What time?"],
+            ["carol", "Carol", "I can't do before 3"],
+        ];
+
+        let interval = setInterval(() => {
+            if (!items.length) {
+                clearInterval(interval);
+                return;
+            }
+
+            const [fromid, displayname, msg] = items.shift();
+            let data = {disposition: "message", from: displayname, fromid: fromid};
+            if (typeof msg === "string") {
+                data.text = msg;
+            } else if (typeof msg == "object") {
+                data = Object.assign(JSON.parse(JSON.stringify(msg)), data);
+            }
+
+            if (fromid == self) {
+                chat.send(data);
+            } else {
+                storage.add(path + "/messages", true, data);
+            }
+            //chat.add("", data, true, fromid == "bob");
+        }, 10);
+
+        let typing = false;
+
+        document.querySelector("div.input textarea").onkeyup = event => {
+            setTimeout(() => {
+                const textarea = document.querySelector("div.input textarea");
+                const old = typing;
+                if (textarea.value && !typing) {
+                    typing = true;
+                } else if (!textarea.value && typing) {
+                    typing = false;
+                }
+                //console.log("value", textarea.value);
+                if (old !== typing) {
+                    const fromid = document.querySelector("div.input input.fromid").value;
+                    const from = document.querySelector("div.input input.from").value;
+                    if (fromid) {
+                        let data = {type: "typing", from, fromid, value: typing};
+                        storage.notify(path + "/messages", data);
+                    }
+                }
+            });
+        };
+
+        document.querySelector("div.input textarea").onkeypress = event => {
+            if (event.key == "Enter" && !event.shiftKey) {
+                const fromid = document.querySelector("div.input input.fromid").value;
+                const from = document.querySelector("div.input input.from").value;
+                const text = document.querySelector("div.input textarea.text").value;
+                const type = document.querySelector("div.input select.type").selectedOptions[0].value;
+
+                let data = {disposition: "message", from, fromid, text};
+                if (typing) {
+                    typing = false;
+                    const data = {type: "typing", from, fromid, value: false};
+                    storage.notify(path + "/messages", data);
+                }
+                if (type != "text/plain") {
+                    data.type = type;
+                }
+                if (!fromid) {
+                    data.disposition = "info";
+                    delete data.from;
+                    delete data.fromid;
+                }
+                storage.add(path + "/messages", true, data);
+
+                setTimeout(() => {
+                    document.querySelector("div.input textarea").value = "";
+                });
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+    delayed-video, video-io {
+        width: 320px; height: 240px;
+        background: transparent;
+    }
+    input {
+        width: 20px;
+    }
+    </style>
+</head>
+<body>
+    <video-io id="video" mirrored="false"></video-io>
+    <delayed-video for="video"></delayed-video>
+    <div>
+        <span>Delay:</span>
+        <input type="text" title="Delay in seconds" placeholder="4" value="4" label="Delay"/>
+        <button>Start</button>
+    </div>
+    <script type="text/javascript">
+let [video, delayed, input, button] = 
+    ["video-io", "delayed-video","input", "button"].map(selector => document.querySelector(selector));
+
+button.onclick = e => {
+    let button = e.currentTarget;
+    if (button.innerText == "Start") {
+        button.innerText = "Stop";
+        delayed.delay = parseInt(input.value) || 4;
+        video.publish = true;
+    } else {
+        button.innerText = "Start";
+        video.publish = false;
+    }
+};
+    </script>
+</body>
+</html>

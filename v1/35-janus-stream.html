@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/9.0.3/adapter.min.js"></script>
+    <script type="text/javascript" src="https://janus-legacy.conf.meetecho.com/janus.js"></script>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="janus-stream.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        div.table {
+            display: table;
+        }
+        div.table > div {
+            display: table-row;
+        }
+        div.table > div > div {
+            display: table-cell;
+            padding: 1ch;
+        }
+    </style>
+</head>
+<body>
+    <janus-stream id="stream1" src="https://janus.conf.meetecho.com/janus?room=1234&feed=5678"></janus-stream>
+    <janus-stream id="stream2" src="https://janus.conf.meetecho.com/janus?room=1234&feed=5678"></janus-stream>
+    <janus-stream id="stream3" src="https://janus.conf.meetecho.com/janus?room=1234&feed=5678"></janus-stream>
+    <div class="table">
+        <div>
+            <div><video-io id="video1" controls autoenable="true" keeptracks="true" for="stream1"></video-io></div>
+            <div><video-io id="video2" controls for="stream2"></video-io></div>
+            <div><video-io id="video3" controls for="stream3"></video-io></div>
+        </div>
+        <div>
+            <div><button id="button1">publish</button></div>
+            <div><button id="button2">subscribe</button></div>
+            <div><button id="button3">subscribe</button></div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        let video1 = document.querySelector("#video1");
+        let video2 = document.querySelector("#video2");
+        let video3 = document.querySelector("#video3");
+        let stream1 = document.querySelector("#stream1");
+        let stream2 = document.querySelector("#stream2");
+        let stream3 = document.querySelector("#stream3");
+        let button1 = document.querySelector("#button1");
+        let button2 = document.querySelector("#button2");
+        let button3 = document.querySelector("#button3");
+
+        video1.srcObject = stream1;
+        video2.srcObject = stream2;
+        video3.srcObject = stream3;
+
+        button1.onclick = button2.onclick = button3.onclick = e => {
+            let button = e.currentTarget;
+            let video = document.querySelector(button.id.replace(/button/, '#video'));
+            if (button.innerText == "stop") {
+                if (button.id == "button1") {
+                    button.innerText = "publish";
+                    video.publish = false;
+                } else {
+                    button.innerText = "subscribe";
+                    video.subscribe = false;
+                }
+            } else {
+                button.innerText = "stop";
+                if (button.id == "button1") {
+                    video.publish = true;
+                } else {
+                    video.subscribe = true;
+                }
+            }
+        };
+    </script>
+</body>
+</html>

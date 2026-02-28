@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+    video {
+        width: 320px; height: 240px;
+        background: transparent;
+    }
+    input[type="checkbox"]:after {
+        content: attr(value);
+        margin-left: 16px;
+    }
+    input[type="checkbox"] {
+        margin-right: 60px;
+    }
+    </style>
+</head>
+<body>
+    <named-stream id="stream"></named-stream>
+    <video-io publish="true" for="stream"></video-io>
+    <video autoplay></video>
+    <button>Record</button>
+    <button>Download</button>
+    <button>Play</button>
+    <input type="checkbox" value="Append?" />
+    <script type="text/javascript">
+let video = document.querySelector("video-io");
+let player = document.querySelector("video");
+let button1 = document.querySelector("button");
+let button2 = document.querySelector("button:nth-of-type(2)");
+let button3 = document.querySelector("button:nth-of-type(3)");
+let checkbox = document.querySelector("input[type='checkbox']");
+let recordeddata = null;
+
+button1.onclick = e => {
+    let button = e.currentTarget;
+    if (button.innerText == "Record") {
+        recordeddata = null;
+        video.record = true;
+        button.innerText = "Stop";
+    } else {
+        video.record = false;
+        button.innerText = "Record";
+    }
+};
+button2.onclick = e => {
+    let blob = video.recordeddata;
+    if (!blob) {
+        blob = recordeddata;
+    } else {
+        recordeddata = blob;
+    }
+    if (blob) {
+        Promise.resolve(blob).then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.style.display = "none";
+            a.href = url;
+            a.download = "video-io-" + ("" + Math.random()).substr(2,3) + ".webm";
+            document.body.append(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+        });
+    }
+};
+button3.onclick = e => {
+    let blob = video.recordeddata;
+    if (!blob) {
+        blob = recordeddata;
+    } else {
+        recordeddata = blob;
+    }
+    if (blob) {
+        Promise.resolve(blob).then(blob => {
+            const url = URL.createObjectURL(blob);
+            player.src = url;
+            player.controls = true;
+        });
+    }
+};
+checkbox.onclick = e => {
+    if (e.currentTarget.checked)
+        video.recordmode = "append";
+    else
+        video.recordmode = null;
+};
+    </script>
+</body>
+</html>

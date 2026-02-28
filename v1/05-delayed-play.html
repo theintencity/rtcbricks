@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+    video, video-io, div.video {
+        width: 320px; height: 240px;
+        background: transparent;
+    }
+    div.video {
+        display: inline-block;
+        position: relative;
+    }
+    video {
+        position: absolute;
+    }
+    input {
+        width: 20px;
+    }
+    </style>
+</head>
+<body>
+    <video-io for="stream" mirrored="false"></video-io>
+    <div class="video">
+        <video autoplay></video>
+        <video autoplay></video>
+    </div>
+    <div>
+        <span>Delay:</span>
+        <input type="text" placeholder="Delay in seconds" value="4" label="Delay"/>
+        <button>Start</button>
+    </div>
+    <script type="text/javascript">
+let [video, video1, video2, div, input, button] = 
+    ["video-io", "video:nth-of-type(1)", "video:nth-of-type(2)", "div", "input", "button"].map(selector => document.querySelector(selector));
+
+let timer1, timer2;
+button.onclick = e => {
+    let button = e.currentTarget;
+    if (button.innerText == "Start") {
+        button.innerText = "Stop";
+        video.publish = true;
+        let previous = null;
+
+        // modified from https://gist.github.com/m3g4p0p/dd05494db42e87bb3d033d9f375ae7ab
+        let initialize = (timeout, video1, video2) => {
+            const recorder = new MediaRecorder(video.localStream);
+            const restart = ({data}) => {
+                video1.src = URL.createObjectURL(data);
+                recorder.start();
+            };
+            video1.addEventListener("play", () => {
+                console.log("play");
+                video1.style.display = "block";
+                video2.style.display = "none";
+            });
+            recorder.ondataavailable = (event) => restart(event);
+            recorder.start();
+            return setInterval(recorder.stop.bind(recorder), timeout);
+        };
+        setTimeout(() => {
+            const timeout = (parseInt(input.value) || 4)*1000;
+            timer1 = initialize(timeout, video1, video2);
+            setTimeout(() => {
+                timer2 = initialize(timeout, video2, video1);
+            }, timeout/2);
+        }, 1000);
+    } else {
+        button.innerText = "Start";
+        video.publish = false;
+        clearInterval(timer1);
+        clearInterval(timer2);
+    }
+};
+    </script>
+</body>
+</html>

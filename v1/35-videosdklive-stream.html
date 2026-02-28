@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="https://sdk.videosdk.live/js-sdk/0.1.6/videosdk.js"></script>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="videosdklive-stream.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        div.table {
+            display: table;
+        }
+        div.table > div {
+            display: table-row;
+        }
+        div.table > div > div {
+            display: table-cell;
+            padding: 1ch;
+        }
+    </style>
+</head>
+<body>
+    <videosdklive-stream id="stream1" src="https://api.videosdk.live/v2/rooms?room=...&token=..."></videosdklive-stream>
+    <videosdklive-stream id="stream2" src="https://api.videosdk.live/v2/rooms?room=...&token=..."></videosdklive-stream>
+    <videosdklive-stream id="stream3" src="https://api.videosdk.live/v2/rooms?room=...&token=..."></videosdklive-stream>
+    <div class="table">
+        <div>
+            <div><video-io id="video1" controls for="stream1"></video-io></div>
+            <div><video-io id="video2" controls for="stream2"></video-io></div>
+            <div><video-io id="video3" controls for="stream3"></video-io></div>
+        </div>
+        <div>
+            <div><button id="button1">publish</button></div>
+            <div><button id="button2">subscribe</button></div>
+            <div><button id="button3">subscribe</button></div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        let params = new URLSearchParams(window.location.search);
+        if (params.has("token")) {
+            console.log("updating src with token=", params.get("token"));
+            [...document.querySelectorAll("videosdklive-stream")].forEach(stream => {
+                stream.setAttribute("src", `https://api.videosdk.live/v2/rooms?room=${encodeURIComponent(params.get("room") || "conf123")}&token=${encodeURIComponent(params.get("token"))}`);
+            });
+        } else {
+            console.error("missing sandbox parameter.");
+        }
+
+        const onclick = e => {
+            let button = e.currentTarget;
+            let video = document.querySelector(button.id.replace(/button/, '#video'));
+            if (button.innerText == "stop") {
+                if (button.id == "button1") {
+                    button.innerText = "publish";
+                    video.publish = false;
+                } else {
+                    button.innerText = "subscribe";
+                    video.subscribe = false;
+                }
+            } else {
+                button.innerText = "stop";
+                if (button.id == "button1") {
+                    video.publish = true;
+                } else {
+                    video.subscribe = true;
+                }
+            }
+        };
+
+        [...document.querySelectorAll("button")].forEach(button => button.onclick = onclick);
+    </script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+    <video-io id="video1" microphone="false" controls></video-io>
+    <video-io id="video2" autoenable="true" controls></video-io>
+    <video-mix id="mixer"></video-mix>
+    
+    <script type="text/javascript">
+        const [video1, video2, mixer] = ["video1", "video2", "mixer"].map(id => document.getElementById(id));
+
+        mixer.addEventListener("frame", e => {
+            const canvas = e.canvas, video = video1;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            if (e.videos[0]) {
+                ctx.drawImage(e.videos[0], 0, 0);
+            }
+            const text = (new Date()).toLocaleString();
+            ctx.font = "24px serif";
+            ctx.fillStyle = "#ffffff";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            ctx.fillText(text, 320, 10, 640);
+        });
+
+        video2.input = mixer;
+        mixer.input = [video1];
+        video1.publish = video2.publish = true;
+    </script>
+</body>
+</html>

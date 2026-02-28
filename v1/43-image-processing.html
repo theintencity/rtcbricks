@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+<!-- based on https://github.com/tensorflow/tfjs-models/tree/master/body-pix -->
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+    <named-stream id="stream"></named-stream>
+    <img id="background" style="visibility: hidden; width: 0; height: 0;" src="43-background.jpg"/>
+    <video-io id="video1" microphone="false" controls desiredframerate="5"></video-io>
+    <video-io id="video2" autoenable="true" controls style="background: grey; --preview-transform: scaleX(-1);"></video-io>
+    <video-io id="video3" autoenable="true" controls style="--preview-transform: scaleX(-1);"></video-io>
+    <video-io id="video4" autoenable="true" controls style="--preview-transform: scaleX(-1);"></video-io>
+    <video-io id="video5" autoenable="true" controls style="--preview-transform: scaleX(-1);"></video-io>
+    <video-mix id="mixer"></video-mix>
+    <script type="text/javascript">
+        window.onload = async () => {
+            let [video1, video2, mixer, background] = ["video1", "video2", "mixer", "background"].map(id => document.getElementById(id));
+            let [canvas3, canvas4, canvas5] = [3,4,5].map(index => document.createElement("canvas"));
+            video3.input = canvas3.captureStream();
+            video4.input = canvas4.captureStream();
+            video5.input = canvas5.captureStream();
+
+            video2.input = mixer;
+            mixer.input = [video1];
+            video1.publish = video2.publish = video3.publish = video4.publish = video5.publish = true;
+
+            const net = await bodyPix.load({architecture: "MobileNetV1", outputStride: 16, multiplier: 0.5});
+
+            mixer.addEventListener("frame", async (event) => {
+                let video = event.videos[0];
+                if (video && video.videoWidth && video.videoHeight) {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext("2d").drawImage(video, 0, 0);
+                    const t0 = Date.now();
+                    const segmentation = await net.segmentPerson(canvas, {maxDetection: 1, internalResolution: "medium", segmentationThreshold: 0.75});
+                    const t1 = Date.now();
+                    console.log(Math.round(t1-t0));
+
+                    const array = new ArrayBuffer(segmentation.width * segmentation.height * 4);
+                    const buffer = new Uint8ClampedArray(array);
+                    new Uint32Array(array).fill(0x00ffffff);
+
+                    for (let i=0; i<segmentation.data.length; ++i) {
+                        buffer[i * 4 + 3] = segmentation.data[i] == 1 ? 0 : 255;
+                    }
+
+                    const image = new ImageData(buffer, segmentation.width, segmentation.height);
+                    
+                    // mask print
+                    const mask = event.canvas;
+                    mask.width = segmentation.width; mask.height = segmentation.height;
+                    mask.getContext("2d").putImageData(image, 0, 0);
+
+                    // blur background
+                    let bg = document.createElement("canvas");
+                    bg.width = segmentation.width; bg.height = segmentation.height;
+                    bgctx = bg.getContext("2d");
+                    bgctx.globalCompositeOperation = "source-over";
+                    bgctx.filter = "blur(2px)";
+                    bgctx.drawImage(mask, 0, 0);
+                    bgctx.filter = "none";
+                    bgctx.globalCompositeOperation = "source-out";
+                    bgctx.drawImage(video, 0, 0);
+
+                    let ctx = canvas3.getContext("2d");
+                    canvas3.width = segmentation.width;
+                    canvas3.height = segmentation.height;
+                    ctx.filter = "blur(10px)";
+                    ctx.drawImage(video, 0, 0);
+                    ctx.filter = "none";
+                    ctx.drawImage(bg, 0, 0);
+
+                    // remove background
+                    ctx = canvas4.getContext("2d");
+                    canvas4.width = segmentation.width;
+                    canvas4.height = segmentation.height;
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(0, 0, segmentation.width, segmentation.height);
+                    ctx.drawImage(bg, 0, 0); 
+
+
+                    // virtual background
+                    bg = document.createElement("canvas");
+                    bg.width = segmentation.width;
+                    bg.height = segmentation.height;
+                    bgctx = bg.getContext("2d");
+                    bgctx.globalCompositeOperation = "source-over";
+                    //bgctx.filter = "blur(2px)";
+                    bgctx.drawImage(mask, 0, 0);
+                    //bgctx.filter = "none";
+                    bgctx.globalCompositeOperation = "source-out";
+                    bgctx.drawImage(video, 0, 0);
+
+                    ctx = canvas5.getContext("2d");
+                    canvas5.width = segmentation.width;
+                    canvas5.height = segmentation.height;
+                    ctx.drawImage(background, 0, 0);
+                    ctx.drawImage(bg, 0, 0);
+                }
+            });
+        };
+    </script>
+</body>
+</html>

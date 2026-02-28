@@ -1,0 +1,292 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="text-chat.js"></script>
+    <script type="text/javascript" src="text-chat-bubbles.js"></script>
+    <script type="text/javascript" src="web-assets.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        body {
+            position: absolute; width: 100%; height: 100%;
+            display: flex; flex-flow: row nowrap;
+        }
+        body > * {
+            margin: 10px;
+            box-sizing: border-box;
+            position: relative;
+        }
+        text-chat {
+            border: solid 1px lightgrey;
+            flex: 1;
+            margin-right: 0px;
+        }
+
+        div.controls {
+            display: flex; flex-flow: column nowrap;
+            width: 270px;
+            overflow: auto;
+        }
+        div.input {
+            width: calc(100% - 20px);
+        }
+        div.input > * {
+            margin-top: 4px;
+        }
+        div.input input, div.input select {
+            width: 70px; height: 24px; box-sizing: border-box;
+        }
+        div.input textarea {
+            width: 100%;
+            resize: none;
+        }
+        div.form {
+            flex: 1;
+            display: grid;
+            align-content: flex-start;
+            justify-items: flex-end;
+            grid-template-columns: 1fr 100px;
+            grid-gap: 4px;
+        }
+        div.form label {
+            align-self: flex-end;
+            white-space: nowrap;
+        }
+        div.form input[type="text"], div.form select, div.form > textarea {
+            width: 100px;
+            text-align: left;
+            box-sizing: border-box;
+            height: 20px;
+        }
+        div.form > textarea {
+            resize: vertical;
+            white-space: pre;
+            overflow-wrap: normal;
+            overflow-x: scroll;
+            width: 200px;
+        }
+        div.form > label.textarea {
+            position: relative;
+            left: -100px;
+        }
+        div.form input[type="checkbox"] {
+            margin-right: calc(100% - 20px);
+        }
+
+        shared-storage, alert-sounds, yahoo-smileys, chat-images {
+            display: none; visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+    <shared-storage id="storage" src="local"></shared-storage>
+    <alert-sounds id="sounds"></alert-sounds>
+    <yahoo-smileys id="smileys"></yahoo-smileys>
+    <chat-images id="images"></chat-images>
+
+    <text-feed-data id="data" self="bob" displayname="Bob" path="sessions/chat532" for-storage="storage"></text-feed-data>
+    <text-chat for-data="data" input="false">
+        <text-feed-bubbles input="true" showtyping="true" for-sounds="sounds" for-smileys="smileys" for-images="images"
+            arrow="c-upper" icon="circle" label="other" selfright="true" showself="true" grouped="true"
+            style="--background-color-other:lightblue;--background-color-self:lightgreen;--font-label:12px fantasy;">
+        </text-feed-bubbles>
+    </text-chat>
+
+    <div class="controls">
+        <div class="form"></div>
+        <div class="input">
+            <input class="fromid" type="text" value="alice" placeholder="Sender id"/>
+            <input class="from" type="text" value="Alice" placeholder="Sender displayname"/>
+            <select class="type"><option value="text/plain">text</option><option value="text/html">html</option></select>
+            <textarea class="text" placeholder="Enter message..."></textarea>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        const storage = document.querySelector("shared-storage");
+        const chat = document.querySelector("text-feed-bubbles");
+        const path = chat.getAttribute("path");
+        const form = document.querySelector("div.form");
+        const metadata = chat.constructor.metadata;
+
+        const allowed = {"for-sounds": ["sounds", ""], "for-smileys": ["smileys", ""], "for-images": ["images", ""]};
+
+        Object.entries(metadata.properties)
+            .filter(([name, prop]) => prop.type == "bool" || prop.type == "string")
+            .filter(([name, prop]) => {
+                return ["for-data", "ready"].indexOf(name) < 0;
+            })
+            .forEach(([name, prop]) => {
+                const label = document.createElement("label");
+                label.innerText = name;
+                let control;
+                if (prop.allowed || allowed[name]) {
+                    const select = control = document.createElement("select");
+                    (prop.allowed || allowed[name]).forEach(value => {
+                        const option = document.createElement("option");
+                        option.innerText = value;
+                        select.appendChild(option);
+                    });
+                    if (chat[name] !== undefined) {
+                        select.value = chat[name];
+                    }
+                    select.onchange = event => {
+                        if (name.indexOf("-") < 0) {
+                            chat[name] = select.value;
+                        } else {
+                            chat.setAttribute(name, select.value);
+                        }
+                    };
+                } else {
+                    let input = control = document.createElement("input");
+                    input.type = prop.type == "bool" ? "checkbox" : "text";
+                    if (prop.type == "bool") {
+                        input.checked = chat[name];
+                        input.onclick = event => {
+                            chat[name] = input.checked;
+                        };
+                    } else {
+                        if (name == "inputstyle") {
+                            input = control = document.createElement("textarea");
+                            input.type = "text";
+                            label.className = "textarea";
+                        }
+                        input.value = chat[name] || "";
+                        input.onkeyup = event => {
+                            if (event.key == "Enter" && name != "inputstyle") {
+                                if (name.indexOf("-") < 0) {
+                                    chat[name] = input.value;
+                                } else {
+                                    chat.setAttribute(name, input.value);
+                                }
+                            }
+                        };
+                        input.onkeydown = event => {
+                            if (event.key == "Enter" && name == "inputstyle") {
+                                if (!event.shiftKey) {
+                                    event.preventDefault();
+                                    event.stopImmediatePropagation();
+                                    chat[name] = input.value;
+                                }
+                            }
+                        };
+                    }
+                }
+                control.setAttribute("name", name);
+                control.setAttribute("title", prop.desc);
+
+                if (prop.readOnly) {
+                    control.disabled = true;
+                }
+
+                form.appendChild(label);
+                form.appendChild(control);
+
+            });
+        chat.addEventListener("typing", event => {
+            document.querySelector("div.form input[name='typing']").checked = chat.typing;
+        });
+        Object.entries(metadata.styles)
+            .forEach(([name, prop]) => {
+                const label = document.createElement("label");
+                label.innerText = name;
+                const input = document.createElement("input");
+                input.type = "text";
+                input.setAttribute("placeholder", prop.default || "");
+                input.value = chat.style.getPropertyValue(name) || "";
+                input.onkeyup = event => {
+                    if (event.key == "Enter") {
+                        //console.log("setting style", input.value, name);
+                        chat.style.setProperty(name, input.value);
+                    }
+                };
+                input.setAttribute("name", name);
+                input.setAttribute("title", prop.desc);
+
+                form.appendChild(label);
+                form.appendChild(input);
+
+            });
+
+
+        const items = [
+            ["alice", "Alice", "Hello there!"], 
+            ["carol", "Carol", "Hi"], 
+            ["dave", "Dave", {text: "Hola!!", icon: true}], 
+            ["dave", "Dave", {text: "What's up?", icon: true}], 
+            ["bob", "Bob", {text: "What's the plan?", icon: "http:51-text-chat-face1.jpg"}],
+            ["ethan", "Ethan", {text: "Staying home", icon: "http:51-text-chat-face2.jpg"}],
+            ["bob", "Bob", {text: "Let's go to that movie about mail or something. It is at the city center AMC.", icon: "http:51-text-chat-face1.jpg"}],
+            ["carol", "Carol", "What time?"],
+            ["carol", "Carol", "I can't do before 3"],
+            ["ethan", "Ethan", {text: "Enjoy!!", icon: "http:51-text-chat-face2.jpg"}],
+        ];
+
+        items.forEach(([fromid, displayname, msg]) => {
+            let data = {disposition: "message", from: displayname, fromid: fromid};
+            if (typeof msg === "string") {
+                data.text = msg;
+            } else if (typeof msg == "object") {
+                data = Object.assign(JSON.parse(JSON.stringify(msg)), data);
+            }
+
+            chat.add("", data, true, fromid == "bob");
+        });
+
+        let typing = false;
+
+        document.querySelector("div.input textarea").onkeyup = event => {
+            setTimeout(() => {
+                const textarea = document.querySelector("div.input textarea");
+                const old = typing;
+                if (textarea.value && !typing) {
+                    typing = true;
+                } else if (!textarea.value && typing) {
+                    typing = false;
+                }
+                //console.log("value", textarea.value);
+                if (old !== typing) {
+                    const fromid = document.querySelector("div.input input.fromid").value;
+                    const from = document.querySelector("div.input input.from").value;
+                    const text = "Typing...";
+                    if (fromid) {
+                        let data = {from, fromid, text, value: typing};
+                        chat._on_received_typing(data);
+                    }
+                }
+            });
+        };
+
+        document.querySelector("div.input textarea").onkeypress = event => {
+            if (event.key == "Enter" && !event.shiftKey) {
+                const fromid = document.querySelector("div.input input.fromid").value;
+                const from = document.querySelector("div.input input.from").value;
+                const text = document.querySelector("div.input textarea.text").value;
+                const type = document.querySelector("div.input select.type").selectedOptions[0].value;
+
+                let data = {disposition: "message", from, fromid, text};
+                if (typing) {
+                    typing = false;
+                    chat._remove_typing(data);
+                }
+                if (type != "text/plain") {
+                    data.type = type;
+                }
+                if (!fromid) {
+                    data.disposition = "info";
+                    delete data.from;
+                    delete data.fromid;
+                }
+
+                chat.add("", data);
+
+                setTimeout(() => {
+                    document.querySelector("div.input textarea").value = "";
+                });
+            }
+        };
+
+    </script>
+
+</body>
+</html>

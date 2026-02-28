@@ -1,0 +1,23 @@
+{
+    "short_name": "video-io",
+    "name": "Video-IO by Kundan Singh",
+    "description": "Video-IO: a generic web component for WebRTC pub-sub.",
+    "display": "standalone",
+    "display_override": ["window-controls-overlay"],
+    "start_url": "/v1/video-io.html",
+    "scope": "/v1/video-io.html",
+    "icons": [
+        { "src": "icon512.png", "type": "image/png", "sizes": "512x512" },
+        { "src": "icon48.png", "type": "image/png", "sizes": "48x48" }
+    ],
+    "protocol_handlers": [
+        { "protocol": "web+vpub", "url": "/v1/video-io.html?launch=%s" },
+        { "protocol": "web+vsub", "url": "/v1/video-io.html?launch=%s" },
+        { "protocol": "web+ezpub", "url": "/v1/video-io.html?launch=%s" },
+        { "protocol": "web+ezsub", "url": "/v1/video-io.html?launch=%s" }
+    ],
+    "capture_links": "existing_client_event",
+    "launch_handler": {
+        "client_mode": "focus-existing"
+    }
+}

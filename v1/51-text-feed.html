@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="text-chat.js"></script>
+    <script type="text/javascript" src="web-assets.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        div {
+            position: absolute;
+            display: flex; flex-flow: column wrap; justify-content: flex-start; align-items: flex-start;
+            height: 300px; width: 400px; max-height: 100%;
+        }
+        div > * {
+            position: relative;
+            margin-right: 1ch;
+        }
+        text-feed {
+            width: 70%; height: 100%;
+            border: solid 1px grey;
+        }
+        input {
+            padding: 1ch; width: 30%;
+            box-sizing: border-box;
+            margin-bottom: 1ch;
+        }
+    </style>
+</head>
+<body>
+    <alert-sounds id="sounds"></alert-sounds>
+    <yahoo-smileys id="smileys"></yahoo-smileys>
+
+    <div>
+        <text-feed for-smileys="smileys" for-sounds="sounds"></text-feed>
+
+        <input id="first" placeholder="From Alice" />
+        <input id="second" placeholder="From Bob" />
+        <input id="third" placeholder="From Carol" />
+    </div>
+
+    <script type="text/javascript">
+        let last_id = 0;
+        function send(sender, text) {
+            const feed = document.querySelector("text-feed");
+            const id = "msg-" + (++last_id);
+            const item = {from: sender, text: text};
+            feed.add(id, item);
+        }
+        setTimeout(() => {
+            send("Alice", "Hello");
+            send("Bob", "Hi [happy]");
+            send("Alice", "What's up?");
+        }, 200);
+
+        [].slice.call(document.querySelectorAll("input")).forEach(input => {
+            input.onkeyup = ({currentTarget, key}) => {
+                if (key == 'Enter') {
+                    send(currentTarget.getAttribute("placeholder").substring(5), currentTarget.value);
+                    currentTarget.value = "";
+                }
+            };
+        });
+    </script>
+</body>
+</html>

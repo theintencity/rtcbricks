@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="restserver-storage.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="text-chat.js"></script>
+    <script type="text/javascript" src="web-assets.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        div.content {
+            display: flex; flex-flow: row wrap;
+            width: auto;
+        }
+        div.content > div {
+            position: relative;
+            display: flex; flex-flow: column nowrap; justify-content: flex-start; align-items: stretch;
+            width: 200px; height: 300px;
+            margin-right: 1ch; margin-bottom: 1ch;
+        }
+        div.content > div > * {
+            position: relative;
+        }
+        text-feed {
+            flex: 1;
+            border: solid 1px grey;
+            margin-bottom: 1ch;
+        }
+        input {
+            padding: 1ch;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <!--<shared-storage id="storage" src="ws://localhost:8080/restserver"></shared-storage>-->
+    <shared-storage id="storage" src="local"></shared-storage>
+    <text-feed-data id="data1" for-storage="storage" path="sessions/chat123"></text-feed-data>
+    <text-feed-data id="data2" for-storage="storage" path="sessions/chat123"></text-feed-data>
+    <text-feed-data id="data3" for-storage="storage" path="sessions/chat123"></text-feed-data>
+    <alert-sounds id="sounds"></alert-sounds>
+    <yahoo-smileys id="smileys"></yahoo-smileys>
+
+    <div class="content">
+        <div>
+            <text-feed id="feed1" for-data="data1" for-smileys="smileys" for-sounds="sounds"></text-feed>
+            <input placeholder="From Alice" />
+        </div>
+        <div>
+            <text-feed id="feed2" for-data="data2" for-smileys="smileys" for-sounds="sounds"></text-feed>
+            <input placeholder="From Bob" />
+        </div>
+        <div>
+            <text-feed id="feed3" for-data="data3" for-smileys="smileys" for-sounds="sounds"></text-feed>
+            <input placeholder="From Carol" />
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        let last_id = 0;
+        function send(feed, sender, text) {
+            const id = "msg-" + (++last_id);
+            const item = {from: sender, text: text};
+            feed.add(id, item);
+        }
+        setTimeout(() => {
+            const storage = document.querySelector("shared-storage");
+            const feed = document.querySelector("text-feed");
+            [
+                {text: "Hello", from: "Alice"},
+                {text: "Hi [happy]", from: "Bob"},
+                {text: "What's up?", from: "Alice"},
+            ].forEach(({text, from}) => {
+                storage.add(feed.data.getAttribute("path"), !feed.persistent, {text, from});
+            });
+        }, 200);
+
+        [].slice.call(document.querySelectorAll("input")).forEach(input => {
+            input.onkeyup = ({currentTarget, key}) => {
+                if (key == 'Enter') {
+                    const storage = document.querySelector("shared-storage");
+                    const feed = currentTarget.previousElementSibling;
+                    const from = currentTarget.getAttribute("placeholder").substring(5);
+                    const text = currentTarget.value;
+                    storage.add(feed.data.getAttribute("path"), !feed.persistent, {text, from});
+                    currentTarget.value = "";
+                }
+            };
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="storage-stream.js"></script>
+    <script type="text/javascript" src="peer-storage.js"></script>
+    <script type="text/javascript" src="text-chat.js"></script>
+    <script type="text/javascript" src="text-chat-bubbles.js"></script>
+    <script type="text/javascript" src="user-roster.js"></script>
+    <script type="text/javascript" src="media-chat.js"></script>
+    <script type="text/javascript" src="flex-box.js"></script>
+    <script type="text/javascript" src="web-assets.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        div.diagram {
+            width: 362px; height: 332px; margin: 10px; margin-right: 6px; vertical-align: top;
+            border: solid 1px #d0d0d0;
+            display: inline-flex; justify-content: center; align-items: center;
+        }
+
+        div.chat {
+            position: relative; 
+            display: inline-flex; flex-flow: column nowrap; gap: 10px;
+            margin: 10px;
+            vertical-align: top;
+        }
+        div.chat > div {
+            position: relative;
+            display: inline-flex; flex-flow: row nowrap; gap: 4px;
+        }
+        div.chat > div > select {
+            flex: 1;
+        }
+        media-chat {
+            width: 170px; height: 300px;
+            display: inline-block;
+            border: solid 1px lightgrey;
+            margin: 0;
+        }
+        video-io > span {
+            color: rgba(255,255,255,0.5); 
+            font-size: 10px; font-family: sans-serif;
+            text-shadow: 0 0 3px rgba(0,0,0,0.3);
+        }
+        text-feed {
+            font-size: 12px; line-height: 16px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="diagram">
+        <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <template>
+        <shared-storage id="storage1"></shared-storage>
+        <media-chat-data id="data1" for-storage="storage1" self="alice" displayname="Alice" path="sessions/conf123"></media-chat-data>
+        <div class="chat">
+            <media-chat for-data="data1">
+                <toolbar-buttons slot="buttons">
+                    <span>Weekly sync</span>
+                    <button name="video" toggle title="start/stop a video call"></button>
+                </toolbar-buttons>
+                <flex-box slot="videos"></flex-box>
+                <user-roster slot="roster" dense="true"></user-roster>
+                <text-chat slot="chat" showtyping="true">
+                    <text-feed></text-feed>
+                </text-chat>
+            </media-chat>
+            <div>
+                <select></select>
+                <button>&#x2713;</button>
+                <button>&#x2717;</button>
+                <span class="status"></span>
+            </div>
+        </div>
+    </template>
+
+    <script type="text/javascript">
+        const urlParams = new URLSearchParams(window.location.search);
+        let users = urlParams.get("users");
+        const users_ = ["alice", "bob", "carol", "dave", "emma", "frank", "grace", "henry"];
+        if (!users) {
+            users = users_.slice(0, 6);
+        } else if (users.match(/^\d+$/)) {
+            const count = parseInt(users);
+            if (count <= 8) {
+                users = users_.slice(0, count);
+            } else {
+                users = new Array(parseInt(users));
+            }
+        } else {
+            users = users.split(",");
+        }
+        if (users.length > 30) {
+            console.warn("limiting users to 30");
+            users.length = 30;
+        }
+
+        // load all the chat items
+
+        const template = document.querySelector("template");
+        let N = users.length;
+        for (let i=1; i<=N; ++i) {
+            const storage = document.importNode(template.content.children[0], true);
+            storage.id = "storage" + i;
+            document.body.appendChild(storage);
+        }
+        for (let i=1; i<=N; ++i) {
+            const data = document.importNode(template.content.children[1], true);
+            data.id = "data" + i;
+            data.setAttribute("for-storage", "storage" + i);
+            const user = users[i-1] || ("user" + i);
+            const display = user.substring(0, 1).toLocaleUpperCase() + user.substring(1);
+            data.setAttribute("self", user);
+            data.setAttribute("displayname", display);
+            document.body.appendChild(data);
+        }
+        for (let i=1; i<=N; ++i) {
+            const chat = document.importNode(template.content.children[2], true);
+            chat.querySelector("media-chat").setAttribute("for-data", "data" + i);
+            document.body.appendChild(chat);
+        }
+
+
+        // install video handlers
+
+        const streams = {};
+
+        [].slice.call(document.querySelectorAll("media-chat")).forEach(item => {
+            item.addEventListener("addvideo", event => {
+                const {video, id} = event;
+                console.log("creating stream for " + id);
+                let stream = document.createElement("storage-stream");
+                stream.path = "streams/video-" + id;
+                stream.storage = item.data.storage;
+                video.srcObject = stream;
+            });
+
+            item.addEventListener("removevideo", event => {
+                const {video, id} = event;
+                console.log("deleting stream for " + id);
+            });
+        });
+
+
+
+        // populare the buttons
+
+        const stores = [...document.querySelectorAll("shared-storage")];
+        const names = [...document.querySelectorAll("media-chat-data")].map(data => data.getAttribute("self"));
+
+        [...document.querySelectorAll("div.chat > div > select")].forEach((select, i) => {
+            select.append(...names.filter((name, j) => i !== j).map(name => {
+                const option = document.createElement("option");
+                option.innerText = name;
+                return option;
+            }));
+        });
+
+        const spans = [...document.querySelectorAll("media-chat > toolbar-buttons > span")];
+
+        for (let i=0; i<stores.length; ++i) { // from connectall
+            const storage1 = stores[i];
+            const id = Math.random().toString(36).substring(2, 6);
+            storage1.impl = new PeerStorageImpl(id);
+            storage1.net = new PeerNetworkImpl("tree", id);
+            storage1.impl.net = storage1.net;
+            storage1.net.console.log("creating peer-storage", id);
+            storage1.dispatchEvent(new Event("ready"));
+
+            spans[i].innerText = "User: " + names[i] + " (" + id + ")";
+        }
+
+        [...document.querySelectorAll("div.chat > div > button:nth-of-type(1)")].forEach(button => {
+            button.onclick = event => {
+                const button = event.currentTarget;
+                const storage1 = button.parentNode.parentNode.querySelector("media-chat").data.storage;
+                const storage2 = stores[names.indexOf(button.parentNode.querySelector("select").value)];
+                PeerNetworkImpl.connect(storage1, storage2);
+
+                connect(storage1.id.match(/(\d+)$/)[1], storage2.id.match(/(\d+)$/)[1]);
+            };
+        });
+
+        [...document.querySelectorAll("div.chat > div > button:nth-of-type(2)")].forEach(button => {
+            button.onclick = event => {
+                const button = event.currentTarget;
+                const storage1 = button.parentNode.parentNode.querySelector("media-chat").data.storage;
+                const channels = Object.values(storage1.impl.net._channels);
+                storage1.impl.net.removeall();
+                channels.forEach(channel => channel.close());
+
+                disconnect(storage1.id.match(/(\d+)$/)[1]);
+            };
+        });
+
+        // draw the diagram
+
+        const diagram = document.querySelector("div.diagram");
+        const svg = document.querySelector("div.diagram > svg");
+        const size = N <= 6 ? 400 : Math.round(400 * Math.sqrt(N-6));
+        console.log("size=", size);
+        svg.style.width = svg.style.height = size + "px";
+
+        const zoom = Math.min(diagram.offsetWidth / size, diagram.offsetHeight / size);
+        svg.style.zoom = zoom;
+
+        let selected = null;
+
+        names.forEach((name, i) => {
+            const W = size, H = size, r = 40; // svg size
+            const CX = W/2, CY = H/2;
+            const R = Math.min(CX, CY) - r - 10;
+            const angle = -180 + (i/names.length)*360;
+            const cx = CX + R*Math.cos(angle * Math.PI/180), cy = CY + R*Math.sin(angle * Math.PI/180);
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", Math.round(cx)); circle.setAttribute("cy", Math.round(cy)); circle.setAttribute("r", Math.round(r));
+            circle.style.stroke = "black"; circle.style.fill = "#eee"; circle.style.strokeWidth = 1;
+            circle.style.cursor = "pointer";
+            svg.appendChild(circle);
+            
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", Math.round(cx)); text.setAttribute("y", Math.round(cy));
+            text.style.stroke = "black"; text.style.strokeWidth = 0.5; text.style.fontSize = names.length > 8 ? "3em" : "1.4em";
+            text.style.textAnchor = "middle"; text.style.alignmentBaseline = "middle";
+            text.style.pointerEvents = "none";
+            text.textContent = names.length > 8 ? (i+1) : name;
+            svg.appendChild(text);
+
+            circle.onclick = event => {
+                const p = i+1;
+                if (selected === null) {
+                    selected = p;
+                    const circle = svg.querySelector("circle:nth-of-type(" + p + ")");
+                    circle.style.fill = "#88f";
+                } else if (selected === p) {
+                    selected = null;
+                    const circle = svg.querySelector("circle:nth-of-type(" + p + ")");
+                    circle.style.fill = "#eee";
+                } else {
+                    const q = selected;
+                    selected = null;
+                    const circle = svg.querySelector("circle:nth-of-type(" + q + ")");
+                    circle.style.fill = "#eee";
+                    connect(q, p);
+
+                    const storage1 = stores[q-1];
+                    const storage2 = stores[p-1];
+                    PeerNetworkImpl.connect(storage1, storage2);
+                }
+            };
+        });
+
+        const lines = {}; // index is i:j and value is line object. i <= j
+
+        function connect(i, j) {
+            const circle1 = document.querySelector("div.diagram > svg > circle:nth-of-type(" + i + ")");
+            const circle2 = document.querySelector("div.diagram > svg > circle:nth-of-type(" + j + ")");
+            let x1 = parseInt(circle1.getAttribute("cx")), y1 = parseInt(circle1.getAttribute("cy")),
+                x2 = parseInt(circle2.getAttribute("cx")), y2 = parseInt(circle2.getAttribute("cy"));
+            const d = Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
+            const dx = (x2-x1)*45/d, dy = (y2-y1)*45/d;
+            x1 += dx; x2 -= dx; y1 += dy; y2 -= dy;
+
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("marker-start", "url(#arrow)");
+            line.setAttribute("marker-end", "url(#arrow)");
+            line.setAttribute("x1", Math.round(x1));
+            line.setAttribute("y1", Math.round(y1));
+            line.setAttribute("x2", Math.round(x2));
+            line.setAttribute("y2", Math.round(y2));
+            line.style.stroke = "black"; line.style.strokeWidth = 2;
+            svg.insertBefore(line, svg.firstElementChild);
+
+            const p = Math.min(i, j), q = Math.max(i, j);
+            lines[`${p}:${q}`] = line;
+
+            line.style.cursor = "pointer";
+            line.onclick = event => {
+                const storage1 = document.querySelector("#storage" + i);
+                const storage2 = document.querySelector("#storage" + j);
+                storage1.impl.net.remove(storage2.impl.net.id);
+                storage2.impl.net.remove(storage1.impl.net.id);
+
+                disconnect(i, j);
+            };
+        }
+
+        function disconnect(i, j) {
+            if (j !== undefined) {
+                const p = Math.min(i, j), q = Math.max(i, j);
+                const line = lines[`${p}:${q}`];
+                if (line) {
+                    svg.removeChild(line);
+                    delete lines[`${p}:${q}`];
+                }
+            } else {
+                const p = i;
+                for (let index in lines) {
+                    if (index.startsWith(`${p}:`) || index.endsWith(`:${p}`)) {
+                        svg.removeChild(lines[index]);
+                        delete lines[index];
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

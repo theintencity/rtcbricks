@@ -1,0 +1,309 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <style type="text/css">
+body, html {
+    position: absolute; width: 100%; height: 100%;
+    margin: 0; padding: 0;
+    font-size: 14px;
+}
+div.page {
+    position: absolute; height: 50%; left: 0px; right: 0px;
+}
+div.page.first { 
+    top: 0px;
+    border-bottom: solid 1px lightgrey;
+}
+div.page.second {
+    bottom: 0px;
+}
+div.page > * {
+    position: absolute;
+}
+video-io {
+    left: 4px; top: 4px; width: 320px; height: 240px;
+    background-color: rgba(0,0,0,0.1);
+}
+button.reload {
+    display: none;
+    left: 5px; top: 245px;
+}
+div.controls {
+    left: 330px; top: 0px; right: 0px; bottom: 0px;
+    display: flex; flex-flow: column wrap; align-items: flex-end; justify-content: flex-start; align-content: flex-start;
+    overflow: auto;
+}
+div.controls > * {
+    display: inline-block;
+    margin: 2px; margin-left: 1ch; margin-right: 1ch;
+    white-space: nowrap;
+}
+div.page.first div.controls > div[name="publish"] > label,
+div.page.second div.controls > div[name="subscribe"] > label {
+    font-weight: bold;
+}
+div[type="number"] > input {
+    width: 5ch;
+}
+div[type="string"] > input {
+    width: 7ch;
+}
+input {
+    outline: none;
+}
+a {
+    color: blue;
+    cursor: pointer;
+}
+    </style>
+</head>
+<body>
+    <named-stream id="stream"></named-stream>
+    <div class="page first">
+        <video-io for="stream"></video-io>
+        <div class="controls"></div>
+        <button class="reload">Reload</button>
+    </div>
+    <div class="page second">
+        <video-io for="stream"></video-io>
+        <div class="controls"></div>
+        <button class="reload">Reload</button>
+    </div>
+
+    <script type="text/javascript">
+let video1 = document.querySelector("div.first video-io");
+let video2 = document.querySelector("div.second video-io");
+
+// this should be same as that in video-io.js component file
+let properties = video1.constructor.metadata.properties;
+let order = {bool: 1, number: 2, string: 3, object: 4};
+
+let entries = Object.entries(properties).sort((a, b) => {
+    return (order[a[1].type] - order[b[1].type]) || a[0].localeCompare(b[0]);
+});
+
+let prop2text = (value, prop) => {
+    if (prop.type == "number")
+        return isNaN(value) ? "" : ("" + value);
+    else 
+        return "" + value;
+};
+let text2prop = (value, prop) => {
+    if (prop.type == "number") 
+        return value === "" ? NaN : parseFloat(value);
+    else if (value === "null") 
+        return null;
+    return value;
+}
+
+entries.filter(entry => {
+    return entry[1].test !== false;
+    //return entry[1].type != "object" || entry[1].readOnly && entry[1].fetch;
+}).forEach(entry => {
+    document.querySelector("div.first div.controls").appendChild(createElement(video1, entry));
+    document.querySelector("div.second div.controls").appendChild(createElement(video2, entry));
+});
+
+function createElement(video, entry) {
+    let name = entry[0], prop = entry[1];
+    let div = document.createElement("div");
+    div.setAttribute("name", name);
+    div.setAttribute("type", prop.type);
+    let label = document.createElement("label");
+    label.setAttribute("for", name);
+    label.innerText = name;
+    let input = prop.type == "object" ? document.createElement("a") : document.createElement("input");
+    //input.id = name;
+    let title = `${prop.desc}\n\n(${prop.type}${prop.readOnly ? ', read-only' : ''}${prop.writeOnly ? ', write-only' : ''}${prop.default !== undefined ? ', default ' + JSON.stringify(prop.default) : ''}${prop.impl === false ? ', not available yet' : ''}${prop.asattr ? ', reflected as attribute': ''})\n${prop.related ? 'Also see: ' + prop.related : ''}`;
+    input.setAttribute("title", title);
+    div.appendChild(label);
+    div.appendChild(input);
+
+    if (prop.readOnly) {
+        input.readOnly = true;
+        if (prop.type == "bool") {
+            input.disabled = true;
+        }
+    }
+
+    if (prop.type == "object") {
+        input.style.marginLeft = "1ch";
+        if (prop.readOnly) {
+            input.innerText = "get";
+            input.onclick = event => {
+                let value = video[name];
+                Promise.resolve(value).then(value => { // for recorded data
+                    if (typeof value == "string") {
+                        if (value.substring(0,5) == "data:") {
+                            // window.open(value, "_blank"); // does not work
+                            window.open().document.write('<iframe src="' + value  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>');
+                        } else if (value.substring(0,1) == "[" || value.substring(0,1) == "{") {
+                            console.log("JSON\n" + JSON.stringify(value, null, "  "));
+                            window.open().document.write(`<pre>${JSON.stringify(value, null, "  ")}</pre>`);
+                        } else {
+                            console.log("text\n", value);
+                            window.open().document.write(value);
+                        }
+                    } else if (value instanceof Blob) {
+                        window.open(URL.createObjectURL(value), "_blank");
+                    } else if (value instanceof Array) {
+                        console.log("Array\n" + JSON.stringify(value, null, "  "));
+                        window.open().document.write(`<pre>${JSON.stringify(value, null, "  ")}</pre>`);
+                    } else {
+                        console.log("value=", value);
+                        window.open().document.write(`<pre>${value}</pre>`);
+                    }
+                });
+            };
+        } else {
+            input.innerText = "set/get";
+            input.onclick = event => {
+                let value = prop.writeOnly ? "" : JSON.stringify(video[name]);
+                let result = prompt("Edit value:", value);
+                if (result && result != value) {
+                    video[name] = JSON.parse(result);
+                }
+            };
+        }
+    } else if (prop.type == "bool") {
+        input.type = "checkbox";
+        if (prop.default) {
+            input.checked = prop.default;
+        }
+        input.onclick = e => {
+            // if (name == "record" && !e.currentTarget.checked) {
+            //     download_recording(video);
+            // }
+            video[name] = e.currentTarget.checked;
+        };
+        if (!prop.fetch && !prop.writeOnly) {
+            input.checked = video[name];
+        }
+    } else {
+        input.type = "text";
+        if (prop.default) {
+            input.value = prop2text(prop.default, prop);
+        }
+        input.onchange = e => {
+            let value = e.currentTarget.value;
+            video[name] = text2prop(value, prop);
+        };
+        if (prop.readOnly) {
+            input.onclick = e => {
+                e.currentTarget.value = prop2text(video[name], prop);
+            };
+        }
+        if (!prop.fetch && !prop.writeOnly) {
+            input.value = prop2text(video[name], prop);
+        }
+    }
+    return div;
+}
+
+[[video1, 'first'], [video2, 'second']].forEach(items => {
+    const [video, first] = items;
+    video.addEventListener("propertychange", e => {
+        //console.log("propertychange " + e.property + " " + e.oldValue + "=>" + e.newValue);
+        let input = document.querySelector("div." + first + " div.controls div[name='" + e.property + "'] input");
+        if (input) {
+            if (input.type == "checkbox") {
+                input.checked = e.newValue;
+            } else if (typeof e.newValue == "number") {
+                input.value = isNaN(e.newValue) ? "" : e.newValue;
+            } else {
+                input.value = e.newValue;
+            }
+        }
+    });
+});
+
+function download_recording(video) {
+    const blob = video.recordeddata;
+    if (blob) {
+        Promise.resolve(blob).then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.style.display = "none";
+            a.href = url;
+            a.download = "test.webm";
+            document.body.append(a);
+            a.click();
+            setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+        });
+    }
+}
+
+let query = window.location.search.substr(1);
+query.split("&").map(nv => {
+    let index = nv.indexOf("=");
+    let name = (index < 0 ? nv : nv.substr(0, index));
+    let value = (index < 0 ? "" : nv.substr(index+1));
+    let video = "first";
+    let id = "first";
+    index = name.indexOf(".");
+    if (index >= 0) {
+        id = name.substr(0, index);
+        name = name.substr(index+1);
+    }
+    return {id, name, value};
+}).forEach(entry => {
+    const {id, name, value} = entry;
+    let prop = properties[name];
+    let video = document.querySelector("div.page." + id + " video-io");
+    if (video && prop !== undefined && !prop.readOnly) {
+        console.log("setting " + name + "=" + value);
+        video.setAttribute(name, value);
+    }
+});
+
+
+// [[video1, 'first'], [video2, 'second']].forEach(items => {
+//     const [video, first] = items;
+
+//     document.querySelector("div.page." + first + " button.reload").onclick = () => {
+//         // set attribute based on current selection if not default
+//         const attrs = entries.map(entry => {
+//             const [name, prop] = entry;
+//             let input = document.querySelector("div.page." + first + " div.controls div[name='" + name + "'] input");
+//             return {name, prop, input};
+//         }).filter(({name, prop, input}) => {
+//             return !!input;
+//         }).map(({name, prop, input}) => {
+//             let value;
+//             if (prop.type == "bool") {
+//                 value = input.checked;
+//                 if (prop.default !== undefined && value === prop.default) {
+//                     value = undefined;
+//                 }
+//             } else if (prop.type == "number") {
+//                 value = parseFloat(input.value);
+//                 if (prop.default !== undefined && value === prop.default 
+//                         || prop.default === undefined && isNaN(value)) {
+//                     value = undefined;
+//                 }
+//             } else {
+//                 value = input.value;
+//                 if (prop.default !== undefined && value === prop.default 
+//                         || prop.default === undefined && !value) {
+//                     value = undefined;
+//                 }
+//             }
+//             return {name, value};
+//         });
+//         attrs.filter(({name, value}) => name != 'publish' && name != 'subscribe').forEach(({name, value}) => {
+//             console.log(name, value);
+//             video[name] = value;
+//         });
+//         attrs.filter(({name, value}) => name == 'publish' || name == 'subscribe').forEach(({name, value}) => {
+//             console.log(name, value);
+//             video[name] = value;
+//         });
+//     };
+// });
+    </script>
+</body>
+</html>

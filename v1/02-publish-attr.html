@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+    <video-io controls microphone="false" publish="true"></video-io>
+    <button>Stop</button>
+    <script type="text/javascript">
+        let video = document.querySelector("video-io");
+        let button = document.querySelector("button");
+        button.onclick = function(event) {
+            if (button.innerText == "Stop") {
+                video.publish = false;
+                button.innerText = "Publish";
+            } else {
+                video.publish = true;
+                button.innerText = "Stop";
+            }
+        };
+    </script>
+</body>
+</html>

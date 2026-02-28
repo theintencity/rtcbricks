@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+    <named-stream id="stream"></named-stream>
+    <video id="video1" autoplay controls></video>
+    <video-io id="video2" autoenable="true" controls></video-io>
+    <video-io id="video3" controls></video-io>
+    <script type="text/javascript">
+        let [video1, video2, video3, stream] = ["video1", "video2", "video3", "stream"].map(id => document.getElementById(id));
+        video2.input = video1;
+        video2.srcObject = video3.srcObject = stream;
+        video1.src = "42-sample.mp4";
+        video2.publish = video3.subscribe = true;
+    </script>
+</body>
+</html>

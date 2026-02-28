@@ -1,0 +1,156 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="verto-stream.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+    div.box {
+        position: absolute;
+        display: flex; flex-flow: column nowrap; justify-content: center;
+        width: 320px;
+    }
+    video-io {
+        position: relative; width: 320px; height: 240px;
+        box-shadow: 0 0 1px 1px black;
+    }
+    button {
+        position: relative; margin-top: 10px;
+        align-self: center;
+    }
+    div.box.first {
+        top: 150px; left: 10px;
+    }
+    div.box.second {
+        top: 10px; left: 550px;
+    }
+    div.box.third {
+        top: 300px; left: 550px;
+    }
+    svg {
+        position: absolute;
+    }
+    svg.arrow.first {
+        left: 340px; top: 225px;
+    }
+    svg.arrow.second {
+        left: 440px; top: 150px;
+    }
+    svg.arrow.third {
+        left: 440px; top: 300px;
+    }
+    video-io {
+        object-fit: cover;
+    }
+    </style>
+</head>
+<body>
+    <verto-stream id="stream1"></verto-stream>
+    <verto-stream id="stream2"></verto-stream>
+    <verto-stream id="stream3"></verto-stream>
+    <svg class="arrow first" width="100" height="100">
+        <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">
+                <path d="M0,5 L0,0 L10,5 L0,10 L0,5" style="fill:black;" />
+            </marker>
+        </defs>
+        <path d="M0,50 L75,50" style="stroke:black; stroke-width: 1.25px; fill: none; marker-end: url(#arrow);" />
+    </svg>
+    <svg class="arrow second" width="100" height="100">
+        <path d="M0,100 L100,0" style="stroke:black; stroke-width: 1.25px; fill: none; marker-end: url(#arrow);" />
+    </svg>
+    <svg class="arrow third" width="100" height="100">
+        <path d="M0,0 L100,100" style="stroke:black; stroke-width: 1.25px; fill: none; marker-end: url(#arrow);" />
+    </svg>
+    <div class="box first">
+        <video-io id="video1" controls autoenable="true" keeptracks="true" for="stream1"></video-io>
+        <button id="button1">publish</button>
+    </div>
+    <div class="box second">
+        <video-io id="video2" controls keeptracks="true" for="stream2"></video-io>
+        <button id="button2">subscribe</button>
+    </div>
+    <div class="box third">
+        <video-io id="video3" controls keeptracks="true" for="stream3"></video-io>
+        <button id="button3">subscribe</button>
+    </div>
+    <script type="text/javascript">
+        let video1 = document.querySelector("#video1");
+        let video2 = document.querySelector("#video2");
+        let video3 = document.querySelector("#video3");
+        let stream1 = document.querySelector("#stream1");
+        let stream2 = document.querySelector("#stream2");
+        let stream3 = document.querySelector("#stream3");
+        let button1 = document.querySelector("#button1");
+        let button2 = document.querySelector("#button2");
+        let button3 = document.querySelector("#button3");
+
+        let counter = 0;
+        [stream1, stream2, stream3].forEach((stream, index) => {
+            let user = "12345", server = "fs.myserver.com", sessid = "678_" + (Date.now() + ++counter);
+            let dialogParams = { destination_number: user, callID: ("" + Math.random()).substring(2, 10)};
+
+            dialogParams.callID = ("" + Math.random()).substring(2, 10);
+            sessid = ("" + Math.random()).substring(2, 10);
+
+            let params = {
+                login: {sessid: sessid},
+                relogin: {sessid: sessid, login: user + "@" + server, passwd: "mypassword", loginParams: {}, userVariables: {}},
+                invite: {sessid: sessid, dialogParams: dialogParams},
+                bye: {sessid: sessid, dialogParams: dialogParams},
+            };
+
+            let src = "wss://" + server + "?params=" + encodeURIComponent(JSON.stringify(params));
+            
+            stream.setAttribute("src", src);
+        });
+
+        video1.configuration = video2.configuration = video3.configuration = {
+            iceServers: [{urls: "stun:stun.l.google.com:19302"}], sdpSemantics: "plan-b", bundlePolicy: "max-compat"
+        };
+
+        video1.srcObject = stream1;
+        video2.srcObject = stream2;
+        video3.srcObject = stream3;
+
+        button1.onclick = button2.onclick = button3.onclick = e => {
+            let button = e.currentTarget;
+            let video = document.querySelector(button.id.replace(/button/, '#video'));
+            if (button.innerText == "stop") {
+                if (button.id == "button1") {
+                    button.innerText = "publish";
+                    video.publish = false;
+                } else {
+                    button.innerText = "subscribe";
+                    video.subscribe = false;
+                }
+
+                const stream = document.querySelector('#' + video.getAttribute("for"));
+                setTimeout(() => {
+                    updateSrc(stream);
+                }, 1000);
+            } else {
+                button.innerText = "stop";
+                if (button.id == "button1") {
+                    video.publish = true;
+                } else {
+                    video.subscribe = true;
+                }
+            }
+        };
+
+        function updateSrc(stream) {
+            let src = stream.getAttribute("src");
+            let match = src.match(/^(.*)\?params=(.*)$/);
+            let params = JSON.parse(decodeURIComponent(match[2] || "")) || {};
+            let callId = params.invite.dialogParams.callID;
+            params.invite.dialogParams.callID = params.bye.dialogParams.callID = callId.substring(0, callId.length-4) + ("" + Math.random()).substring(2,6);
+            let sessid = params.login.sessid;
+            params.login.sessid = params.relogin.sessid = params.invite.sessid = params.bye.sessid = sessid.substring(0, sessid.length-4) + ("" + Math.random()).substring(2,6);
+            console.log("updated callID " + callId + " to " + params.invite.dialogParams.callID);
+            src = match[1] + "?params=" + encodeURIComponent(JSON.stringify(params));
+            stream.setAttribute("src", src);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="text-chat.js"></script>
+    <script type="text/javascript" src="text-chat-bubbles.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        body {
+            position: absolute; width: 100%; height: 100%;
+        }
+        text-chat {
+            width: 200px; height: 300px; max-height: 100%;
+            display: inline-block;
+            border: solid 1px lightgrey;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <shared-storage id="storage" src="local"></shared-storage>
+    <text-feed-data id="data1" for-storage="storage" self="alice" displayname="Alice" path="sessions/chat456"></text-feed-data>
+    <text-feed-data id="data2" for-storage="storage" self="bob" displayname="Bob" path="sessions/chat456"></text-feed-data>
+    <text-feed-data id="data3" for-storage="storage" self="carol" displayname="Carol" path="sessions/chat456"></text-feed-data>
+
+    <text-chat for-data="data1"
+        input="false" showtyping="false">
+        <text-feed-bubbles input="true" showtyping="true" label="other"></text-feed-bubbles>
+    </text-chat>
+
+    <text-chat for-data="data2"
+        showtyping="false">
+        <text-feed-bubbles label="other" showtyping="true"></text-feed-bubbles>
+    </text-chat>
+
+    <text-chat for-data="data3">
+        <text-feed></text-feed>
+    </text-chat>
+
+</body>
+</html>

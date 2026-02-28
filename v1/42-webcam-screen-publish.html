@@ -1,0 +1,144 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        div.table {
+            display: table;
+        }
+        div.table > div {
+            display: table-row;
+        }
+        div.table > div > div {
+            display: table-cell;
+            font-size: 40px;
+            vertical-align: middle;
+        }
+        div.padding {
+            padding: 1ch;
+        }
+        video-io {
+            background-color: black;
+        }
+        video-mix {
+            visibility: hidden;
+            position: absolute; width: 0px; height: 0px;
+        }
+    </style>
+</head>
+<body>
+    <div class="table">
+        <div>
+            <div><video-io id="video1" controls></video-io></div>
+            <div class="padding">+</div>
+            <div><video-io id="video2" controls screen="true" microphone="false" desiredframerate="3"></video-io></div>
+            <div class="padding">=</div>
+            <div><video-io id="video3" autoenable="true" controls></video-io></div>
+            <div>
+                <video-mix id="mixer">
+                    <script for="video2" type="text/plain">
+                        canvas.width = video.videoWidth || 640;
+                        canvas.height = video.videoHeight || 320;
+                        canvas.getContext("2d").drawImage(video, 0, 0);
+                    </script>
+                    <script for="video1" type="text/plain">
+                        let position = script.getAttribute("position") || "top-right";
+                        let W = canvas.width, H = canvas.height;
+                        let w = video.videoWidth, h = video.videoHeight;
+                        let wh = Math.min(w, h) * 5 / 6; // zoom in center
+                        let p = canvas.width * 60 / 320;
+                        let x = position.indexOf("right") >= 0 ? canvas.width - p - 4 : 4;
+                        let y = position.indexOf("bottom") >= 0 ? canvas.height - p - 4 : 4;
+
+                        let ctx = canvas.getContext("2d");
+
+                        if (script.getAttribute("shape") == "circle") {
+                            ctx.beginPath();
+                            ctx.arc(x+p/2, y+p/2, p/2, 0, Math.PI*2);
+                            ctx.clip();
+                            ctx.stroke();
+                            ctx.closePath();
+                        }
+ 
+                        ctx.shadowBlur = 30;
+                        ctx.shadowColor = "rgba(0,0,0,0.3)";
+                        ctx.drawImage(video, w/2 - wh/2, h/2 - wh/2, wh, wh, x, y, p, p);
+                        ctx.shadowBlur = "none";
+                        ctx.shadowColor = "none";
+                    </script>
+                </video-mix>
+            </div>
+        </div>
+    </div>
+    <div>
+        <button id="button">publish</button>
+        <button id="change">change</button>
+        <span id="status"></span>
+    </div>
+    <script type="text/javascript">
+        let video1 = document.querySelector("#video1"), 
+            video2 = document.querySelector("#video2"), 
+            video3 = document.querySelector("#video3"), 
+            mixer = document.querySelector("#mixer");
+
+        mixer.audio = [video1];
+        mixer.input = [video1, video2];
+        video3.input = mixer;
+
+        document.querySelector("#button").onclick = e => {
+            let button = e.currentTarget;
+            if (button.innerText == "publish") {
+                button.innerText = "stop";
+                video1.publish = video2.publish = video3.publish = true;
+                status("publishing");
+            } else {
+                button.innerText = "publish";
+                video1.publish = video2.publish = video3.publish = false;
+                status("stopped");
+            }
+        };
+
+        document.querySelector("#change").onclick = e => {
+            let button = e.currentTarget;
+            if (!button.value) {
+                button.value = "first";
+                video3.input = video1;
+                status("video3.input = video1");
+            } else if (button.value == "first") {
+                button.value = "second";
+                video3.input = video2;
+                status("video3.input = video2");
+            } else if (button.value == "second") {
+                button.value = "third";
+                video3.input = mixer;
+                status("video3.input = mixer; bottom-right;");
+                document.querySelector('script[for="video1"]').setAttribute("position", "bottom-right");
+            } else if (button.value == "third") {
+                button.value = "fourth";
+                status("bottom-left, in circle");
+                document.querySelector('script[for="video1"]').setAttribute("shape", "circle");
+                document.querySelector('script[for="video1"]').setAttribute("position", "bottom-left");
+            } else if (button.value == "fourth") {
+                button.value = "fifth";
+                status("switch foreground and background");
+                document.querySelector('script[for="video1"]').removeAttribute("shape");
+                document.querySelector('script[for="video1"]').removeAttribute("position");
+                let script1 = document.querySelector('script[for="video1"]'), script2 = document.querySelector('script[for="video2"]');
+                script1.setAttribute("for", "video2");
+                script2.setAttribute("for", "video1");
+            } else if (button.value == "fifth") {
+                button.value = "";
+                status("");
+                let script1 = document.querySelector('script[for="video1"]'), script2 = document.querySelector('script[for="video2"]');
+                script1.setAttribute("for", "video2");
+                script2.setAttribute("for", "video1");
+            }
+        };
+
+        function status(text) {
+            document.querySelector("#status").innerText = text;
+        }
+    </script>
+</body>
+</html>

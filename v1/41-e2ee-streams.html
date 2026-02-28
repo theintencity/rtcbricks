@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+    <named-stream id="stream"></named-stream>
+    <video-io id="video1" controls autoenable="true"></video-io>
+    <video-io id="video2" controls></video-io>
+    <video-io id="video3" controls></video-io>
+    <script type="text/javascript">
+        const [video1, video2, video3, stream] = ["video1", "video2", "video3", "stream"].map(id => document.getElementById(id));
+
+        video1.secret = video2.secret = "password123";
+        video1.srcObject = video2.srcObject = video3.srcObject = stream;
+        video1.publish = video2.subscribe = video3.subscribe = true;
+    </script>
+</body>
+</html>
