@@ -34,7 +34,7 @@ this project remains the same, as follow:
 Please contact the software owner, or join the discussion group mentioned below,
 to get started with this project. It is actually very easy to get started.
 Just checkout the code, run a simple web server, and access the v1 directory
-in a browswer. That will open the full tutorial to get started. 
+in a browwer. That will open the full tutorial to get started. 
 I just use Python command like, `python -m SimpleHTTPServer`, from within the
 rtcbricks directory, to launch a simple web server, to see the tutorial.
 
