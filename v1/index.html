@@ -83,7 +83,7 @@ scenarios are also described, e.g., <code>text-chat</code>.</p>
 
 
 
-<h2 id="abstract"category="Basic">What is video-io?</h2>
+<h2 id="abstract"category="Basic"cat="Intro"position="0,-30"short="what's video-io?">What is video-io?</h2>
 
 <p>Video-io is a web component demonstrating several generic WebRTC related use cases, e.g., 
 live camera view, recording of multimedia messages, live video call or conferencing, in 
@@ -151,7 +151,7 @@ the same named stream, "Alice", you get one to many video broadcast. When two vi
 reverse direction attached to a different named stream, "Bob", you get two-party video call.
 This simple abstraction facilitates a wide range of use cases as your will see later.</p>
 
-<h3 id="topic-1">Include video-io in your web-page</h3>
+<h3 id="topic-1"short="Embed">Include video-io in your web-page</h3>
 
 <p>To include the web component, do the following in the <code>head</code> section of your HTML document.</p>
 <pre><code class="lang-html">&lt;script type="text/javascript" src="https://rtcbricks.kundansingh.com/v1/video-io.js"&gt;&lt;/script&gt;
@@ -187,7 +187,7 @@ in HTML, e.g.,</p>
 
 
 
-<h2 id="topic-2">How to show live camera view?</h2>
+<h2 id="topic-2"short="live camera">How to show live camera view?</h2>
 
 <p>One of the first things that you can do is to capture from webcam and display the video.
 This is done by using the <code>publish</code> attribute as follows.</p>
@@ -239,7 +239,7 @@ two for camera and microphone.</p>
 <p>The above example uses an external button to control the publish state. 
 You will notice in the above example that the microphone icon is muted.</p>
 
-<h3>Change capture or display size</h3>
+<h3 short="Change size">Change capture or display size</h3>
 
 <p>Use the CSS styles to change the display size. Use the <code>camdimension</code> attribute and 
 property to change the camera capture size.</p>
@@ -258,7 +258,7 @@ that can be set in markup. See <a href="#topic-api">How to use the video-io API?
 complete list of attributes and properties.</p>
     
 
-<h3>Mirrored (or not?) preview</h3>
+<h3 short="Mirrored">Mirrored (or not?) preview</h3>
 
 <p>The local camera preview is mirrored by default. This can be changed to not mirror the preview
 video using the <code>mirrored</code> attribute to false</p>
@@ -313,17 +313,17 @@ video pauses, then the published media stream is disabled too.</p>
 
 
 
-<h2 id="topic-3">How to change the component's appearance?</h2>
+<h2 id="topic-3"short="appearance">How to change the component's appearance?</h2>
     
 <p>This section describes some ways to change the appearance and general behavior of the component, 
 independent of the publisher or subscriber mode.</p>
 
-<h3>Background Color</h3>
+<h3 short="Bg Color">Background Color</h3>
 
 <p>The default background color of the component is transparent. This can be changed using the 
 <code>background</code> or <code>background-color</code> CSS style attribute.</p>
 
-<h3>Background <code>poster</code></h3>
+<h3 short="Poster">Background <code>poster</code></h3>
 
 <p>Use the <code>poster</code> attribute or property to display an image before the video is
 loaded or played.</p>
@@ -440,7 +440,7 @@ and magnification of 3x. Note that magnification of less than 1x is not allowed.
 <p>This and the next feature are useful for quickly checking some small text during screen share, when the 
 component size is small.</p>
 
-<h3>Select to zoom</h3>
+<h3 short="Zoom">Select to zoom</h3>
 
 <p>The <code>zoomable</code> property controls whether the user can drag-select a
 portion of the video and zoom.</p>
@@ -461,7 +461,7 @@ example - it opens in a new tab; try resizing the window, with or without zoom o
 <button class="tryit"shift nocode path="video.html?video.publish=true&video.zoomable=true&style.object-fit=contain&style.background=black"></button>
 
 
-<h2 id="topic-connect">How to connect publisher and subscriber?</h2>
+<h2 id="topic-connect"short="pub-sub">How to connect publisher and subscriber?</h2>
 
 <p>A <code>video-io</code> component instance can be in a publish or subscribe mode. Previously, we
 showed examples of the publish mode. The subscribe mode is relatively easy, as there is no capture
@@ -473,7 +473,7 @@ section, we assume that both are running on the same web page.</p>
 The point-to-point connection is similar to the WebRTC peer connection abstraction, albeit unidirectional
 only. The named streams abstraction will be discussed in the next sub-section.</p>
 
-<h3>Point-to-point</h3>
+<h3 short="P2P">Point-to-point</h3>
 
 <p>In the point-to-point connection, one instance of publisher connects to one instance of subscriber.
 The application manages data exchange between these instances. In particular, the instance emits the 
@@ -601,7 +601,7 @@ publisher side pause.</p>
 <p>Setting <code>autopause</code> shows consistent video behavior on publisher and subscriber side,
 instead of publisher paused and subscriber with black video feed.</p>
     
-<h3 id="rtclite-stream">Using <code>rtclite-stream</code> for Notification</h3>
+<h3 id="rtclite-stream"short="RTClite">Using <code>rtclite-stream</code> for Notification</h3>
 
 <p>As mentioned before, a real application will likely use a WebRTC notification service to
 exchange the signaling data among the different distributed instances of the <code>video-io</code>
@@ -673,7 +673,7 @@ and hence, each such stream instance may be attached to only one <code>video-io<
 It may be extended to add some form of authentication and access control for your need
 on top of the basic connection.</p>
 
-<h3 id="firebase-stream">Using Firebase for Notification</h3>
+<h3 id="firebase-stream"short="Firebase">Using Firebase for Notification</h3>
 
 <p>I have created another component, <code>firebase-stream</code>, that uses the 
 <a target="_blank"href="https://firebase.google.com/">Firebase</a> project to implement the notification system.
@@ -761,7 +761,7 @@ your application by adding appropriate authentication, and access control on you
 database. Also, take measures to secure the app credentials.</p>
 
 
-<h3>Use the Graph Universe Node database for notification</h3>
+<h3 short="Dbgun database">Use the Graph Universe Node database for notification</h3>
 
 <p>Graph Universe Node database is an open source 
 <a target="_blank"href="https://github.com/amark/gun">project</a>
@@ -798,7 +798,7 @@ Use of external media servers such as Janus or FreeSwitch is discussed later in
 
 
 
-<h2>How to record and play a video message</h2>
+<h2 short="record-play">How to record and play a video message</h2>
 
 <p>Use the <code>record</code> attribute or property to enable recording of the published or 
 subscribed stream.
@@ -929,7 +929,7 @@ These attributes and properties are summarized below.</p>
 
 
 
-<h2 id="topic-api"category="Advanced - API">How to use the video-io API? (complete reference)</h2>
+<h2 id="topic-api"category="Advanced - API"cat="API"position="50,-25"short="video-io">How to use the video-io API? (complete reference)</h2>
 
 <p>Previously, we have shown several examples of attributes and properties. Here we formally define those
 and enumerate and describe all the available values.</p>
@@ -1065,7 +1065,7 @@ implement a named stream component.</p>
 
 
 
-<h2 id="storage"category="Advanced - Data">How to use shared data?</h2>
+<h2 id="storage"category="Advanced - Data"cat="Data"position="50,25"short="shared data">How to use shared data?</h2>
 
 <p>The ability to access and modify shared data is crucial in a distributed application such as
 two-party call, multi-party conference or online panel discussion. Furthermore, the clients
@@ -1283,7 +1283,7 @@ await lref.transient().add({name: "Alice"});
 <p>As we will see in the next few sections, the shared object abstraction can be used
 to implement a wide range of application scenarios.</p>
 
-<h2 id="storage-stream">How to create a stream using shared data?</h2>
+<h2 id="storage-stream"short="create stream">How to create a stream using shared data?</h2>
 
 <p>A new named stream component, <code>storage-stream</code>, is implemented using the 
 <code>shared-storage</code> component. This enables use of single application service for
@@ -1327,7 +1327,7 @@ As mentioned before, the shared storage component can be an external storage ser
 
 
 
-<h2 id="peerstorage">How to use peer-to-peer storage?</h2>
+<h2 id="peerstorage"short="peer-to-peer">How to use peer-to-peer storage?</h2>
 
 <p>My other project, <a target="_blank"href="https://github.com/theintencity/ezcall">Ezcall</a>, 
 uses a peer-to-peer network and storage for video conferencing. The peer-to-peer
@@ -1415,7 +1415,7 @@ simultaneous video users.</p>
 
 
 
-<h2 id="flex-box"category="Advanced - Multiparty">How to customize multi-video layout?</h2>
+<h2 id="flex-box"category="Advanced - Multiparty"cat="N-party"position="0,30"short="layout">How to customize multi-video layout?</h2>
 
 <p>The <code>flex-box</code> web component is a container to display multiple videos,
 images or other content.</p>
@@ -1802,7 +1802,7 @@ aspect ratio is preferred.</p>
 </script>
 
 
-<h2 id="topic-mediaserver">How to work with a media server?</h2>
+<h2 id="topic-mediaserver"short="media server">How to work with a media server?</h2>
 
 <p>The underlying WebRTC technology used in the <code>video-io</code> component is inherently
 peer-to-peer for media path. However, many real-world call and conferencing applications
@@ -1836,7 +1836,7 @@ various apps, while preserving the publish-subscribe model of the named stream
 abstraction.</p>
 
 
-<h3 id="janus-stream">Using Janus for notification and media service</h3>
+<h3 id="janus-stream"short="Janus">Using Janus for notification and media service</h3>
 
 <p>The <code>janus-stream</code> component allows using the <code>video-io</code> instances with the 
 <a target="_blank"href="https://github.com/meetecho/janus-gateway">Janus media server</a>. 
@@ -1926,7 +1926,7 @@ pick any randomly unique number for room and feed ID.</p>
 <p>In your real application, you may want to install your own Janus server, and connect using websocket
 URL.</p>
 
-<h3>Using FreeSwitch as media server</h3>
+<h3 short="Freeswitch">Using FreeSwitch as media server</h3>
 
 <p>The <code>verto-stream</code> component alows using the <code>video-io</code> instances with the 
 <a target="_blank"href="https://signalwire.com/freeswitch">FreeSwitch media server</a>
@@ -2009,7 +2009,7 @@ socket, for the minimum set of features needed for this project.</p>
 
 
 
-<h2 id="topic-hostedserver">How to work with hosted conference services?</h2>
+<h2 id="topic-hostedserver"short="hosted services">How to work with hosted conference services?</h2>
 
 <p>Here we describe how to connect with popular hosted conference services such as
 Agora, Jitsi, LiveKit, VideoSDK.live and others. Unlike the previously discussed
@@ -2028,7 +2028,7 @@ However, since the peer connection is often handled by the service specific
 named stream implementation, some properties and attributes of video-io that are
 dependent on the connection, are not available with these named stream implementations.</p>
 
-<h3>Using Jitsi-as-a-Service</h3>
+<h3 short="Jitsi">Using Jitsi-as-a-Service</h3>
 
 <p>Jitsi is an open source video conferencing server, which also has a hosted jitsi-as-a-service offering.
 Our jitsi-stream web component takes a room identifier representing the stream name, 
@@ -2054,7 +2054,7 @@ media server.</p>
 
 <button class="tryit"path="35-jitsi-stream.html"form="jitsi-form"width="1100"height="300"></button>
 
-<h3>Using Agora service</h3>
+<h3 short="Agora">Using Agora service</h3>
 
 <p>Agora is another developer friendly video conferencing service.
 Our agora-stream component takes a channel name representing a named stream, 
@@ -2079,7 +2079,7 @@ trying the example below.</p>
 
 <button class="tryit"path="35-agora-stream.html"form="agora-form"width="1100"height="300"></button>
 
-<h3>Using LiveKit service</h3>
+<h3 short="LiveKit">Using LiveKit service</h3>
 
 <p>LiveKit is another open source developer platform for video conferencing.
 Our livekit-stream component takes a room name representing a named stream, and a sandbox test server to connect to. 
@@ -2104,7 +2104,7 @@ trying the example below.</p>
 
 <button class="tryit"path="35-livekit-stream.html"form="livekit-form"width="1100"height="300"></button>
 
-<h3>Using VideoSDK.live service</h3>
+<h3 short="VideoSDK.live">Using VideoSDK.live service</h3>
 
 <p>VideoSDK.live is also a developer platform and service for video conferencing.
 Our videosdklive-stream component takes a room name for a named stream, and an authentication token
@@ -2128,11 +2128,11 @@ trying the example below.</p>
 <button class="tryit"path="35-videosdklive-stream.html"form="videosdklive-form"width="1100"height="300"></button>
 
 
-<h2>How to further customize a named stream?</h2>
+<h2 short="customize">How to further customize a named stream?</h2>
 
 <p>Here, additional topics related to named streams are covered.</p>
 
-<h3>Using external-stream</h3>
+<h3 short="external-stream">Using external-stream</h3>
 
 <p>The generic external-stream web component is useful in connecting to any external
 media server or conference service. It takes a URL of an external web app, 
@@ -2169,7 +2169,7 @@ at this URL before trying the example below.</p>
 <button class="tryit"path="35-external-stream-popup.html"width="1100"height="300"></button>
 
 
-<h3>Using split-stream</h3>
+<h3 short="split-stream">Using split-stream</h3>
 
 <p>The named stream abstraction allows at most one publisher and zero or more subscribers
 attached to a single stream. It also requires a video-io component instance to be attached
@@ -2203,7 +2203,7 @@ subscriber video-io attaches to the individual child named stream.</p>
 
 
 
-<h2>How to do peer-to-peer broadcast without media server?</h2>
+<h2 short="p2p broadcast">How to do peer-to-peer broadcast without media server?</h2>
 
 <p>The techniques described in <a href="#topic-connect">How to connect publisher and subscriber?</a>
 and <a href="#topic-clone">How to clone and modify the video stream?</a> can be used to create a 
@@ -2235,7 +2235,7 @@ that serve other nodes, without any self benefit in that particular session.</p>
 
 
 
-<h2 id="topic-e2ee"category="Advanced - Media Processing">How to do end-to-end encryption using insertable streams?</h2>
+<h2 id="topic-e2ee"category="Advanced - Media Processing"cat="Media"position="-50,25"short="encryption">How to do end-to-end encryption using insertable streams?</h2>
 
 <p>Use the <code>secret</code> attribute or property to enable end-to-end encryption using insertable 
 streams, in publish or subscribe <code>video-io</code> instance. Internally, the implementation uses a worker 
@@ -2268,7 +2268,7 @@ the encryption used here will prevent the middlebox from accessing the unencrypt
 
 
 
-<h2 id="topic-clone">How to clone and modify the video stream</h2>
+<h2 id="topic-clone"short="modify video">How to clone and modify the video stream</h2>
 
 <p>Previously, we have shown examples of capturing video from webcam, screen or app. Here, we will show
 how to modify a video stream in real-time, e.g., to put caption or mix or perform some image processing 
@@ -2420,14 +2420,14 @@ by clicking on the "change" button in the previous example.</p>
 
 
 
-<h2>How to do image processing on video?</h2>
+<h2 short="image processing">How to do image processing on video?</h2>
 
 <p>Previously, in <a href="#topic-clone">How to clone and modify the video stream?</a>, it was shown
 how to get access to and modify the raw image data, such as to put caption or multi-party layout.
 The same concept can be used to apply image processing algorithms in real-time to the frames of the
 video stream, and to publish the modified video stream.</p>
 
-<h3>Background detection, blur and removal</h3>
+<h3 short="Virtual bg">Background detection, blur and removal</h3>
 
 <p>The following example uses MediaPipe to segment a person in an image. It generates four new video streams:
 for the segment, with blur background, with removed background, and with virtual background. 
@@ -2469,7 +2469,7 @@ frame is not required either.</p>
 
 
 
-<h2 category="Advanced - Collaboration">How to create components using shared storage?</h2>
+<h2 category="Advanced - Collaboration"cat="Collab"position="-50,-25"short="create components">How to create components using shared storage?</h2>
 
 <p>We have created several web components to support multimedia collaboration
 use cases such as text chat, user roster,
@@ -2678,7 +2678,7 @@ described earlier. Those wrappers also have methods such as <code>add</code>,
 <code>set</code>, <code>setattrs</code>, <code>remove</code>, 
 <code>removeall</code>, <code>getall</code> and <code>notify</code>.</p>
 
-<h2>How to do text chat?</h2>
+<h2 short="text chat">How to do text chat?</h2>
 
 <p>To enable text chat among collaborating users, there are two web components:
 <code>text-feed</code> and <code>text-chat</code>, and one data model web 
@@ -2982,7 +2982,7 @@ display.</p>
 
 
 
-<h2>How to display user roster?</h2>
+<h2 short="user roster">How to display user roster?</h2>
 
 <p>Collaborative applications often need the ability to display a list of users along with their
 attributes or capabilities. For example, a contact list in a messenger application or
@@ -3047,7 +3047,7 @@ how the component groups the users by their presence status.</p>
 
 
 
-<h2>How to do multimedia chat?</h2>
+<h2 short="multimedia chat">How to do multimedia chat?</h2>
 
 <p>The <code>media-chat</code> component enables a full fledged multimedia chat, and includes
 other components to perform text chat, display attendee list, and optional video-io elements.
@@ -3263,7 +3263,7 @@ The right side shows the component in action. There are some pre-configured item
 the user-roster and text-chat for demonstration purpose. The left side also allows sending
 a sample text message from another user.</p>
 
-<h3 name="toolbar-buttons">toolbar-buttons and overlay-menu</h3>
+<h3 name="toolbar-buttons"short="Toolbar/Menu">toolbar-buttons and overlay-menu</h3>
 
 <p>The <code>toolbar-buttons</code> and <code>overlay-menu</code> components are used
 in the previous examples to customize the toolbar buttons and the overlay menu.
@@ -3431,7 +3431,7 @@ included in the <code>media-chat</code> component. Note that the
 <code>speakerlevel</code> property of the component must be set for
 this to work.</p>
 
-<h3>Private text message</h3>
+<h3 short="Private text">Private text message</h3>
 
 <p>By default, entering a text message in the <code>media-chat</code>
 component's included <code>text-chat</code> component, sends it to the
@@ -3447,7 +3447,7 @@ text input area to allow sending the private message. The text chat
 display also labels the private messages by including sender and receiver
 both, instead of just sender name for public messages.</p>
 
-<h3>Custom command on text input</h3>
+<h3 short="Commands">Custom command on text input</h3>
 
 <p>If the <code>allowaction</code> property is set, then text input
 starting with forward slash / character is treated as an action command,
@@ -3456,7 +3456,7 @@ on the text chat channel. This allows intercepting such actions, e.g.,
 the text entered as "/join video" could be interpreted in the application to join the 
 call with video. More concrete examples of such actions will be shown later.</p>
 
-<h3>Synchronized layout</h3>
+<h3 short="Sync layout">Synchronized layout</h3>
 
 <p>The <code>allowsync</code> and <code>syncstate</code> properties 
 control and indicate how the layout of the videos part is synchronized
@@ -3500,7 +3500,7 @@ allowaction, and others.</p>
 
 
 
-<h2>Summary</h2>
+<h2 id="summary"short="none">Summary</h2>
 
 <p>This document describes a number of new web components that are useful in implementing a wide
 range of communicating applications such as video call, broadcast, conference, and so on.
