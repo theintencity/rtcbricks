@@ -18,6 +18,7 @@
     <script type="text/javascript"src="user-roster.js"></script>
     <script type="text/javascript"src="media-chat.js"></script>
     
+    <script type="text/javascript"src="device-selector.js"></script>
     
     <link href="index.css"rel="stylesheet"type="text/css">
     <script type="text/javascript"src="index.js"></script>
@@ -1058,7 +1059,101 @@ The video-io component instance invokes these functions on the attached named st
 implement a named stream component.</p>
 
 
+<h2 short="installed app">How to use the video-io installed app?</h2>
 
+<p>We have also created a standalone web app named video-io that can show zero or
+more video-io web components wrapped in a flex-box component. 
+Although the video-io web component shows a single video in publish or 
+subscribe mode, many video conferencing related use cases require showing multiple video
+elements at the same time. The flex-box web component, which is described later
+<a href="#flex-box">How to customize multi-video layout?</a>, is used to layout
+multiple video-io or other elements.</p>
+
+<p>
+    <img class="image"src="11-pwa-1.png"style="height: 275px;">
+    <img class="image"src="11-pwa-2.png"style="height: 275px;">
+</p>
+
+<p>This video-io standalone web app can be installed as a progressive web app (PWA),
+on desktop or mobile. To use the installed app, first launch the web app in the browser,
+then use the browser's prompt or the install button near the address bar to
+install it locally.</p>
+
+<button class="tryit"shift nocode path="video-io.html"></button>
+
+<p>Note that the PWA manifest file for this app expects
+the web page of the app to be at <code>/v1/video-io.html</code>. So if your testing
+is not on this path, it may not allow or show the install button. Alternatively,
+you can edit the video-io.json file for another path as per your hosting.</p>
+
+<p>The user interface allows publish or subscribe of named streams, e.g., 
+by entering publish=alice or subscribe=alice. It attaches a video-io component
+to each such stream. For testing with external named streams, you need to specify
+the full description, e.g., 
+<span style="word-break: break-all; font-family: monospace;">publish=rtclite:ws://localhost:8080/streams/1234</span> 
+will publish to that named stream using rtclite-stream component. A list of publish and subscribe
+parameters can also be supplied on launch. It can also be launched on
+desktop, if not already open, to add a new stream using its URL protocol handlers: 
+<code>web+ezpub</code> or <code>web+ezsub</code>, for publish or subscribe, respectively. 
+Note that the protocol handler feature is not supported on mobile.
+If a user opens a URL
+<a href="web+ezpub:rtclite:ws://localhost:8080/streams/1234"><span style="word-break: break-all;">web+ezpub:rtclite:ws://localhost:8080/streams/1234</span></a>, 
+it adds a video-io web component instance, and an attached rtclite-stream web component. 
+It then connects to the presumed rtclite service at localhost port 8080, over a
+websocket transport, and publishes camera/mic media to the named stream, <code>streams/1234</code>.
+</p>
+
+<p>The flex-box component allows dynamically adjusting the layout, e.g., double clicking
+on a video to put it in presenter mode, or resize videos based on available size and
+aspect ratio of the window. It allows drag-and-drop of the video elements, e.g.,
+to re-order them in the display, or to pop out a video to a separate window or tab,
+or to move or copy a publish or subscribe video stream from one app instance to another.</p>
+
+<p>The goal of this video-io app, separate from the video-io web component, is to
+create a generic user interface for web video conferencing applications, where
+the conferencing app logic can reside in external software, which invokes this app
+to display, capture, publish and subscribe various media streams using the protocol
+handler. The extensive video-io component API can be used to further customize
+its behavior using the URL parameters.</p>
+
+
+
+<h2 short="select device">How to select devices?</h2>
+
+<p>The <code>device-selector</code> component can be used to display a user interface to allow
+selecting media devices. It allows selecting microphone, speaker and camera devices.
+When this component is attached to another target <code>video-io</code> component,
+it automatically sets the devices on the target. The controls in this 
+component automatically adjust on resize.</p>
+
+<p>Try the following example to explore device selection. Give it a try from a machine that
+has multiple devices such as two webcams or two microphones.</p>
+<button class="tryit"path="19-device-selector.html"preview width="700"height="360"></button>
+
+<h3 id="device-selector">device-selector</h3>
+
+<p>The following table describes all the properties of the component.</p>
+
+<script type="text/javascript">
+    tabulateProperties("device-selector");
+</script>
+
+<p>The following table shows all the methods of the component.</p>
+
+<script type="text/javascript">
+    tabulateMethods("device-selector");
+</script>
+
+<p>The following table shows all the events dispatched by the component instance.</p>
+
+<script type="text/javascript">
+    tabulateEvents("device-selector");
+</script>
+
+<p>The user interface of the component can be customized using the following styles.</p>
+<script type="text/javascript">
+    tabulateStyles("device-selector");
+</script>
 
 
 
@@ -1083,7 +1178,7 @@ and <code>vvowproject</code>, as well as with the popular Firebase real-time dat
 <p>The <code>SharedStorage</code> class in this project has an implementation of the shared data 
 abstraction for local testing and demonstrations. The individual subclass implementations further
 extend this for real world applications by using specific server side storage, such as in 
-<code>restserver-storage.js</code> or <code>firestore-storage.js</code>. This section shows how 
+<code>restserver-storage.js</code>. This section shows how 
 to use the base <code>SharedStorage</code> class for initial testing, and to replace it with
 others if needed.</p>
 

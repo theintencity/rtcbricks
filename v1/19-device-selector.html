@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="device-selector.js"></script>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+device-selector {
+    border: solid 1px lightgrey;
+    resize: both;
+}
+body {
+    display: flex; flex-flow: row wrap;
+}
+div.horizontal {
+    display: flex; flex-flow: row nowrap;
+}
+body > :not(:last-child), 
+div.horizontal > :not(:last-child) {
+    margin-right: 1ch;
+}
+div.vertical {
+    display: flex; flex-flow: column nowrap;
+}
+div.vertical > :not(:last-child) {
+    margin-bottom: 1ch;
+}
+div.form {
+    display: grid; 
+    grid-template-columns: max-content max-content;
+    grid-gap: 5px;
+    align-content: center;
+}
+label.title {
+    text-align: center;
+}
+input[type="text"] {
+    outline: none;
+    color: darkgrey;
+}
+
+    </style>
+</head>
+<body>
+    <div class="horizontal">
+        <div class="form">
+            <input name="autosize" type="checkbox" />
+            <label>autosize</label>
+            <input name="microphone" type="checkbox" />
+            <label>microphone</label>
+            <input name="sound" type="checkbox" />
+            <label>sound</label>
+            <input name="camera" type="checkbox" />
+            <label>camera</label>
+            <input name="preview" type="checkbox" />
+            <label>preview</label>
+            <input name="mirrored" type="checkbox" />
+            <label>mirrored</label>
+            <input name="selected" type="checkbox" />
+            <label>selected</label>
+            <input name="showsave" type="checkbox" />
+            <label>showsave</label>
+            <input name="save" type="checkbox" />
+            <label>save</label>
+        </div>
+        <div class="vertical">
+            <label class="title">&lt;device-selector&gt;</label>
+            <device-selector for="video"></device-selector>
+        </div>
+    </div>
+    <div class="vertical">
+        <label class="title">attached &lt;video-io&gt;</label>
+        <video-io id="video" publish="true" controls></video-io>
+        <div class="form">
+            <label>micname</label>
+            <input name="micname" type="text" readonly/>
+            <label>soundname</label>
+            <input name="soundname" type="text" readonly/>
+            <label>camname</label>
+            <input name="camname" type="text" readonly/>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+const selector = document.querySelector("device-selector");
+selector.save = !!localStorage["device-selector"];
+
+["autosize", "microphone", "sound", "camera", "preview", "mirrored", "selected", "showsave", "save"].forEach(attr => {
+    const input = document.querySelector(`input[name="${attr}"]`);
+    input.checked = !!selector[attr];
+    input.onclick = event => {
+        selector[attr] = event.currentTarget.checked;
+    };
+});
+
+const video = document.querySelector("video-io");
+const attrs = ["micname", "soundname", "camname"];
+attrs.forEach(attr => {
+    const input = document.querySelector(`input[name="${attr}"]`);
+    input.value = video[attr];
+});
+
+video.addEventListener("propertychange", event => {
+    if (attrs.indexOf(event.property) >= 0) {
+        const attr = event.property;
+        const input = document.querySelector(`input[name="${attr}"]`);
+        input.value = video[attr];
+    }
+});
+
+selector.addEventListener("change", event => console.log(event));
+selector.addEventListener("prompt", event => console.log(event));
+selector.addEventListener("ready", event => console.log(event));
+    </script>
+</body>
+</html>
