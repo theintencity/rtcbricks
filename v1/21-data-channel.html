@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        div.table {
+            display: table;
+        }
+        div.table > div {
+            display: table-row;
+        }
+        div.table > div > div {
+            display: table-cell;
+            padding: 1ch;
+        }
+        div.box {
+            position: relative;
+            display: flex; flex-flow: column nowrap;
+            width: 160px;
+        }
+        div.box > :not(:first-child) {
+            margin-top: 1ch;
+        }
+        
+        video-io {
+            width: 160px; height: 120px;
+        }
+        textarea {
+            height: 100px; 
+            resize: none;
+        }
+    </style>
+</head>
+<body>
+    <named-stream id="stream"></named-stream>
+    <div class="table">
+        <div>
+            <div>
+                <div class="box">
+                    <video-io id="video1" for="stream" controls camera="false" microphone="false" channel="true"></video-io>
+                    <input type="text" id="send1" placeholder="type text and enter..."/>
+                    <textarea id="receive1" readonly placeholder="received text..."></textarea>
+                    <input type="file" id="file1" accept="image/*" value="upload"/>
+                </div>
+            </div>
+            <div>
+                <div class="box">
+                    <video-io id="video2" for="stream" controls sound="false" channel="true"></video-io>
+                    <input type="text" id="send2" placeholder="type text and enter..."/>
+                    <textarea id="receive2" readonly placeholder="received text..."></textarea>
+                    <input type="file" id="file2" accept="image/*" value="upload"/>
+                </div>
+            </div>
+            <div>
+                <div class="box">
+                    <video-io id="video3" for="stream" controls sound="false" channel="true"></video-io>
+                    <input type="text" id="send3" placeholder="type text and enter..."/>
+                    <textarea id="receive3" readonly placeholder="received text..."></textarea>
+                    <input type="file" id="file3" accept="image/*" value="upload"/>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        const [video1, video2, video3, send1, send2, send3, receive1, receive2, receive3] = 
+            ["video1", "video2", "video3", "send1", "send2", "send3", "receive1", "receive2", "receive3"].map(id => document.getElementById(id));
+
+        // video1.srcObject = video2.srcObject = video3.srcObject = stream;
+
+        send1.onkeydown = send2.onkeydown = send3.onkeydown = event => {
+            if (event.key == "Enter") {
+                const video = event.currentTarget.parentNode.querySelector("video-io");
+                video.send(event.currentTarget.value);
+                event.currentTarget.value = "";
+            }
+        };
+        file1.onchange = file2.onchange = file3.onchange = event => {
+            const input = event.currentTarget;
+            if (input.files.length > 0) {
+                const file = input.files[0];
+                const video = event.currentTarget.parentNode.querySelector("video-io");
+                try {
+                    video.send(file);
+                } catch (e) {
+                    // Blob support in chrome data channel was added only recently.
+                    console.log("failed to send blob, fallback to arraybuffer");
+                    file.arrayBuffer().then(buffer => {
+                        video.send(buffer);
+                        input.value = "";
+                    });
+                }
+            }
+        };
+
+        const receiver = event => {
+            if (event.data instanceof ArrayBuffer) {
+                console.log("received arraybuffer");
+                const blob = new Blob([event.data]);
+                const url = URL.createObjectURL(blob);
+                const video = event.currentTarget;
+                video.poster = url;
+            } else if (event.data instanceof Blob) {
+                const url = URL.createObjectURL(blob);
+                const video = event.currentTarget;
+                video.poster = url;
+            } else {
+                const textarea = event.currentTarget.parentNode.querySelector("textarea");
+                textarea.value = textarea.value + (textarea.value ? "\n" : "") + event.data;
+            }
+        };
+        video1.addEventListener("message", receiver);
+        video2.addEventListener("message", receiver);
+        video3.addEventListener("message", receiver);
+
+        video1.publish = video2.subscribe = video3.subscribe = true;
+    </script>
+</body>
+</html>

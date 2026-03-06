@@ -1,0 +1,222 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+body {
+    display: flex; flex-flow: column nowrap;
+    font-family: sans-serif;
+    justify-content: center;
+}
+div.publishers, div.viewers {
+    display: flex; flex-flow: row wrap; justify-content: center; align-items: center;
+}
+div.publishers > :not(:last-child), div.viewers > :not(:last-child) {
+    margin-right: 1px;
+}
+
+div.publisher, div.viewer {
+    display: flex; flex-flow: column nowrap; justify-content: center; align-items: center;
+    border: solid 1px lightgrey; margin: 1px; padding: 2px; box-sizing: border-box;
+}
+div.buttons, select, span {
+    margin-bottom: 10px;
+}
+
+input[type="text"] {
+    width: 60px;
+    cursor: text; outline: none; border: solid 1px;
+    border-top-left-radius: 12px; border-bottom-left-radius: 12px;
+    border-width: 1px;
+    padding-left: 10px; box-sizing: border-box;
+}
+div.buttons {
+    display: flex; flex-flow: row nowrap; justify-content: center;
+    height: 24px;
+}
+
+button.start, button.stop {
+    border-top-right-radius: 12px; border-bottom-right-radius: 12px;
+    border: solid 1px;
+}
+div.publisher[state="idle"] video-io {
+    visibility: hidden;
+}
+div.publisher[state="active"] input[type="text"] {
+    pointer-events: none;
+    cursor: default;
+    background-color: lightgrey;
+}
+div.publisher[state="active"] button.start, 
+div.publisher[state="idle"] button.stop {
+    display: none;
+}
+
+select {
+    border: solid 1px; outline: none;
+}
+span, select {
+    max-width: 80px;
+}
+
+video-io {
+    width: 160px; height: 120px;
+}
+video-io span {
+    font-family: sans-serif; color: white;
+}
+
+    </style>
+</head>
+<body>
+    <template id="publisher">
+        <div class="publisher" state="idle" name="">
+            <span></span>
+            <named-stream></named-stream>
+            <div class="buttons">
+                <input type="text" placeholder="Name"/>
+                <button class="start">start</button>
+                <button class="stop">stop</button>
+            </div>
+            <video-io controls autoenable="true" microphone="false"></video-io>
+        </div>
+    </template>
+    <template id="viewer">
+        <div class="viewer" name="">
+            <span></span>
+            <select>
+                <option value="" selected>None</option>
+            </select>
+            <video-io controls hidden>
+                <span slot="header"></span>
+            </video-io>
+        </div>
+    </template>
+    
+    <div class="publishers"></div>
+    <div class="viewers"></div>
+
+    <script type="text/javascript">
+        function sanitize(name) {
+            return name.replace(/[^\w]/g, '-').toLowerCase();
+        }
+
+        const names = ["First", "Second", "First"];
+        const template1 = document.querySelector("template#publisher");
+        const template2 = document.querySelector("template#viewer");
+        const streams = {};
+
+        names.forEach((name, index) => {
+            const clone = template1.content.cloneNode(true);
+            clone.querySelector("input").value = name;
+            document.querySelector("div.publishers").appendChild(clone);
+
+            const sa = new SharedStorage("local");
+
+            const publisher = document.querySelector("div.publisher:last-child");
+            publisher.querySelector("span").innerText = "publisher " + (index+1);
+            publisher.querySelector("input").value = name;
+            publisher.querySelector("video-io").srcObject = publisher.querySelector("named-stream");
+
+            publisher.querySelector("button.start").onclick = () => {
+                publisher.setAttribute("state", "active");
+                publisher.querySelector("video-io").publish = true;
+                const name = publisher.querySelector("input").value;
+                const id = sanitize(name);
+                sa.list("stations").transient().object(id).create({name: name})
+                    .then(() => {
+                        publisher.setAttribute("name", id);
+                        streams[id] = publisher.querySelector("named-stream");
+                    })
+                    .catch(error => { // probably already exists.
+                        setTimeout(() => {
+                            console.error("failed to publish, possibly duplicate: " + id);
+                            publisher.setAttribute("state", "idle");
+                            publisher.querySelector("video-io").publish = false;
+                        }, 1000);
+                    });
+            };
+
+            publisher.querySelector("button.stop").onclick = () => {
+                publisher.setAttribute("state", "idle");
+                delete streams[publisher.getAttribute("name")];
+                sa.object("stations/" + publisher.getAttribute("name")).delete()
+                    .then(() => {
+                        publisher.setAttribute("name", "");
+                    })
+                    .catch(error => console.error(error));
+                publisher.querySelector("video-io").publish = false;
+            };
+        });
+
+        // double the viewers
+        [].concat(names, names).forEach((name, index) => {
+            const clone = template2.content.cloneNode(true);
+            document.querySelector("div.viewers").appendChild(clone);
+
+            const sa = new SharedStorage("local");
+
+            const viewer = document.querySelector("div.viewer:last-child");
+            viewer.querySelector("span").innerText = "viewer " + (index+1);
+            //viewer.querySelector("input").value = name;
+            //viewer.querySelector("video-io").srcObject = publisher.querySelector("named-stream");
+
+            sa.list("stations").onchange = event => {
+                console.log(JSON.stringify(event));
+                switch (event.type) {
+                    case "itemcreate":
+                        const option = document.createElement("option");
+                        option.value = event.id;
+                        option.innerText = event.newValue.name;
+                        viewer.querySelector("select").appendChild(option);
+                        break;
+                    case "itemdelete":
+                        const option1 = viewer.querySelector("select > option[value='" + event.id + "']");
+                        if (option1) {
+                            viewer.querySelector("select").removeChild(option1);
+                            if (viewer.getAttribute("name") == event.id) {
+                                viewer.querySelector("select").selectedIndex = 0; // or None
+                                viewer.querySelector("video-io").subscribe = false;
+                                viewer.querySelector("video-io").srcObject = null;
+                                viewer.setAttribute("name", "");
+                                viewer.querySelector("video-io > span").innerText = "";
+                                viewer.querySelector("video-io").hidden = true;
+                            }
+                        }
+                        break;
+                }
+            };
+            sa.list("stations").getall().then(list => {
+                list.forEach(item => {
+                    const [name, value] = item;
+                    const option = document.createElement("option");
+                    option.value = name;
+                    option.innerText = value.name;
+                    viewer.querySelector("select").appendChild(option);
+                });
+            });
+
+            viewer.querySelector("select").onchange = event => {
+                if (viewer.getAttribute("name")) {
+                    viewer.querySelector("video-io").subscribe = false;
+                    viewer.querySelector("video-io").srcObject = null;
+                }
+                const name = event.currentTarget.value;
+                if (name) {
+                    viewer.setAttribute("name", event.currentTarget.value);
+                    viewer.querySelector("video-io").srcObject = streams[name] ||  null;
+                    viewer.querySelector("video-io").subscribe = true;
+                    viewer.querySelector("video-io").hidden = false;
+                } else {
+                    viewer.querySelector("video-io").hidden = true;
+                }
+                viewer.querySelector("video-io > span").innerText = event.currentTarget.selectedOptions[0].innerText;
+            };
+        });
+
+    </script>
+
+</body>
+</html>

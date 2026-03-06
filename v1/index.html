@@ -1074,6 +1074,8 @@ multiple video-io or other elements.</p>
     <img class="image"src="11-pwa-2.png"style="height: 275px;">
 </p>
 
+<h3 short="PWA">Progressive web app (PWA)</h3>
+
 <p>This video-io standalone web app can be installed as a progressive web app (PWA),
 on desktop or mobile. To use the installed app, first launch the web app in the browser,
 then use the browser's prompt or the install button near the address bar to
@@ -1108,6 +1110,42 @@ on a video to put it in presenter mode, or resize videos based on available size
 aspect ratio of the window. It allows drag-and-drop of the video elements, e.g.,
 to re-order them in the display, or to pop out a video to a separate window or tab,
 or to move or copy a publish or subscribe video stream from one app instance to another.</p>
+
+<h3 short="Config">Configure attributes and styles</h3>
+
+<p>Besides the publish and subscribe URL parameters, it also accepts config parameter,
+and the corresponding <code>web+ezcfg:</code> protocol handler. The config parameter
+value can be used to set the attributes or styles on all included or individual video-io
+elements. Consider the following example of the URL parameter:</p>
+
+<pre><code class="lang-js">?publish=...&config=video1.screen%3Dtrue%26video.style.object-fit%3Dcontain
+</code></pre>
+
+<p>Note that the parameters are parsed and processed sequentially. 
+It creates a publish video-io first after processing the publish parameter, and labels it as <code>video1</code>.
+Then the config parametre is parsed, to interpret two actual values as follows. Note that
+the full parameter value is escaped.</p>
+
+<pre><code class="lang-js">video1.screen=true
+video.style.object-fit=contain
+</code></pre>
+
+<p>The first one is applied to the individual video-io instance labeled <code>video1</code>,
+and causes it to use screen share to publish, instead of the default camera video feed.
+The second is applied generically to all video-io instances including the previously
+created as well as those that will be created in the future in this instance of the app.
+In this case it changes the <code>object-fit</code> style of the video-io component to
+<code>contain</code> instead of default <code>cover</code>, so that sides in the video
+are not cut-off, and a padding is used instead.</p>
+
+<p>The config parameter can also be used to set the attribute or style on the flex-box
+container. Consider the following example, which turns the flex-box display to
+pip or picture-in-picture mode, and uses the second video as the background.</p>
+
+<pre><code class="lang-html">...&config=box.display%3Dpip%26video2.float%3D (same as below)
+box.display=pip
+video2.float=
+</code></pre>
 
 <p>The goal of this video-io app, separate from the video-io web component, is to
 create a generic user interface for web video conferencing applications, where
@@ -1157,10 +1195,62 @@ has multiple devices such as two webcams or two microphones.</p>
 
 
 
+<h2 category="Advanced - Data"cat="Data"position="50,17"short="data channel">How to use the data channel?</h2>
+
+<p>The <code>channel</code> property of the <code>video-io</code> component can be used to enable the
+underlying data channel between publisher and subscribers, similar to the media path, but
+bi-directional.</p>
+
+<pre><code class="lang-html">&lt;video-io id="video1" channel="true" publish="true"&gt;&lt;/video-io&gt;
+&lt;video-io id="video2" channel="true" subscribe="true"&gt;&lt;/video-io&gt;
+</code></pre>
+
+<p>This then allows you to send some text data using the <code>send</code> method, which is then received 
+and delievered via the <code>message</code> event on the other end.</p>
+
+<pre><code class="lang-js">video1.send("... some text ...");
+video2.addEventListener("message", event => {
+    // event.data is the text data received.
+});
+</code></pre>
+    
+<p>The data channel is established along with the media path, when the component is published or subscribed.
+Hence, the channel property must be set before publish or subscribe is initiated. A data-only path may be
+achieved by disabling <code>camera</code> and <code>microphone</code> properties of the publish side.
+In the full mesh or peer-to-peer case, 
+the data channel, like the media path, is between the publisher and all the subscribers. Thus, it allows
+sending data from the publisher to the subscribers, and from the subscriber to the publisher. It does not
+allow sending data among the subscribers, as  the peer connection is only between the publisher and
+the subscriber, but not between two subscribers.
+However, the application can implement higher-level logic to
+facilitate data routing at the publisher, by receiving from one subscriber and sending back to all,
+such that the original subscriber ignores the reflected data.</p>
+
+<p>Try the following example to explore how the bi-directional data path works.</p>
+<button class="tryit"path="21-data-channel.html"preview width="530"height="320"></button>
+
+<p>The example does not enable audio/video by default, but uses the video-io component display to
+show the shared image files, if any. To enable audio/video, you need to click to enable publish and
+subscribes, and the camera/microphone on the publisher.   
+Similar to the underlying WebRTC data channel, the component can support sending text string, <code>Blob</code>, 
+<code>ArrayBuffer</code> or <code>ArrayBufferView</code>. The image file send in the above example uses 
+a <code>Blob</code>, and if that fails, it falls back to <code>ArrayBuffer</code>,
+because <code>Blob</code> support was added only recently in Chrome's data channel.</p>
+
+<p>When a media server such as Janus is used in the media path, then the data channel is between the 
+publisher and the media server, and between the subscriber and the media server. Thus, unless the media server
+supports the data channel and implements the message routing logic, you will not have publisher to subscriber
+or subscriber to publisher data path using this mechanism.
+This is similar to the media path requirement at the media server.</p>
+
+<p>Although, the channel feature is useful, it is not
+enough to implement several communication use cases such as discovering participants in a call or 
+registering to receive incoming call. For that we need some other application logic such as based on
+shared data, described next.</p>
 
 
 
-<h2 id="storage"category="Advanced - Data"cat="Data"position="50,25"short="shared data">How to use shared data?</h2>
+<h2 id="storage"short="shared data">How to use shared data?</h2>
 
 <p>The ability to access and modify shared data is crucial in a distributed application such as
 two-party call, multi-party conference or online panel discussion. Furthermore, the clients
@@ -1501,16 +1591,315 @@ simultaneous video users.</p>
 
 
 
+<h2 category="Advanced - Multiparty"cat="N-party"position="0,30"short="one-to-many">How to do one-to-many video broadcast?</h2>
+
+<p>The techniques described in <a href="#topic-connect">How to connect publisher and subscriber?</a>
+is sufficient to establish one-to-many broadcast. The various <code>video-io</code> instances publish
+or subscribe to some named stream to facilitate this.</p>
+
+<h3>Basic</h3>
+
+<p>An application can also show a list of all the publishers, and allow the user to subscribe to one,
+similar to tuning a radio station. The shared storage described earlier can be used, e.g., using a
+shared list, say, "stations". A publisher picks a name, and adds it in that list. Using a transient
+object ensures that the object is removed when the publisher is closed.</p>
+
+<pre><code class="lang-js">db.list("stations").transient().add({name: "channel one"})
+</code></pre>
+
+<p>A subscriber can show the list to the user to select. It also keeps track of changes in the list.</p>
+
+<pre><code class="lang-js">const items = await db.list("stations").getall();
+// use items to show list of stations. 
+// each item is an array with key-value: ["..id..", {name: ...}]
+</code></pre>
+<pre><code class="lang-js">db.list("stations").onchange = event => {
+    // event.type is "itemcreate" or "itemdelete" (or "itemupdate")
+    // update display list based on event.id and event.newValue
+};
+</code></pre>
+
+<button class="tryit"path="31-broadcast.html"preview width="700"height="400"></button>
+
+<p>The above example allows you to publish some streams, and view them. There can be
+more than one viewers for the same stream. When the published stream is stopped,
+all the viewers are also stopped.</p>
+
+<h3>Avoid duplicates</h3>
+
+<p>If the application needs to avoid duplicate names, it can use the name as object identifier
+in the path. In that case it must also check if another client is publishing on the same
+channel before publishing self, using the <code>create</code> method on the object reference.</p>
+
+<button class="tryit"path="31-no-duplicates.html"preview width="1100"height="400"></button>
+
+<p>The above example shows that same name will not be published twice, because the shared object's
+create will fail. To sanitize the name to shared object path segment, all non-alphanumeric letters
+are changes to "-", and all alphanumeric characters are converted to lower case, for comparison.</p>
+
+<p>The named stream may be replaced by other implementations such as rtclite-stream or janus-stream,
+for a real distributed application. Later we will see how to use peer-to-peer for such broadcast.</p>
 
 
 
+<h2 id="topic-twoparty"short="two-party">How to do two-party video call?</h2>
+
+<p>The techniques described in <a href="#topic-connect">How to connect publisher and subscriber?</a>
+along with an external call signaling protocol is sufficient to establish a two-party call
+or multi-party video conference. The call signaling can be implemented
+using the shared storage described earlier.</p> 
+
+<h3>Overview</h3>
+
+<p>For a two party call, each party creates
+two <code>video-io</code> components, one to publish and the other to subscribe. The two parties
+choose and share the named stream information with each other as shown below.</p>
+
+<div class="mediapath no-print no-mobile"style="display: flex; justify-content: center; flex-flow: row wrap;">
+    <div style="display: inline-block; position: relative; width: 400px; height: 250px;">
+        <div style="width: 100%; height: 100%; transform: scale(0.5) perspective(500px) translate3d(50%, 50%, 0px); perspective-origin: 50% 50%; transform-style: preserve-3d;">
+            <img src="alice.jpg"style="position: absolute; width: 100px; height: 100px; transform: translate3d(-250px, -110px, 0px) rotateY(90deg); box-shadow: 0 0 10px 1px rgba(0,0,0,0.3); border: solid 4px var(--image-border-color); box-sizing: border-box;">
+            <img src="bob.jpg"style="position: absolute; width: 100px; height: 100px; transform: translate3d(-250px, 0px, 0px) rotateY(90deg); box-shadow: 0 0 10px 1px rgba(0,0,0,0.3); border: solid 4px var(--image-border-color); box-sizing: border-box;">
+            <img src="alice.jpg"style="position: absolute; width: 100px; height: 100px; transform: translate3d(200px, -110px, 0px) rotateY(-90deg); box-shadow: 0 0 10px 1px rgba(0,0,0,0.3); border: solid 4px var(--image-border-color); box-sizing: border-box;">
+            <img src="bob.jpg"style="position: absolute; width: 100px; height: 100px; transform: translate3d(200px, 0px, 0px) rotateY(-90deg); box-shadow: 0 0 10px 1px rgba(0,0,0,0.3); border: solid 4px var(--image-border-color); box-sizing: border-box;">
+            <div style="position: absolute; width: 80px; height: 28px; text-align: center; border: solid 1px var(--image-border-color); transform: translate3d(0px,-75px,0px); box-shadow: 0 0 10px 1px rgba(0,0,0,0.3);">Alice</div>
+            <img src="arrow.svg"style="position: absolute; width: 210px; height: 40px; transform: translate3d(-180px, -80px, 0px); filter: drop-shadow(0 0 10px rgba(0,0,0,0.3)) var(--image-filter);">
+            <img src="arrow.svg"style="position: absolute; width: 180px; height: 40px; transform: translate3d(85px, -80px, 0px); filter: drop-shadow(0 0 10px rgba(0,0,0,0.3)) var(--image-filter);">
+            <div style="position: absolute; width: 80px; height: 28px; text-align: center; border: solid 1px var(--image-border-color); transform: translate3d(0px,35px,0px); box-shadow: 0 0 10px 1px rgba(0,0,0,0.3);">Bob</div>
+            <img src="arrow.svg"style="position: absolute; width: 210px; height: 40px; transform: translate3d(-220px, 30px, 0px) scaleX(-1); filter: drop-shadow(0 0 10px rgba(0,0,0,0.3)) var(--image-filter);">
+            <img src="arrow.svg"style="position: absolute; width: 180px; height: 40px; transform: translate3d(55px, 30px, 0px) scaleX(-1); filter: drop-shadow(0 0 10px rgba(0,0,0,0.3)) var(--image-filter);">
+        </div>
+    </div>
+</div>
+
+<p>The call signaling protocol is used for three things: (a) to register a user name, so that others
+can discover and reach this user, (b) to send an intent to call, so that the other user can answer or 
+decline, and (c) to exchange the named stream information so that both the clients can launch the
+<code>video-io</code> components.</p>
+
+<p>These can be accomplished using the shared storage described before. For example, data path of
+the form "users/{name}" can represent the user's presence. The user's client can listen for 
+events on this, and other users can send notification to this data path. One example follows:</p>
+<div style="display: flex; justify-content: center; align-items: center;">
+    <div class="table"style="border: solid 1px lightgray; padding: 1ch;">
+        <div>
+            <div style="width: 50%; font-weight: bold;">Caller</div>
+            <div style="width: 50%; font-weight: bold;">Receiver</div>
+        </div>
+        <div><div>1. Register user to receive any call response.</div><div>1. Register user to receive any call intent.</div></div>
+        <div><div>2. Start publish video-io component on stream1.</div><div></div></div>
+        <div><div>3. Notify receiver of call intent. Mention stream1.</div><div></div></div>
+        <div><div></div><div>4. On notification, prompt the user to answer or decline.</div></div>
+        <div><div></div><div>5. And start subscribe video-io component on stream1.</div></div>
+        <div><div></div><div>6. On answer, start publish video-io component on stream2.</div></div>
+        <div><div></div><div>7. And notify caller of call answer. Mention stream2.</div></div>
+        <div><div>8. On notification, start subscribe video-io component on stream2.</div><div></div></div>
+                        
+    </div>
+</div>
+
+<p>This is just one example. Order of some steps may be altered, e.g., step 2 and step 5 may be 
+postponed after call is answered. Following is another example. The important thing is to understand 
+the three phases - call intent, video-io component, and stream name exchange.</p>
+
+<div style="display: flex; justify-content: center; align-items: center;">
+    <div class="table"style="border: solid 1px lightgray; padding: 1ch;">
+        <div>
+            <div style="width: 50%; font-weight: bold;">Caller</div>
+            <div style="width: 50%; font-weight: bold;">Receiver</div>
+        </div>
+        <div><div>1. Register user to receive any call response.</div><div>1. Register user to receive any call intent.</div></div>
+        <div><div>2. Notify receiver of call intent. Mention stream1.</div><div></div></div>
+        <div><div></div><div>3. On notification, prompt the user to answer or decline.</div></div>
+        <div><div></div><div>4. On answer, notify caller of call answer. Mention stream2.</div></div>
+        <div><div></div><div>5. Start subscribe video-io component on stream1.</div></div>
+        <div><div></div><div>6. Start publish video-io component on stream2.</div></div>
+        <div><div>7. On notification, start subscribe video-io component on stream2.</div><div></div></div>
+        <div><div>8. Start publish video-io component on stream1.</div><div></div></div>
+                        
+    </div>
+</div>
+<br>
+<h3>Single line</h3>
+
+<p>The specific steps of sending and receiving call intent or answer can be codified using 
+<code>SharedStorage</code> as follows. Let's assume the client can be in four states:
+idle, inviting, invited or active. We will use notification "invite" to send the 
+call intent, and "answer" to respond. Other notifications such as "cancel", "decline" or
+"end" will also be used with their intuitive meanings.</p>
+
+<p>Suppose, the caller is user "alice" and receiver is user "bob". Both the clients
+listen for incoming notifications on their respective shared object. For example, the receiver
+side code looks like the following.</p>
+
+<pre><code class="lang-js">db.object("users/bob").onnotify = event => { ... }
+</code></pre>
+
+<p>When the caller initiates a call, it sends a notification "invite" with additional
+details such as caller's named stream and caller name, triggered on the receiver user's
+shared object, as follows. It then changes the state to "inviting".</p>
+
+<pre><code class="lang-js">db.object("users/bob").notify({type: "invite", from: "alice", stream: "abc1"});
+</code></pre>
+
+<p>When the receiver gets this notification, it prompts the user about the incoming call,
+and changes the state to "invited". If the user answers the call, it changes the state to
+"active", and sends back a notification "answer" to the caller as follows. It includes
+additional details such as receiver's named stream.</p>
+
+<pre><code class="lang-js">db.object("users/alice").notify({type: "answer", stream: "xyz2"});
+</code></pre>
+
+<p>When the caller receives this notification, it changes the state to "active" too.
+The complete code path can be tried below, and looked up in the code sample there. It also covers
+other notifications such as to "cancel", "decline" or "end" the call.</p>
+
+<button class="tryit"path="32-two-party.html"preview width="710"height="520"></button>
+
+<p>The example above shows the state transition of the caller and receiver clients on
+different events such as button clicks to invite or answer.</p>
+
+<h3>Multiple lines</h3>
+
+<p>The above example shows a very simple call signaling protocol using the shared storage. A real 
+call application will likely be much more complex to handle some or all of these requirements:</p>
+
+<ol>
+    <li>Ability to register multiple devices for the same user such that any one can pick 
+        the call, similar to multiple line presence of the home phone system.</li>
+    <li>Allow multiple call invitations at the same time, even if there is at the most 
+                one active at any time.</li>
+    <li>Search the user by name or other attributes either before placing the call, or when 
+        multiple users are found for the same target.
+    </li>
+    <li>Gracefully handle timeout, unreachability or other unreliability in the system.</li>
+    <li>Call transfer, hold, call park or other telephony features that people are familiar 
+        with.</li>
+</ol>
+
+<p>The first two requirements can be implemented as follows. Each call "invite" includes an
+unique invitation identifier. This is included in all related notifications of
+"answer", "decline" or "cancel". It is not needed in "end". Additionally, when a call
+is answered or declined from one device of the receiver, the caller sends a "cancel", 
+so that all other devices in pending incoming invitation state can clean up and stop
+ringing. Moreover, another response besides "decline" may be needed, to stop
+ringing of only the local device, but not others. These ideas are similar to the SIP 
+forking proxy behavior of an INVITE request.</p>
+
+<p>The implementation is demonstrated below. You can try registering two clients with 
+the same name, and have the third client call that name. A new state of "ready" is included,
+to distinguish from unregistered "idle" state. The example includes four clients for
+further experimentation.</p>
+
+<button class="tryit"path="32-multiple-devices.html"preview width="710"height="630"></button>
+
+<p>Here are the experiments you can try in the above example. Register the four clients with
+their default names, Alice and Bob, two clients per name. Invite from first client of Alice 
+to Bob, and notice both of the Bob's clients receiving the invite. Answer from one of the Bob's 
+clients, and notice that the other client stops incoming call state, and the two party call
+is established between the first client of Alice and the answering client of Bob, with two-way
+video. Note that the sound is disabled in the above example, to avoid local audio feedback loop.
+Click on the end button to stop the two-party call, which also stops the two-way video.
+Now repeat the above call, but decline from one client of Bob. Next, repeat the above with
+two-way video, and then attempt another call from the second client of Alice to Bob, and note
+which client receives the invitation, and how two separate calls are possible between these
+users on separate clients. Next, unregister the clients from their users, and register only
+some, to see that call invitation is not received on unregistered client. Try registering
+with other names, and calling others names, including non-existent names, to see the 
+behavior.</p>
+
+<p>The display controls are updated in the above example to reflect
+the internal state of the client. The behavior is similar to a typical softphone from
+traditional VoIP system. Some behavior can easily be added or altered such as for missed 
+call notification, ringing sound, or when to show the videos.</p>
+
+<h3>Sequential invites</h3>
+
+<p>An alternate implementation can be done as follows. Instead of a shared receiver object at
+"users/bob", the receiver user can add its device contact as a transient object in the list
+"users/bob/devices". When the caller user attempts to send a call invite, it locates all the
+items of the list, and sends the notification to each. This allows the caller to manage
+separate receiver devices and their call state independently, e.g., for sequential forking,
+parallel forking, or a mix of two. Folks familiar with VoIP
+or SIP (Session Initiation Protocol) can see similarity with them, and that is expected.
+In fact, for a full fledged phone system, the call signaling will likely become similar to
+the existing signaling protocol.</p>
 
 
 
+<h2 id="topic-multiparty"short="multi-party">How to do multi-party video conference?</h2>
+
+<p>Generally, there are two models of signaling used for multi-party calls:</p>
+<ul>
+    <li>Join-leave: where participants know the unique call identifier, and can 
+    dial-in to the bridge using that identifier. Invitation is out-of-band to convey
+    that identifier or join instructions.</li>
+    <li>Invite-answer: similar to the two-party call, where a caller can invite more 
+    than one receivers in the call, or a receiver can merge an incoming caller to her 
+    existing call.</li>
+</ul>
+
+<h3>Join-leave</h3>
+
+<p>For the join-leave model, we can use the shared storage, to store the
+participants of a call, e.g., "calls/1234/users/alice" represents the 
+user "alice" in a call with call identifier "1234". For this to work, the call
+identifier must be known to all the participants. The participants can discover
+each other by listening to any change in shared list of "calls/1234/users". 
+For simplicity, we can assume the participant identifier, e.g., "alice", to be same 
+as her published stream name. Thus, in an N-party call, each participant
+has one publish <code>video-io</code> component and N-1 subscribe 
+<code>video-io</code> components.</p>
+
+<button class="tryit"path="33-join-leave.html"preview width="760"height="650"></button>
+
+<p>In the example above, you can try joining the different clients in different
+order, or change some call identifier to have some clients join a different call.
+For simple layout of videos, each publisher has the same fixed position in each
+client viewer, and the layout is fixed for a four-party call.</p>
+
+<h3>Invite-answer</h3>
+
+<p>The invite-answer model is well suited for a telephone style system.
+It turns out that we can build a system that combines both the models, described
+earlier as the two-party call and join-leave conference. The idea is 
+to keep join-leave as default, but be able to convey the call identifier via
+invite-answer notification. Once the call is joined, user can only leave, but 
+cannot force another user to end too via call signaling. Thus, unlike the previous
+two-party call signaling, the "end" notification is not used anymore. All the
+other notifications of "invite", "cancel", "answer" and "decline" are still valid.
+Additionally, a new notification of "redirect" is used, similar to decline, but
+it redirects the caller to another call, and it is up to the caller whether to
+join the new proposed call, if it is not already in the original call, or do not
+join the new call, if it is already in the original call with other folks.
+The state machine is also altered so that it allows multiple invites,
+but at most one pending.</p>
+
+<p>The combined model uses both types of shared data - for call signaling use 
+"users/alice", and for call membership use "calls/1234/users/alice".</p>
+
+<button class="tryit"path="33-invite-join.html"preview width="1100"height="800"></button>
+
+<p>In the example above, you can try various sequence of events by registering,
+inviting, or joining to see the expected behavior. For example, after registering
+the users on their devices, call from Alice to Bob, and Carol to David, and
+click answer to be in a call. Then call from Alice to Carol, and select to answer. This
+will cause Carol's device to switch to the incoming call, and leave the original
+call with David. Then call from David to Bob, and select to redirect. This will
+cause David's client to leave the original call without any other participant,
+and join Bob's call. The redirect is not processed on the caller if it is in a
+call with another person.</p>
+
+<p>For simplicity, only a 
+maximum of four videos, including one self preview, are shown. If there are
+more than four participants in the call, only three others plus self will be
+shown. The first video is always reserved for self preview. You will also notice
+that the video layout is not adjusted when participants leave. That is covered in
+the next section.</p>
 
 
 
-<h2 id="flex-box"category="Advanced - Multiparty"cat="N-party"position="0,30"short="layout">How to customize multi-video layout?</h2>
+<h2 id="flex-box"short="layout">How to customize multi-video layout?</h2>
 
 <p>The <code>flex-box</code> web component is a container to display multiple videos,
 images or other content.</p>
@@ -3625,6 +4014,10 @@ as well as to try new things by extending the existing applications.</p>
                 source media stream. It can be attached to a video-io component or a media stream.
             </td></tr>
             
+            <tr><td><a href="#device-selector">device-selector</a></td><td>Include device-selector.js</td></tr>
+            <tr><td></td><td>
+                This displays user interface to select devices such as microhone, speaker and camera.
+            </td></tr>
         </table>
     </td></tr>
     <tr><td><a href="#named-stream">named-stream</a></td><td>Include video-io.js</td></tr>

@@ -1,0 +1,254 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+body {
+    display: flex; flex-flow: row wrap;
+    font-family: sans-serif;
+}
+div.user {
+    position: relative; flex: 1;
+    display: flex; flex-flow: column nowrap;
+    border: solid 1px lightgrey; margin: 1px; padding: 2px; box-sizing: border-box;
+}
+div.user > span, div.user > div.buttons {
+    margin-bottom: 10px;
+}
+div.user:before {
+    content: "(" attr(state) ") ";
+    position: absolute;
+    left: 70px;
+}
+div.buttons {
+    display: flex; flex-flow: row nowrap; justify-content: center;
+    height: 24px;
+}
+div.videos {
+    display: flex; flex-flow: row nowrap; justify-content: center;
+}
+div.videos > video-io {
+    width: 160px; height: 240px;
+    object-fit: cover;
+}
+video-io.mine {
+    margin-right: 1px;
+}
+
+div.buttons > button, div.buttons > input {
+    display: none;
+}
+
+input.myname, input.yourname {
+    border-width: 1px;
+    border-top-left-radius: 12px; border-bottom-left-radius: 12px;
+    padding-left: 10px; box-sizing: border-box;
+}
+button.register, button.unregister {
+    margin-right: 10px;
+}
+button.register, button.unregister, button.invite, button.cancel, button.end, button.decline {
+    border-width: 1px;
+    border-top-right-radius: 12px; border-bottom-right-radius: 12px;
+}
+
+div.user[state="idle"] button.register, 
+div.user input.myname, 
+div.user[state="ready"] button.invite,
+div.user:not([state="idle"]) input.yourname,
+div.user:not([state="idle"]) button.unregister,
+div.user[state="inviting"] button.cancel, 
+div.user[state="invited"] button.answer,
+div.user[state="invited"] button.decline,
+div.user[state="active"] button.end {
+    display: block;
+    cursor: pointer;
+}
+div.buttons > input {
+    pointer-events: none;
+    background-color: lightgrey;
+    outline: none;
+    width: 10ch;
+    cursor: default;
+}
+div.user[state="idle"] input.myname,
+div.user[state="ready"] input.yourname {
+    pointer-events: all;
+    background-color: transparent;
+    cursor: text;
+}
+div.user:not([state="ready"]) button.unregister {
+    pointer-events: none;
+    background-color: darkgrey;
+    cursor: default;
+}
+
+video-io span {
+    font-family: sans-serif; color: white;
+}
+
+    </style>
+</head>
+<body>
+    <template>
+        <div class="user" state="idle" callid="">
+            <named-stream></named-stream>
+            <span></span>
+            <div class="buttons">
+                <input type="text" class="myname" placeholder="My name"/>
+                <button class="register">register</button>
+                <button class="unregister">unregister</button>
+                <input type="text" class="yourname" placeholder="Other"/>
+                <button class="invite">invite</button>
+                <button class="cancel">cancel</button>
+                <button class="answer">answer</button>
+                <button class="decline">decline</button>
+                <button class="end">end</button>
+            </div>
+            <div class="videos">
+                <video-io class="mine" autoenable="true" microphone="false">
+                    <span slot="footer">My video</span>
+                </video-io>
+                <video-io class="yours">
+                    <span slot="footer">Your video</span>
+                </video-io>
+            </div>
+        </div>
+    </template>
+
+    <script type="text/javascript">
+        const users = ["first", "second", "third", "fourth"];
+        const names = ["Alice", "Bob"];
+        const template = document.querySelector("template");
+
+        users.forEach((name, index) => {
+            const clone = template.content.cloneNode(true);
+            clone.querySelector("named-stream").id = name;
+            clone.querySelector("div.user > span").innerText = name;
+            clone.querySelector("div.user").setAttribute("name", name);
+
+            document.body.appendChild(clone);
+
+            const sa = new SharedStorage("local");
+            const user = document.querySelector("div.user[name='" + name + "']");
+            const myname = user.querySelector("input.myname");
+            const yourname = user.querySelector("input.yourname");
+            const myvideo = user.querySelector("video-io.mine");
+            const yourvideo = user.querySelector("video-io.yours");
+
+            myname.value = index < users.length/2 ? names[0] : names[1];
+            yourname.value = index < users.length/2 ? names[1] : names[0];
+
+            myvideo.for = name;
+
+            user.querySelector("button.invite").onclick = () => {
+                if (user.getAttribute("state") == "ready") {
+                    const callid = ("" + Math.random()).substring(2, 6);
+                    user.setAttribute("state", "inviting");
+                    user.setAttribute("callid", callid);
+                    sa.object("users/" + yourname.value).notify({type: "invite", callid: callid, from: myname.value, stream: name})
+                        .then(count => {
+                            if (!count) { // failed to send any invite
+                                setTimeout(() => {
+                                    user.setAttribute("state", "ready");
+                                }, 1000);
+                            }
+                        });
+                } // else not ready, or already in a call.
+            };
+
+            user.querySelector("button.cancel").onclick = () => {
+                if (user.getAttribute("state") == "inviting") {
+                    user.setAttribute("state", "ready");
+                    const callid = user.getAttribute("callid");
+                    user.removeAttribute("callid");
+                    sa.object("users/" + yourname.value).notify({type: "cancel", callid: callid});
+                } // else not inviting
+            };
+
+            user.querySelector("button.answer").onclick = () => {
+                if (user.getAttribute("state") == "invited") {
+                    user.setAttribute("state", "active");
+                    myvideo.publish = yourvideo.subscribe = true;
+                    const callid = user.getAttribute("callid");
+                    sa.object("users/" + yourname.value).notify({type: "answer", callid: callid, from: myname.value, stream: name});
+                } // else not invited.
+            };
+
+            user.querySelector("button.decline").onclick = () => {
+                if (user.getAttribute("state") == "invited") {
+                    user.setAttribute("state", "ready");
+                    const callid = user.getAttribute("callid");
+                    user.removeAttribute("callid");
+                    sa.object("users/" + yourname.value).notify({type: "decline", callid: callid});
+                } // else not invited
+            };
+
+            user.querySelector("button.end").onclick = () => {
+                if (user.getAttribute("state") == "active") {
+                    user.setAttribute("state", "ready");
+                    myvideo.publish = yourvideo.subscribe = false;
+                    const callid = user.getAttribute("callid");
+                    user.removeAttribute("callid");
+                    sa.object("users/" + yourname.value).notify({type: "end", callid: callid});
+                } // else not in call.
+            };
+
+            user.querySelector("button.register").onclick = () => {
+                user.setAttribute("state", "ready");
+                sa.object("users/" + myname.value).onnotify = event => {
+                    switch (event.data.type) {
+                        case "invite":
+                            if (user.getAttribute("state") == "ready") {
+                                user.setAttribute("state", "invited");
+                                user.setAttribute("callid", event.data.callid);
+                                yourname.value = event.data.from;
+                                yourvideo.for = event.data.stream;
+                            } // else missed call.
+                            break;
+                        case "cancel":
+                            if (user.getAttribute("state") == "invited" && user.getAttribute("callid") == event.data.callid) {
+                                user.setAttribute("state", "ready");
+                                user.removeAttribute("callid");
+                            } // else ignore.
+                            break;
+                        case "answer":
+                            if (user.getAttribute("state") == "inviting" && user.getAttribute("callid") == event.data.callid) {
+                                user.setAttribute("state", "active");
+                                yourvideo.for = event.data.stream;
+                                myvideo.publish = yourvideo.subscribe = true;
+                                sa.object("users/" + yourname.value).notify({type: "cancel", callid: event.data.callid});
+                            } // else not this caller device
+                            break;
+                        case "decline":
+                            if (user.getAttribute("state") == "inviting" && user.getAttribute("callid") == event.data.callid) {
+                                user.setAttribute("state", "ready");
+                                user.removeAttribute("callid");
+                                sa.object("users/" + yourname.value).notify({type: "cancel", callid: event.data.callid});
+                            } // else not this caller device
+                            break;
+                        case "end":
+                            if (user.getAttribute("state") == "active" && user.getAttribute("callid") == event.data.callid) {
+                                user.setAttribute("state", "ready");
+                                myvideo.publish = yourvideo.subscribe = false;
+                                user.removeAttribute("callid");
+                            }
+                            break;
+                    }
+                };
+            };
+
+            user.querySelector("button.unregister").onclick = () => {
+                if (user.getAttribute("state") == "ready") {
+                    user.setAttribute("state", "idle");
+                    sa.object("users/" + myname.value).onnotify = null;
+                } // perhaps in a call.
+            };
+
+        });
+    </script>
+
+</body>
+</html>

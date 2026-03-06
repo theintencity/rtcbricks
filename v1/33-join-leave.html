@@ -1,0 +1,175 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+body {
+    display: flex; flex-flow: row wrap;
+    font-family: sans-serif;
+}
+div.user {
+    position: relative; width: 350px;
+    display: flex; flex-flow: column nowrap;
+    border: solid 1px lightgrey; margin: 1px; padding: 2px; box-sizing: border-box;
+}
+div.user > span, div.user > div.buttons {
+    margin-bottom: 10px;
+}
+div.buttons {
+    display: flex; flex-flow: row nowrap; justify-content: center;
+    height: 24px;
+}
+div.videos {
+    display: flex; flex-flow: row wrap; justify-content: center;
+}
+div.videos > video-io {
+    width: 160px; height: 120px;
+    object-fit: cover;
+    margin: 1px;
+}
+
+input.callid {
+    border-width: 1px;
+    border-top-left-radius: 12px; border-bottom-left-radius: 12px;
+    padding-left: 10px; box-sizing: border-box;
+    outline: none;
+    width: 10ch;
+    cursor: text;
+}
+button.join, button.leave {
+    border: solid 1px;
+    border-top-right-radius: 12px; border-bottom-right-radius: 12px;
+    cursor: pointer;
+}
+div.user[state="idle"] button.leave, 
+div.user[state="active"] button.join {
+    display: none;
+}
+div.user[state="active"] input {
+    pointer-events: none;
+    background-color: lightgrey;
+    cursor: default;
+}
+video-io span {
+    font-family: sans-serif; color: white;
+}
+
+    </style>
+</head>
+<body>
+    <template id="template">
+        <div class="user" state="idle">
+            <span></span>
+            <div class="buttons">
+                <input type="text" class="callid" placeholder="call123"/>
+                <button class="join">join</button>
+                <button class="leave">leave</button>
+            </div>
+            <div class="videos"></div>
+        </div>
+    </template>
+    <template id="publisher">
+        <video-io controls autoenable="true" microphone="false" hidden>
+            <span slot="footer">You</span>
+        </video-io>
+    </template>
+    <template id="subscriber">
+        <video-io controls hidden>
+            <span slot="footer">You</span>
+        </video-io>
+    </template>
+
+    <script type="text/javascript">
+        const calls = ["syncup"];
+        const names = ["first", "second", "third", "fourth"];
+        const template = document.querySelector("template#template");
+        const template1 = document.querySelector("template#publisher");
+        const template2 = document.querySelector("template#subscriber");
+
+        names.forEach(name => {
+            const stream = document.createElement("named-stream");
+            stream.id = name;
+            document.body.appendChild(stream);
+        });
+
+        names.forEach((name, index) => {
+            const clone = template.content.cloneNode(true);
+            clone.querySelector("div.user > span").innerText = name;
+            clone.querySelector("div.user").setAttribute("name", name);
+            clone.querySelector("input.callid").value = calls[0];
+
+            document.body.appendChild(clone);
+
+            const sa = new SharedStorage("local");
+
+            const user = document.querySelector("div.user[name='" + name + "']");
+            const callid = user.querySelector("input.callid");
+            const videos = user.querySelector("div.videos");
+
+            names.forEach((name1, index1) => {
+                const clone1 = (name1 == name ? template1 : template2).content.cloneNode(true);
+                clone1.querySelector("video-io").setAttribute("for", name1);
+                clone1.querySelector("video-io > span").innerText = name1 ==name ? "You" : name1;
+                videos.appendChild(clone1);
+            });
+
+            user.querySelector("button.join").onclick = () => {
+                if (user.getAttribute("state") == "idle") {
+                    user.setAttribute("state", "active");
+
+                    sa.list("calls/" + callid.value + "/users").onchange = event => {
+                        const video = user.querySelector("video-io[for='" + event.id + "']");
+                        if (event.type == "itemcreate") {
+                            video.hidden = false;
+                            if (event.id == name)
+                                video.publish = true;
+                            else
+                                video.subscribe = true;
+                        } else if (event.type == "itemdelete") {
+                            if (event.id == name) 
+                                video.publish = false;
+                            else
+                                video.subscribe = false;
+                            video.hidden = true;
+                        }
+                    };
+
+                    sa.list("calls/" + callid.value + "/users").getall()
+                        .then(items => {
+                            items.forEach(item => {
+                                const [other, data] = item;
+                                const video = user.querySelector("video-io[for='" + other + "']");
+                                video.hidden = false;
+                                if (other == name)
+                                    video.publish = true;
+                                else
+                                    video.subscribe = true;
+                            });
+                        });
+
+                    sa.list("calls/" + callid.value + "/users").transient().object(name).create({name: name});
+                }
+            };
+
+            user.querySelector("button.leave").onclick = () => {
+                if (user.getAttribute("state") == "active") {
+                    user.setAttribute("state", "idle");
+                    sa.object("calls/" + callid.value + "/users/" + name).delete()
+                        .then(() => {
+                            [].slice.call(user.querySelectorAll("video-io")).forEach(video => {
+                                video.hidden = true;
+                                video.publish = video.subscribe = false;
+                            });
+                            setTimeout(() => {
+                                sa.list("calls/" + callid.value + "/users").onchange = null;
+                            }, 500);
+                        });
+                }
+            };
+        });
+    </script>
+
+</body>
+</html>

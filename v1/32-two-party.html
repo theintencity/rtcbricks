@@ -1,0 +1,223 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <!-- TODO: later - this is work in progress
+    <script type="text/javascript" src="savestats.js?url=ws://localhost:9080/savestats/write"></script>
+    <script type="text/javascript">
+        set_savestats_state({sid: "two-party-1"});
+    </script>
+    -->
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+body {
+    display: flex; flex-flow: row nowrap;
+    font-family: sans-serif;
+}
+div.user {
+    position: relative; flex: 1;
+    display: flex; flex-flow: column nowrap;
+    border: solid 1px lightgrey; margin: 1px; padding: 2px; box-sizing: border-box;
+}
+div.user:before {
+    content: "(" attr(state) ") ";
+    position: absolute;
+    left: 70px;
+}
+span, div.buttons {
+    margin-bottom: 10px;
+}
+div.buttons {
+    display: flex; flex-flow: row nowrap; justify-content: center;
+    height: 24px;
+}
+div.buttons > button {
+    display: none;
+    border-width: 1px;
+    cursor: pointer;
+}
+
+button.invite, button.end, button.cancel {
+    border-radius: 12px;
+}
+button.answer {
+    border-top-left-radius: 12px; border-bottom-left-radius: 12px;
+}
+button.decline {
+    border-top-right-radius: 12px; border-bottom-right-radius: 12px;
+}
+
+div.videos {
+    display: flex; flex-flow: row nowrap; justify-content: center;
+}
+div.videos > video-io {
+    width: 160px; height: 240px;
+    object-fit: cover;
+}
+video-io.mine {
+    margin-right: 1px;
+}
+
+div.caller[state="idle"] button.invite, 
+div.caller[state="inviting"] button.cancel, 
+div.caller[state="active"] button.end,
+div.receiver[state="invited"] button.answer,
+div.receiver[state="invited"] button.decline,
+div.receiver[state="active"] button.end {
+    display: block;
+}
+
+video-io span {
+    font-family: sans-serif; color: white;
+}
+
+div.state-machine {
+    align-self: center;
+    width: 200px; height: 200px;
+    background-repeat: no-repeat; background-size: contain; background-position: center center;
+}
+div.user[state="idle"] div.state-machine { background-image: url('32-two-party/idle.png'); }
+div.user[state="inviting"] div.state-machine { background-image: url('32-two-party/inviting.png'); }
+div.user[state="invited"] div.state-machine { background-image: url('32-two-party/invited.png'); }
+div.user[state="active"] div.state-machine { background-image: url('32-two-party/active.png'); }
+div.user[previous="idle"][state="inviting"] div.state-machine { background-image: url('32-two-party/idle-inviting.png'); }
+div.user[previous="idle"][state="invited"] div.state-machine { background-image: url('32-two-party/idle-invited.png'); }
+div.user[previous="inviting"][state="active"] div.state-machine { background-image: url('32-two-party/inviting-active.png'); }
+div.user[previous="invited"][state="active"] div.state-machine { background-image: url('32-two-party/invited-active.png'); }
+div.user[previous="inviting"][state="idle"] div.state-machine { background-image: url('32-two-party/inviting-idle.png'); }
+div.user[previous="invited"][state="idle"] div.state-machine { background-image: url('32-two-party/invited-idle.png'); }
+div.user[previous="active"][state="idle"] div.state-machine { background-image: url('32-two-party/active-idle.png'); }
+    </style>
+</head>
+<body>
+    <named-stream id="caller"></named-stream>
+    <named-stream id="receiver"></named-stream>
+
+    <div class="user caller" state="idle" previous="">
+        <span>Caller</span>
+        <div class="buttons">
+            <button class="invite">invite</button>
+            <button class="cancel">cancel</button>
+            <button class="end">end</button>
+        </div>
+        <div class="state-machine"></div>
+        <div class="videos">
+            <video-io class="mine" for="caller" autoenable="true" microphone="false">
+                <span slot="footer">My video</span>
+            </video-io>
+            <video-io class="yours" for="receiver">
+                <span slot="footer">Your video</span>
+            </video-io>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        const sa1 = new SharedStorage("local");
+        const [caller, caller_mine, caller_yours] = 
+            ["div.user.caller", "div.caller video-io.mine", "div.caller video-io.yours"].map(selector => document.querySelector(selector));
+
+        sa1.object("users/caller").onnotify = event => {
+            switch (event.data.type) {
+                case "answer":
+                    caller.setAttribute("previous", caller.getAttribute("state"));
+                    caller.setAttribute("state", "active");
+                    caller_yours.subscribe = true;
+                    break;
+                case "decline":
+                    caller.setAttribute("previous", caller.getAttribute("state"));
+                    caller.setAttribute("state", "idle");
+                    caller_mine.publish = false;
+                    break;
+                case "end":
+                    caller.setAttribute("previous", caller.getAttribute("state"));
+                    caller.setAttribute("state", "idle");
+                    caller_mine.publish = caller_yours.subscribe = false;
+                    break;
+            }
+        };
+        document.querySelector("div.caller button.invite").onclick = () => {
+            caller.setAttribute("previous", caller.getAttribute("state"));
+            caller.setAttribute("state", "inviting");
+            caller_mine.publish = true;
+            sa1.object("users/receiver").notify({type: "invite"});
+        };
+        document.querySelector("div.caller button.cancel").onclick = () => {
+            caller.setAttribute("previous", caller.getAttribute("state"));
+            caller.setAttribute("state", "idle");
+            caller_mine.publish = false;
+            sa1.object("users/receiver").notify({type: "cancel"});
+        };
+        document.querySelector("div.caller button.end").onclick = () => {
+            caller.setAttribute("previous", caller.getAttribute("state"));
+            caller.setAttribute("state", "idle");
+            caller_mine.publish = caller_yours.subscribe = false;
+            sa1.object("users/receiver").notify({type: "end"});
+        };
+    </script>
+
+
+    <div class="user receiver" state="idle" previous="">
+        <span>Receiver</span>
+        <div class="buttons">
+            <button class="answer">answer</button>
+            <button class="decline">decline</button>
+            <button class="end">end</button>
+        </div>
+        <div class="state-machine"></div>
+        <div class="videos">
+            <video-io class="mine" for="receiver" autoenable="true" microphone="false">
+                <span slot="footer">My video</span>
+            </video-io>
+            <video-io class="yours" for="caller">
+                <span slot="footer">Your video</span>
+            </video-io>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        const sa2 = new SharedStorage("local");
+        const [receiver, receiver_mine, receiver_yours] = 
+            ["div.user.receiver", "div.receiver video-io.mine", "div.receiver video-io.yours"].map(selector => document.querySelector(selector));
+
+        sa2.object("users/receiver").onnotify = event => {
+            switch (event.data.type) {
+                case "invite":
+                    receiver.setAttribute("previous", receiver.getAttribute("state"));
+                    receiver.setAttribute("state", "invited");
+                    receiver_yours.subscribe = true;
+                    break;
+                case "cancel":
+                    receiver.setAttribute("previous", receiver.getAttribute("state"));
+                    receiver.setAttribute("state", "idle");
+                    receiver_yours.subscribe = false;
+                    break;
+                case "end":
+                    receiver.setAttribute("previous", receiver.getAttribute("state"));
+                    receiver.setAttribute("state", "idle");
+                    receiver_mine.publish = receiver_yours.subscribe = false;
+                    break;
+            }
+        };
+        document.querySelector("div.receiver button.answer").onclick = () => {
+            receiver.setAttribute("previous", receiver.getAttribute("state"));
+            receiver.setAttribute("state", "active");
+            receiver_mine.publish = true;
+            sa2.object("users/caller").notify({type: "answer"});
+        };
+        document.querySelector("div.receiver button.decline").onclick = () => {
+            receiver.setAttribute("previous", receiver.getAttribute("state"));
+            receiver.setAttribute("state", "idle");
+            receiver_yours.subscribe = false;
+            sa2.object("users/caller").notify({type: "decline"});
+        };
+        document.querySelector("div.receiver button.end").onclick = () => {
+            receiver.setAttribute("previous", receiver.getAttribute("state"));
+            receiver.setAttribute("state", "idle");
+            receiver_mine.publish = receiver_yours.subscribe = false;
+            sa2.object("users/caller").notify({type: "end"});
+        };
+    </script>
+
+</body>
+</html>

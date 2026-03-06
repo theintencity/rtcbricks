@@ -1,0 +1,381 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+body {
+    display: flex; flex-flow: row wrap;
+    font-family: sans-serif;
+}
+div.user {
+    position: relative; width: 350px;
+    display: flex; flex-flow: column nowrap;
+    border: solid 1px lightgrey; margin: 1px; padding: 2px; box-sizing: border-box;
+}
+div.user > span, div.user > div.buttons {
+    margin-bottom: 10px;
+}
+div.user:before {
+    content: "(" attr(joinstate) "," attr(invitestate) ") ";
+    position: absolute;
+    left: 70px;
+}
+div.buttons {
+    display: flex; flex-flow: row nowrap; justify-content: center;
+    height: 24px;
+}
+div.videos {
+    display: flex; flex-flow: row wrap; justify-content: center;
+}
+div.videos > video-io {
+    width: 160px; height: 120px;
+    object-fit: cover;
+    margin: 1px;
+}
+button {
+    cursor: pointer;
+}
+input, button {
+    outline: none; border-width: 1px;
+}
+input {
+    width: 10ch; cursor: text;
+}
+input.myname, input.yourname, input.joinid {
+    border-width: 1px;
+    border-top-left-radius: 12px; border-bottom-left-radius: 12px;
+    padding-left: 10px; box-sizing: border-box;
+}
+button.register, button.unregister, button.invite, button.cancel, button.decline, button.join, button.leave {
+    border-width: 1px;
+    border-top-right-radius: 12px; border-bottom-right-radius: 12px;
+}
+
+div.user:not([joinstate="idle"]) button.join,
+div.user:not([joinstate="active"]) button.leave,
+div.user:not([invitestate="idle"]) button.register,
+div.user[invitestate="idle"] button.unregister,
+div.user:not([invitestate="ready"]) button.invite,
+div.user[invitestate="idle"] input.yourname,
+div.user:not([invitestate="inviting"]) button.cancel,
+div.user:not([invitestate="invited"]) button.answer,
+div.user:not([invitestate="invited"]) button.redirect, 
+div.user:not([joinstate="active"]) button.redirect, 
+div.user:not([invitestate="invited"]) button.decline {
+    display: none;
+}
+div.user:not([invitestate="ready"]) button.unregister,
+div.user[joinstate="active"] input.joinid,
+div.user:not([invitestate="idle"]) input.myname,
+div.user:not([invitestate="ready"]) input.yourname {
+    pointer-events: none;
+    background-color: darkgrey;
+    cursor: default;
+}
+
+video-io span {
+    font-family: sans-serif; color: white;
+}
+
+    </style>
+</head>
+<body>
+    <template id="template">
+        <div class="user" joinstate="idle" joinid="" invitestate="idle" inviteid="">
+            <named-stream></named-stream>
+            <span></span>
+            <div class="buttons">
+                <input type="text" class="myname" placeholder="My name"/>
+                <button class="register">register</button>
+                <button class="unregister">unregister</button>
+            </div>
+            <div class="buttons">
+                <input type="text" class="yourname" placeholder="Other name"/>
+                <button class="invite">invite</button>
+                <button class="cancel">cancel</button>
+                <button class="answer">answer</button>
+                <button class="redirect">redirect</button>
+                <button class="decline">decline</button>
+            </div>
+            <div class="buttons">
+                <input type="text" class="joinid" placeholder="call123"/>
+                <button class="join">join</button>
+                <button class="leave">leave</button>
+            </div>
+            <div class="videos"></div>
+        </div>
+    </template>
+    <template id="publisher">
+        <video-io controls autoenable="true" microphone="false" hidden>
+            <span slot="header"></span>
+        </video-io>
+    </template>
+    <template id="subscriber">
+        <video-io controls hidden>
+            <span slot="header"></span>
+        </video-io>
+    </template>
+
+    <script type="text/javascript">
+        const users = ["first", "second", "third", "fourth", "fifth", "sixth"];
+        const names = ["Alice", "Bob", "Bob", "Carol", "David", "David"];
+        const max_videos = 4;
+        const template = document.querySelector("template#template");
+        const template1 = document.querySelector("template#publisher");
+        const template2 = document.querySelector("template#subscriber");
+
+        users.forEach((name, index) => {
+            const clone = template.content.cloneNode(true);
+            clone.querySelector("named-stream").id = name;
+            clone.querySelector("div.user > span").innerText = name;
+            clone.querySelector("div.user").setAttribute("name", name);
+
+            document.body.appendChild(clone);
+
+            const sa = new SharedStorage("local");
+
+            const user = document.querySelector("div.user[name='" + name + "']");
+            const myname = user.querySelector("input.myname");
+            const yourname = user.querySelector("input.yourname");
+            const joinid = user.querySelector("input.joinid");
+            const videos = user.querySelector("div.videos");
+
+            myname.value = names[index]; // pre-populate for convenience.
+            yourname.value = names[(index + names.length/2) % names.length];
+
+            for (let i=0; i<max_videos; ++i) {
+                const clone1 = (i == 0 ? template1 : template2).content.cloneNode(true);
+                if (i == 0) { // first video is local preview.
+                    clone1.querySelector("video-io").setAttribute("for", name);
+                    clone1.querySelector("video-io > span").innerText = "You";
+                }
+                videos.appendChild(clone1);
+            }
+
+            user.querySelector("button.join").onclick = () => {
+                if (user.getAttribute("joinstate") == "idle") {
+                    user.setAttribute("joinstate", "active");
+
+                    sa.object("calls/" + joinid.value).update({}); // why persistent?
+
+                    sa.list("calls/" + joinid.value + "/users").onchange = event => {
+                        const video = user.querySelector("video-io[for='" + event.id + "']") ||
+                                      event.type == "itemcreate" && user.querySelector("video-io:not([for])");
+                        if (video) {
+                            if (event.type == "itemcreate") {
+                                video.hidden = false;
+                                if (!video.getAttribute("for")) {
+                                    video.setAttribute("for", event.id);
+                                }
+                                if (event.id == name) {
+                                    video.publish = true;
+                                } else {
+                                    video.querySelector("span").innerText = event.newValue.name;
+                                    video.subscribe = true;
+                                }
+                            } else if (event.type == "itemdelete") {
+                                if (event.id == name) {
+                                    video.publish = false;
+                                } else {
+                                    video.subscribe = false;
+                                    video.removeAttribute("for");
+                                }
+                                video.hidden = true;
+                            }
+                        }
+                    };
+
+                    sa.list("calls/" + joinid.value + "/users").getall()
+                        .then(items => {
+                            items.forEach(item => {
+                                const [other, data] = item;
+                                const video = user.querySelector("video-io[for='" + other + "']") || 
+                                              user.querySelector("video-io:not([for])");
+                                if (video) {
+                                    video.hidden = false;
+                                    if (!video.getAttribute("for")) {
+                                        video.setAttribute("for", other);
+                                    }
+                                    if (other == name) {
+                                        video.publish = true;
+                                    } else {
+                                        video.querySelector("span").innerText = data.name;
+                                        video.subscribe = true;
+                                    }
+                                }
+                            });
+                        });
+
+                    sa.list("calls/" + joinid.value + "/users").transient().object(name).create({name: myname.value || name});
+                }
+            };
+
+            user.querySelector("button.leave").onclick = () => {
+                if (user.getAttribute("joinstate") == "active") {
+                    user.setAttribute("joinstate", "idle");
+                    [].slice.call(user.querySelectorAll("video-io")).forEach(video => {
+                        video.hidden = true;
+                        video.publish = video.subscribe = false;
+                        if (video.getAttribute("for") != name) {
+                            video.removeAttribute("for");
+                        }
+                    });
+
+                    const joinid_value = joinid.value;
+                    sa.object("calls/" + joinid_value + "/users/" + name).delete()
+                        .then(() => {
+                            setTimeout(() => {
+                                sa.list("calls/" + joinid_value + "/users").onchange = null;
+                            }, 500);
+                        });
+                }
+            };
+
+            user.querySelector("button.invite").onclick = () => {
+                if (user.getAttribute("invitestate") == "ready") {
+                    const proceed = () => {
+                        const inviteid = ("" + Math.random()).substring(2, 6);
+                        user.setAttribute("invitestate", "inviting");
+                        user.setAttribute("inviteid", inviteid);
+                        sa.object("users/" + yourname.value).notify({type: "invite", inviteid: inviteid, from: myname.value, joinid: joinid.value})
+                            .then(count => {
+                                if (!count) { // failed to send any invite
+                                    setTimeout(() => {
+                                        user.setAttribute("invitestate", "ready");
+                                    }, 1000);
+                                }
+                            });
+                    };
+
+                    if (user.getAttribute("joinstate") == "idle") { // first join a call.
+                        sa.list("calls").add({}).then(id => {
+                            if (user.getAttribute("joinstate") == "idle") {
+                                joinid.value = id;
+                                user.querySelector("button.join").click();
+                            }
+                            if (user.getAttribute("invitestate") == "ready") {
+                                proceed();
+                            }
+                        });
+                    } else {
+                        proceed();
+                    }
+                } // else not ready, or already inviting or invited.
+            };
+
+            user.querySelector("button.cancel").onclick = () => {
+                if (user.getAttribute("invitestate") == "inviting") {
+                    user.setAttribute("invitestate", "ready");
+                    const inviteid = user.getAttribute("inviteid");
+                    user.removeAttribute("inviteid");
+                    sa.object("users/" + yourname.value).notify({type: "cancel", inviteid: inviteid});
+                } // else not inviting
+            };
+
+            user.querySelector("button.answer").onclick = () => {
+                if (user.getAttribute("invitestate") == "invited") {
+                    user.setAttribute("invitestate", "ready");
+                    const inviteid = user.getAttribute("inviteid");
+                    user.removeAttribute("inviteid");
+                    sa.object("users/" + yourname.value).notify({type: "answer", inviteid: inviteid});
+                    const joinid1 = user.getAttribute("joinid");
+                    user.removeAttribute("joinid");
+                    if (user.getAttribute("joinstate") == "idle") {
+                        joinid.value = joinid1;
+                        user.querySelector("button.join").click();
+                    } else {
+                        if (joinid.value != joinid1) {
+                            user.querySelector("button.leave").click();
+                            setTimeout(() => {
+                                joinid.value = joinid1;
+                                user.querySelector("button.join").click();
+                            }, 2000);
+                        } // else already in the right joinid.
+                    }
+                } // else not invited.
+            };
+
+            user.querySelector("button.redirect").onclick = () => {
+                if (user.getAttribute("invitestate") == "invited" && user.getAttribute("joinstate") == "active") {
+                    user.setAttribute("invitestate", "ready");
+                    const inviteid = user.getAttribute("inviteid");
+                    user.removeAttribute("inviteid");
+                    user.removeAttribute("joinid");
+                    sa.object("users/" + yourname.value).notify({type: "redirect", inviteid: inviteid, joinid: joinid.value});
+                } // else not invited
+            };
+
+            user.querySelector("button.decline").onclick = () => {
+                if (user.getAttribute("invitestate") == "invited") {
+                    user.setAttribute("invitestate", "ready");
+                    const inviteid = user.getAttribute("inviteid");
+                    user.removeAttribute("inviteid");
+                    user.removeAttribute("joinid");
+                    sa.object("users/" + yourname.value).notify({type: "decline", inviteid: inviteid});
+                } // else not invited
+            };
+
+            user.querySelector("button.register").onclick = () => {
+                user.setAttribute("invitestate", "ready");
+                sa.object("users/" + myname.value).onnotify = event => {
+                    switch (event.data.type) {
+                        case "invite":
+                            if (user.getAttribute("invitestate") == "ready") {
+                                user.setAttribute("invitestate", "invited");
+                                user.setAttribute("inviteid", event.data.inviteid);
+                                user.setAttribute("joinid", event.data.joinid);
+                                yourname.value = event.data.from;
+                            } // else missed call.
+                            break;
+                        case "cancel":
+                            if (user.getAttribute("invitestate") == "invited" && user.getAttribute("inviteid") == event.data.inviteid) {
+                                user.setAttribute("invitestate", "ready");
+                                user.removeAttribute("inviteid");
+                                user.removeAttribute("joinid");
+                            } // else ignore.
+                            break;
+                        case "answer":
+                        case "decline":
+                        case "redirect":
+                            if (user.getAttribute("invitestate") == "inviting" && user.getAttribute("inviteid") == event.data.inviteid) {
+                                user.setAttribute("invitestate", "ready");
+                                user.removeAttribute("inviteid");
+                                user.removeAttribute("joinid");
+                                sa.object("users/" + yourname.value).notify({type: "cancel", inviteid: event.data.inviteid});
+
+                                if (event.data.type == "redirect") { // check if no other user in my call
+                                    if (user.querySelector("video-io[for='" + name + "']") && user.querySelectorAll("video-io[for]").length == 1) {
+                                        const joinid1 = event.data.joinid;
+                                        if (user.getAttribute("joinstate") == "active") {
+                                            user.querySelector("button.leave").click();
+                                            setTimeout(() => {
+                                                joinid.value = joinid1;
+                                                user.querySelector("button.join").click();
+                                            }, 2000);
+                                        } else {
+                                            joinid.value = joinid1;
+                                            user.querySelector("button.join").click();
+                                        }
+                                    } else {
+                                        console.error("redirect is is ignored as already in a call");
+                                    }
+                                }
+                            } // else not this caller device
+                    }
+                };
+            };
+
+            user.querySelector("button.unregister").onclick = () => {
+                if (user.getAttribute("invitestate") == "ready") {
+                    user.setAttribute("invitestate", "idle");
+                    sa.object("users/" + myname.value).onnotify = null;
+                } // perhaps in a call.
+            };
+
+        });
+    </script>
+
+</body>
+</html>
