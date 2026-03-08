@@ -18,6 +18,8 @@
     <script type="text/javascript"src="user-roster.js"></script>
     <script type="text/javascript"src="media-chat.js"></script>
     
+    <script type="text/javascript"src="phone-call.js"></script>
+    <script type="text/javascript"src="click-to-call.js"></script>
     <script type="text/javascript"src="device-selector.js"></script>
     
     <link href="index.css"rel="stylesheet"type="text/css">
@@ -2538,6 +2540,7 @@ media server.</p>
 
 <button class="tryit"path="35-jitsi-stream.html"form="jitsi-form"width="1100"height="300"></button>
 
+<br>
 <h3 short="Agora">Using Agora service</h3>
 
 <p>Agora is another developer friendly video conferencing service.
@@ -2563,6 +2566,7 @@ trying the example below.</p>
 
 <button class="tryit"path="35-agora-stream.html"form="agora-form"width="1100"height="300"></button>
 
+<br>
 <h3 short="LiveKit">Using LiveKit service</h3>
 
 <p>LiveKit is another open source developer platform for video conferencing.
@@ -2588,6 +2592,7 @@ trying the example below.</p>
 
 <button class="tryit"path="35-livekit-stream.html"form="livekit-form"width="1100"height="300"></button>
 
+<br>
 <h3 short="VideoSDK.live">Using VideoSDK.live service</h3>
 
 <p>VideoSDK.live is also a developer platform and service for video conferencing.
@@ -2610,6 +2615,12 @@ trying the example below.</p>
 
 
 <button class="tryit"path="35-videosdklive-stream.html"form="videosdklive-form"width="1100"height="300"></button>
+
+<p>The examples shown above with four specific hosted services are for 
+demonstration only, and we do not endorse, ensourage or discourage use of any specific service.
+The next section describes how to add a named stream connection to any
+third-party hosted service.
+</p>
 
 
 <h2 short="customize">How to further customize a named stream?</h2>
@@ -2652,7 +2663,7 @@ at this URL before trying the example below.</p>
 
 <button class="tryit"path="35-external-stream-popup.html"width="1100"height="300"></button>
 
-
+<br>
 <h3 short="split-stream">Using split-stream</h3>
 
 <p>The named stream abstraction allows at most one publisher and zero or more subscribers
@@ -3976,19 +3987,245 @@ allowaction, and others.</p>
 
 
 
+<h2 category="Advanced - Telephony"cat="Telephony"position="-50,-25"short="phone state">What is a phone state?</h2>
+
+<p>Earlier in <a href="#topic-twoparty">How to do two-party video call?</a> we described
+and illustrated state machines for single line and multiple line video phone device engaged in 
+a call. Later in <a href="#topic-multiparty">How to do multi-party video conference?</a> 
+we described and illustrated join-leave as well as invite-answer models for conference signaling.
+Those examples used state machines in the application, while using the shared
+storage for exchange of signaling and media negotiation messages. Here, we will describe
+a few web components that implement a generic state machine for phone calls and conferences,
+using audio and/or video.</p>
+
+<p>The <code>phone-state</code> component implements the state machine for phone registration and
+call. The <code>conference-state</code> component implements the state machine for conference
+join and leave membership, and maintains a list of active members in the conference.</p>
+
+<p>Applications that use phone or conference state machines still need some common set of
+functions independent of the specific state machine, e.g., to add or remove <code>video-io</code>
+instances when a call is connected or when a conference is joined or when a member
+joins or leaves a conference. Such features are enabled in the <code>videos-control</code>
+component. It acts as a controller to connect a <code>phone-state</code> or
+<code>conference-state</code> or a similar component with one or more <code>video-io</code>
+elements to create a call or conference experience.</p>
+
+<p>Try the following example with four <code>phone-state</code>
+instances, representing four phone devices. Each can register and
+make/receive calls. Make sure to enter after typing the text to
+update any property.</p> 
+
+<button class="tryit"path="61-phone-call.html"preview width="760"height="310"></button>
+
+<p>The actual media is outside the scope of this
+component, and is implemented in the application using the <code>videos-control</code>
+component supplied with two fixed <code>video-io</code> elements per 
+phone instance. The <code>exclusive</code> determines whether the 
+phone device registers exclusively for a name, and must be set before
+registering. The <code>earlymedia</code>
+property determines whether the media is started early, before the call is 
+established, when applicable.</p>
+
+<h3 id="phone-state">phone-state</h3>
+
+<script type="text/javascript">
+    tabulateComponent("phone-state");
+</script>
+
+<h3 id="videos-control">videos-control</h3>
+
+<script type="text/javascript">
+    tabulateComponent("videos-control");
+</script>
 
 
 
+<h2 short="conference state">What is a conference state?</h2>
+
+<p>The <code>conference-state</code> component has a simple state machine with
+only one boolean flag indicating whether the user has joined the conference or not.
+Internally it also maintains the membership information, and allows setting
+the member data item in the conference. The data is shared among all the members.</p>
+
+<p>Try the following example with four <code>conference-state</code>
+instances, representing four conference users. Make sure to enter after typing the text to
+update the property.</p>
+
+<button class="tryit"path="62-conference-call.html"preview width="760"height="210"></button>
+
+<p>The self identifier, if missing, is picked automatically and randomly, before
+joining the conference. A <code>videos-control</code> element is used per user to 
+facilitate media display using the four fixed <code>video-io</code> instances per
+user view. Alternatively, a <code>flex-box</code> component may be used.</p>
+
+<h3 id="conference-state">conference-state</h3>
+
+<script type="text/javascript">
+    tabulateComponent("conference-state");
+</script>
 
 
 
+<h2 short="click to call">How to do click-to-call?</h2>
+
+<p>The telephony use case related components described previously such as
+<code>phone-state</code> or <code>conference-state</code> are largely independent
+of the media features. An application typically need to connect these state
+machines with collaboration related components such as <code>videos-control</code> or <code>text-chat</code>.</p>
+
+<p>However, a number of telephony related applications use a few well defined
+scenarios, such as click-to-call, click-to-join or call queues. The <code>click-to-call</code>
+component is a general purpose implementation for several of such scenarios including
+click to call or answer, click to join or leave, queue incoming calls, or 
+distribute outbound calls.</p>
+
+<p>The <code>click-to-call</code> component includes zero or more instances of
+the <code>phone-state</code> or <code>conference-state</code> components. At least
+one state component is needed for proper functioning. The number and type of
+the state components, together with some other attributes, determine the 
+behavior of the component in various scenarios.
+The high level scenarios are shown below.</p>
+
+<table class="properties nowrap">
+    <tr><th>Scenario</th><th>Description</th></tr>
+    <tr><td>Phone</td><td>One phone-state</td></tr>
+    <tr><td></td><td>
+This acts as a single line phone device. It registers to receive incoming calls.
+It can make outgoing calls.
+    </td></tr>
+    <tr><td>Conference</td><td>One conference-state</td></tr>
+    <tr><td></td><td>
+This acts as a single attendee in a conference. It can join or leave a conference.
+    </td></tr>
+    <tr><td>Invited conference</td><td>One conference-state and one phone-state</td></tr>
+    <tr><td></td><td>
+This acts as a single attendee in a conference. But it also allows inviting other 
+users to that conference, and getting invited by other users to a conference.        
+    </td></tr>
+    <tr><td>Call queue</td><td>Multiple phone-state, queue="true"</td></tr>
+    <tr><td></td><td>
+This acts as an incoming call queue. It registers to receive incoming calls. When
+a call is answered, more incoming calls get queued, and can be answered or declined
+after the current call completes.
+    </td></tr>
+    <tr><td>Call distribute</td><td>Multiple phone-state, distribute="sequence" or "parallel"</td></tr>
+    <tr><td></td><td>
+This acts as an outgoing call distributor to multiple distinct targets. When any
+of the target user answers, the call is completed, and the remaining steps are stopped.
+The call may be distributed in sequence or parallel, with or without timeouts.
+    </td></tr>
+</table>
+
+
+<p>To be consistent with a simple click-to-call user experience, a single button
+in the component facilitates most of the user interactions. For example,
+once the target is set, and the component is in idle phone state, then clicking on the
+button initiates an outgoing call. When the phone state is inviting or ringing or active,
+clicking on the button terminates the pending or active call. When the phone state is 
+invited, for incoming call, clicking on the button can launch another confirmation
+box to answer or decline the call. Alternatively, the <code>answer</code> property
+can be set to click-and-hold to answer versus click to decline.</p>
+
+<p>For a conference scenario, the single button can be used to join a conference if the
+conference state is idle, or to leave the conference if it is not. For an invited 
+conference scenario, the behavior of the button is heuristically determined
+based on the phone and conference states. For example, in an idle state, it could
+first join the conference, and if the other target user is set, then send a call invite
+to that user as well. For an incoming call invite, it could answer the call and
+join the conference after confirmation. For an active or pending call or conference,
+clicking the button terminates the call invite or leaves the conference or both.</p>
+
+<p>With multiple phone states, the behavior becomes more intriguing. For example,
+for the call distribution use case, clicking on a pending state with sequential distribution cancels
+the current call, and goes to the next target in the sequence. For the call queue scenario,
+clicking on an active call terminates the call, and launches the confirmation for the 
+next incoming call in the queue, if any.</p>
+
+<p>By default, <code>calltype</code> is audio, and must be set to video, to
+support video calls. In a conference or invited conference scenario, 
+different attendees may use
+different <code>calltype</code> values - some join with audio only, and some with audio and 
+video. However, in a phone scenario, both sides must use the same <code>calltype</code>.
+Typically, a call invite from an audio-only caller is delivered to both the video and
+audio-only receiver, and if the video receiver answers, that receiver
+just does not use the video media type. However, a call invite from a video caller
+is automatically rejected with missed call indication from an audio-only
+receiver, so that if the caller's intention is a video call, then it does not get
+picked by an audio-only receiver.</p>
+
+<p>The phone and invited conference scenarios use the same phone state protocol for 
+signaling. However, they are not compatible with each other.
+For example, a user in the invited conference scenario may not engage in
+a phone call with a user in the phone scenario, and vice-versa. However,
+a user in the conference and the invited conference scenarios using the same
+conference state protocol are compatible with each other - no matter how the conference
+invitation was sent, both can join the same conference. The call queue and
+call distribution scenarios are compatible with the phone scenario.</p>
+
+<p>Some examples of the component used in various scenarios are shown below.
+The <code>storage</code> property or <code>for-storage</code> attribute in the
+state machine components, <code>phone-state</code> and <code>conference-state</code>,
+are required.</p>
+
+<pre><code class="lang-html">// allow outbound and inbound call
+    &lt;click-to-call self="bob" other="alice" calltype="video"&gt;
+        &lt;phone-state for-storage="..."&gt;&lt;/phone-state&gt;
+    &lt;/click-to-call&gt;
+// anonymous click-to-call
+    &lt;click-to-call other="alice"&gt;
+        &lt;phone-state ...&gt;&lt;/phone-state&gt;
+    &lt;/click-to-call&gt;
+// call distributor in sequence
+    &lt;click-to-call self="carol" other="alice,bob" distribute="sequence" incoming="false"&gt;
+        &lt;phone-state ...&gt;&lt;/phone-state&gt;
+        &lt;phone-state ...&gt;&lt;/phone-state&gt;
+    &lt;/click-to-call&gt;
+// call queue
+    &lt;click-to-call self="carol" queue="true" outgoing="false"&gt;
+        &lt;phone-state ...&gt;&lt;/phone-state&gt;
+        &lt;phone-state ...&gt;&lt;/phone-state&gt;
+        &lt;phone-state ...&gt;&lt;/phone-state&gt;
+    &lt;/click-to-call&gt;
+// conference join
+    &lt;click-to-call self="bob" join="conf123" calltype="video"&gt;
+        &lt;conference-state ...&gt;&lt;/conference-state&gt;
+    &lt;/click-to-call&gt;
+// invited anonymous conference
+    &lt;click-to-call self="alice" other="bob"&gt;
+        &lt;phone-state ...&gt;&lt;/phone-state&gt;
+        &lt;conference-state ...&gt;&lt;/conference-state&gt;
+    &lt;/click-to-call&gt;
+// invited conference anonymous caller
+    &lt;click-to-call other="bob" join="conf123"&gt;
+        &lt;phone-state ...&gt;&lt;/phone-state&gt;
+        &lt;conference-state ...&gt;&lt;/conference-state&gt;
+    &lt;/click-to-call&gt;
+</code></pre>
+
+<p>To see these in action, try the following example with several <code>click-to-call</code>
+instances. Some are configured with one <code>phone-state</code>, 
+some with one <code>conference-state</code>, some with one <code>phone-state</code> and one <code>conference-state</code>,
+and some with multiple <code>phone-state</code> components.
+Clicking on the attribute allows you to edit them and reconfigure the component.
+Most of the instances use the inline videos shown in the box, but some use
+the <code>open</code> feature to launch a separate browser window or tab for the videos.
+All the behavior of the component is customizable using the various properties and
+methods described later.</p>
+
+<button class="tryit"path="63-click-to-call.html"preview width="880"height="910"></button>
+
+<h3 id="click-to-call">click-to-call</h3>
+
+<script type="text/javascript">
+    tabulateComponent("click-to-call");
+</script>
 
 
 <h2 id="summary"short="none">Summary</h2>
 
-<p>This document describes a number of new web components that are useful in implementing a wide
+<p>This project has a number of new web components that are useful in implementing a wide
 range of communicating applications such as video call, broadcast, conference, and so on.
-The project includes many code snippets and sample applications to get started quickly,
+This document includes many code snippets and sample applications to get started quickly,
 as well as to try new things by extending the existing applications.</p>
 
 <p>The components and classes are summarized below.</p>
@@ -4160,7 +4397,37 @@ as well as to try new things by extending the existing applications.</p>
             
         </table>
     </td></tr>
-    
+    <tr><td>telephony</td><td></td></tr>
+    <tr><td></td><td>
+        Components for phone and conference states and various forms of telephony
+        scenarios. Many of these work with the shared-storage component.
+        <table class="properties nowrap">
+            <tr><th>Component</th><th>Description</th></tr>
+            <tr><td><a href="#phone-state">phone-state</a></td><td>Include phone-call.js</td></tr>
+            <tr><td></td><td>
+                State machine for phone registration and call, using the
+                shared storage.
+            </td></tr>
+            <tr><td><a href="#conference-state">conference-state</a></td><td>Include phone-call.js</td></tr>
+            <tr><td></td><td>
+                State machine for conference join and leave, and membership,
+                using the shared storage.
+            </td><td>
+            </td></tr>
+            <tr><td><a href="#videos-control">videos-control</a></td><td>Include phone-call.js</td></tr>
+            <tr><td></td><td>
+                Used by phone-state or conference-state or similar to
+                start and stop media using the video-io element when needed.
+            </td></tr>
+            <tr><td><a href="#click-to-call">click-to-call</a></td><td>Include click-to-call.js</td></tr>
+            <tr><td></td><td>
+                Displays a single clickable button, includes one or more of
+                phone-state or conference-state, and using the shared storage,
+                supports wide range of telephone scenarios such as click-to-call,
+                click-to-join, call queue and call distribution.
+            </td></tr>
+        </table>
+    </td></tr>
 </table>
 
 

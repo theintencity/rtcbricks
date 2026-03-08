@@ -1,0 +1,286 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="flex-box.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="phone-call.js"></script>
+    <script type="text/javascript" src="click-to-call.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        div.items {
+            display: flex; flex-flow: row wrap;
+            padding: 1px; box-sizing: border-box;
+        }
+        div.items > div {
+            position: relative; 
+            border: solid 1px lightgrey;
+            width: 200px; height: 220px; overflow: auto;
+            margin: 2px;
+            display: flex; flex-flow: column nowrap; justify-content: flex-end;
+        }
+        pre, span {
+            position: relative;
+            font-family: monospace;
+        }
+        pre {
+            cursor: pointer;
+        }
+        span {
+            font-style: italic;
+        }
+        click-to-call {
+            position: absolute; left: 4px; top: 4px;
+        }
+        flex-box {
+            position: absolute; top: 2px; right: 2px;
+            width: 160px; height: 90px;
+            background-color: black;
+        }
+        video-io {
+            border: solid 1px lightgrey;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <shared-storage id="storage" src="local"></shared-storage>
+
+    <div class="items">
+        <div>
+<click-to-call self="alice" other="bob" calltype="video" cancelafter="10000">
+    <phone-state for-storage="storage"></phone-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+self="alice"
+other="bob"
+calltype="video"
+cancelafter="10000"
+</pre>
+<span class="type">phone</span><span class="title"></span>
+        </div><div>
+<click-to-call self="alice" other="bob"
+    call-src="63-icon-call.png" 
+    end-src="63-icon-close.png" 
+    ringback-src="63-audio-ringback.mp3" 
+    ringing-src="63-audio-ringing.mp3" 
+    missed-src="63-audio-missed.mp3">
+    <phone-state for-storage="storage"></phone-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+self="alice"
+other="bob"
+call-src=...
+end-src=...
+</pre>
+<span class="type">phone</span><span class="title"></span>
+        </div><div winopen>
+<click-to-call self="bob" other="alice" calltype="video" answer="hold">
+    <phone-state for-storage="storage"></phone-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+self="bob"
+other="alice"
+calltype="video" 
+answer="hold"
+</pre>
+<span class="type">phone</span><span class="title"></span>
+        </div><div>
+<click-to-call self="bob" other="carol" declineafter="6000">
+    <phone-state for-storage="storage"></phone-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+self="bob"
+other="carol"
+declineafter="6000"
+</pre>
+<span class="type">phone,window.open</span><span class="title"></span>
+        </div><div>
+<click-to-call self="carol" other="alice,bob" distribute="sequence">
+    <phone-state for-storage="storage"></phone-state>
+    <phone-state for-storage="storage"></phone-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+self="carol"
+other="alice,bob"
+distribute="sequence"
+</pre>
+<span class="type">2 phone</span><span class="title"></span>
+        </div><div>
+<click-to-call self="carol" queue="true">
+    <phone-state for-storage="storage"></phone-state>
+    <phone-state for-storage="storage"></phone-state>
+    <phone-state for-storage="storage"></phone-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+self="carol"
+queue="true"
+</pre>
+<span class="type">3 phone</span><span class="title"></span>
+        </div><div>
+<click-to-call self="alice" join="conf123" calltype="video">
+    <conference-state for-storage="storage"></conference-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+self="alice"
+join="conf123"
+calltype="video"
+</pre>
+<span class="type">conference</span><span class="title"></span>
+        </div><div winopen>
+<click-to-call join="conf123" calltype="video">
+    <conference-state for-storage="storage"></conference-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+join="conf123"
+calltype="video"
+</pre>
+<span class="type">conference,window.open</span><span class="title"></span>
+        </div><div>
+<click-to-call self="carol" join="conf123">
+    <conference-state for-storage="storage"></conference-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+self="carol"
+other="alice"
+join="conf123"
+</pre>
+<span class="type">conference</span><span class="title"></span>
+        </div><div>
+<click-to-call calltype="video">
+    <conference-state for-storage="storage"></conference-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+calltype="video"
+</pre>
+<span class="type">conference</span><span class="title"></span>
+    </div><div>
+<click-to-call self="alice" other="bob" calltype="video">
+    <phone-state for-storage="storage"></phone-state>
+    <conference-state for-storage="storage"></conference-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+self="alice"
+other="bob"
+calltype="video"
+</pre>
+<span class="type">phone+conference</span><span class="title"></span>
+    </div><div>
+<click-to-call self="alice" calltype="video">
+    <phone-state for-storage="storage"></phone-state>
+    <conference-state for-storage="storage"></conference-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+self="alice"
+calltype="video"
+</pre>
+<span class="type">phone+conference</span><span class="title"></span>
+    </div><div>
+<click-to-call self="bob" other="alice" calltype="video">
+    <phone-state for-storage="storage"></phone-state>
+    <conference-state for-storage="storage"></conference-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+self="bob"
+other="alice"
+calltype="video"
+</pre>
+<span class="type">phone+conference</span><span class="title"></span>
+    </div><div>
+<click-to-call self="carol" other="alice" calltype="video">
+    <phone-state for-storage="storage"></phone-state>
+    <conference-state for-storage="storage"></conference-state>
+</click-to-call>
+<flex-box display="flex"></flex-box>
+<pre>
+self="carol"
+other="alice"
+calltype="video"
+</pre>
+<span class="type">phone+conference</span><span class="title"></span>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        document.querySelector("shared-storage").log = (...args) => {
+            console.log(...args);
+        };
+
+        const props = Object.keys(document.querySelector("click-to-call").constructor.metadata.properties);
+
+        [].slice.call(document.querySelectorAll("div.items > div")).forEach(div => {
+            const videos = div.querySelector("flex-box");
+            videos.style.display = "none";
+            const clicktocall = div.querySelector("click-to-call");
+            if (div.hasAttribute("winopen")) {
+                clicktocall.onopen = () => {
+                    return clicktocall.open(/*"", "width=300,height=300"*/);
+                };
+            } else {
+                clicktocall.onopen = () => {
+                    videos.style.display = "";
+                    return videos;
+                };
+                clicktocall.onclose = (videos) => {
+                    videos.style.display = "none";
+                };
+            }
+            clicktocall.addEventListener("titlechange", ({value}) => {
+                //console.log("title change",value);
+                div.querySelector("span.title").innerText = value.split("\n\n")[0];
+            });
+            div.querySelector("span.title").innerText = clicktocall.title.split("\n\n")[0];
+
+            div.querySelector("pre").onclick = () => {
+                let list = [];
+                const found = {};
+                for (let i=0; i<clicktocall.attributes.length; ++i) {
+                    const name = clicktocall.attributes[i].name;
+                    const value = clicktocall.getAttribute(name);
+                    list.push({name, value});
+                    found[name] = true;
+                }
+                const result = prompt("Edit attributes:", list.map(({name, value}) => {
+                    return `${name}="${value}"`;
+                }).join(" "));
+                if (result !== null) {
+                    list = (result || 'name="value"').split(/\s+/g).map(nv => {
+                        const index = nv.indexOf("=");
+                        const name = index < 0 ? nv : nv.substring(0, index);
+                        let value = index < 0 ? "" : nv.substring(index+1);
+                        if (value && value.match(/^".*"$/)) {
+                            value = value.substring(1, value.length-1);
+                        }
+                        return {name, value};
+                    });
+
+                    const again = {};
+                    list.forEach(({name, value}) => {
+                        clicktocall.setAttribute(name, value);
+                        again[name] = true;
+                    });
+                    Object.keys(found).filter(key => again[key] === undefined).forEach(key => {
+                        clicktocall.removeAttribute(key);
+                    })
+                    div.querySelector("pre").innerText = list.map(({name, value}) => {
+                        return name.endsWith("-src") ? `${name}=...` : `${name}="${value}"`;
+                    }).join("\n");
+                }
+            };
+        });
+    </script>
+</body>
+</html>

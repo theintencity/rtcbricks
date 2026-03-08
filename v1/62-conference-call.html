@@ -1,0 +1,172 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="flex-box.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="phone-call.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+body {
+    display: flex; flex-flow: column wrap;
+    font-family: sans-serif;
+}
+div.users {
+    display: flex; flex-flow: row nowrap;
+}
+div.user {
+    position: relative; 
+    min-width: 180px; flex: 0 0 auto;
+    display: flex; flex-flow: column nowrap; align-items: flex-start;
+    border: solid 1px lightgrey; margin: 4px; padding: 4px; box-sizing: border-box;
+}
+div.user > :not(:last-child) {
+    margin-bottom: 4px;
+}
+div.user > div {
+    display: flex; flex-flow: row nowrap; justify-content: center;
+    height: 24px;
+    font-size: 14px;
+}
+div.user > div:not(.videos) > :not(:last-child) {
+    margin-right: 4px;
+}
+button {
+    border-width: 1px;
+    cursor: pointer;
+}
+input[type="text"] {
+    width: 50px;
+}
+span.active::before {
+    content: "active:";
+}
+
+div.user:not([active]) button.leave,
+div.user[active="false"] button.leave,
+div.user[active]:not([active="false"]) button.join {
+    display: none;
+}
+
+div.user > div.videos {
+    width: 164px; height: 124px;
+    display: flex; flex-flow: row wrap;
+}
+div.user > flex-box {
+    width: 160px; height: 120px;
+}
+video-io {
+    position: relative; width: 80px; height: 60px;
+    object-fit: cover;
+    margin: 1px;
+}
+video-io > span {
+    color: white; text-shadow: 0 0 6px rgba(0,0,0,0.8);
+    position: absolute; text-align: center; width: 100%;
+    font-family: sans-serif; font-size: 10px;
+}
+    </style>
+</head>
+<body>
+    <shared-storage id="storage" src="local"></shared-storage>
+    <template>
+        <div class="user">
+            <conference-state for-storage="storage"></conference-state>
+            <div>
+                <input class="conference" type="text" placeholder="conference" title="Type conference name, and enter"/>
+                <input class="self" type="text" placeholder="self" title="Type self name, and enter"/>
+                <button class="join">join</button>
+                <button class="leave">leave</button>
+            </div>
+            <span class="active">false</span>
+            <!--
+            <flex-box display="flex"></flex-box>
+            -->
+            <div class="videos">
+                <video-io><span slot="header"></span></video-io>
+                <video-io><span slot="header"></span></video-io>
+                <video-io><span slot="header"></span></video-io>
+                <video-io><span slot="header"></span></video-io>
+            </div>
+            <videos-control class="control"></videos-control>
+        </div>
+    </template>
+
+    <div class="users"></div>
+
+    <script type="text/javascript">
+
+        [["", "first"], ["", "first"], ["", "first"], ["alice", "first"]].forEach(([selfname, confname]) => {
+            const user = document.importNode(document.querySelector("template").content, true);
+            if (selfname) {
+                user.querySelector("input.self").value = selfname;
+            }
+            if (confname) {
+                user.querySelector("input.conference").value = confname;
+            }
+            document.querySelector("div.users").appendChild(user);
+        });
+
+        [].slice.call(document.querySelectorAll("div.user")).forEach(div => {
+            const controls = div.querySelector("videos-control");
+            const conf = div.querySelector("conference-state");
+
+            controls.srcObject = conf;
+            controls.videos = div.querySelector("flex-box") || [].slice.call(div.querySelectorAll("video-io"));
+            controls.oncreatevideo = () => {
+                const video = document.createElement("video-io");
+                const span = document.createElement("span");
+                span.setAttribute("slot", "header");
+                video.appendChild(span);
+                return video;
+            }
+
+            controls.addEventListener("start", ({direction, video, streampath}) => {
+                const parts = streampath.split("/");
+                video.querySelector("span").innerText = parts.length > 2 ? parts[parts.length-2] : streampath;
+            });
+            controls.addEventListener("stop", ({video}) => {
+                video.querySelector("span").innerText = "";
+            });
+
+            conf.addEventListener("active", ({value}) => {
+                div.setAttribute("active", value);
+                div.querySelector("span.active").innerText = value;
+            });
+
+            div.querySelector("button.join").onclick = event => {
+                conf.join();
+            };
+            div.querySelector("button.leave").onclick = event => {
+                conf.leave();
+            };
+
+            div.querySelector("input.conference").onkeyup = event => {
+                if ((event.keyCode || event.which) == 13) {
+                    setTimeout(()=> {
+                        conf.path = "conf/" + div.querySelector("input.conference").value;
+                    });
+                }
+            };
+            div.querySelector("input.self").onkeyup = event => {
+                if ((event.keyCode || event.which) == 13) {
+                    setTimeout(()=> {
+                        conf.self = div.querySelector("input.self").value;
+                    });
+                }
+            };
+
+            if (div.querySelector("input.conference").value) {
+                conf.path = "conf/" + div.querySelector("input.conference").value;
+            }
+            if (div.querySelector("input.self").value) {
+                conf.self = div.querySelector("input.self").value;
+            }
+        });
+
+        document.querySelector("shared-storage").log = (...args) => {
+            console.log(...args);
+        };
+    </script>
+</body>
+</html>

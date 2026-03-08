@@ -1,0 +1,193 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="phone-call.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+body {
+    display: flex; flex-flow: column wrap;
+    font-family: sans-serif;
+}
+div.users {
+    display: flex; flex-flow: row nowrap;
+}
+div.user {
+    position: relative; 
+    min-width: 180px; flex: 0 0 auto;
+    display: flex; flex-flow: column nowrap; align-items: flex-start;
+    border: solid 1px lightgrey; margin: 4px; padding: 4px; box-sizing: border-box;
+}
+div.user > :not(:last-child) {
+    margin-bottom: 4px;
+}
+div.user > div {
+    display: flex; flex-flow: row nowrap; justify-content: center;
+    height: 24px;
+    font-size: 14px;
+}
+div.user > div > :not(:last-child) {
+    margin-right: 4px;
+}
+button {
+    border-width: 1px;
+    cursor: pointer;
+}
+input[type="text"] {
+    width: 50px;
+}
+span.callstate::before {
+    content: "callstate:";
+}
+span.status {
+    font-style: italic;
+    color: grey;
+}
+
+div.user:not([registered]) button.unregister,
+div.user[registered="true"] button.register,
+div.user[registered="false"] button.unregister,
+div.user:not([callstate]) button.end,
+div.user[callstate="idle"] button.end,
+div.user[callstate="inviting"] button.call,
+div.user[callstate="ringing"] button.call,
+div.user[callstate="active"] button.call,
+div.user[callstate="terminating"] button.call {
+    display: none;
+}
+
+div.user > div.videos {
+    width: 100%; height: 120px;
+}
+video-io {
+    width: 80px; height: 120px;
+    object-fit: cover;
+}
+video-io > span {
+    color: white; text-shadow: 0 0 6px rgba(0,0,0,0.8);
+    position: absolute; text-align: center; width: 100%;
+    font-family: sans-serif; font-size: 10px;
+}
+    </style>
+</head>
+<body>
+    <shared-storage id="storage" src="local"></shared-storage>
+    <template>
+        <div class="user">
+            <phone-state for-storage="storage"></phone-state>
+            <div>
+                <input class="self" type="text" placeholder="self" title="Type self name to register, and enter"/>
+                <button class="register">register</button>
+                <button class="unregister">unregister</button>
+            </div>
+            <div>
+                <input class="other" type="text" placeholder="other" title="Type other name to call, and enter"/>
+                <button class="call">call</button>
+                <button class="end">end</button>
+            </div>
+            <div><input class="exclusive" type="checkbox" /> exclusive</div>
+            <div><input class="earlymedia" type="checkbox" /> earlymedia</div>
+            <span class="callstate">idle</span>
+            <span class="status">&nbsp;</span>
+            <div class="videos">
+                <video-io class="publish">
+                    <span slot="header"></span>
+                </video-io>
+                <video-io class="subscribe">
+                    <span slot="header"></span>
+                </video-io>
+            </div>
+            <videos-control class="control"></videos-control>
+        </div>
+    </template>
+
+    <div class="users"></div>
+
+    <script type="text/javascript">
+
+        [["alice", "bob"], ["bob", "alice"], ["alice", "bob"], ["bob", "carol"]].forEach(([selfname, othername]) => {
+            const user = document.importNode(document.querySelector("template").content, true);
+            user.querySelector("input.self").value = selfname;
+            user.querySelector("input.other").value = othername;
+            document.querySelector("div.users").appendChild(user);
+        });
+
+        [].slice.call(document.querySelectorAll("div.user")).forEach(div => {
+            const controls = div.querySelector("videos-control");
+            const phone = div.querySelector("phone-state");
+
+            controls.srcObject = phone;
+            controls.videos = [].slice.call(div.querySelectorAll("video-io"));
+
+            controls.addEventListener("start", ({direction, video}) => {
+                video.querySelector("span").innerText = div.querySelector(direction == "publish" ? "input.self" : "input.other").value;
+            });
+            controls.addEventListener("stop", ({video}) => {
+                video.querySelector("span").innerText = "";
+            });
+
+            phone.addEventListener("status", ({text}) => {
+                div.querySelector("span.status").innerText = text;
+            });
+            phone.addEventListener("error", ({reason}) => {
+                div.querySelector("span.status").innerText = "error: " + reason;
+            });
+            phone.addEventListener("callstate", ({value}) => {
+                div.setAttribute("callstate", value);
+                div.querySelector("span.callstate").innerText = value;
+                if (value == "invited") {
+                    div.querySelector("input.other").value = phone.otherpath.split("/")[1];
+                }
+            });
+
+            div.querySelector("button.register").onclick = event => {
+                div.setAttribute("registered", "true");
+                phone.register();
+            };
+            div.querySelector("button.unregister").onclick = event => {
+                div.setAttribute("registered", "false");
+                phone.unregister();
+            };
+            div.querySelector("button.call").onclick = event => {
+                phone.call();
+            };
+            div.querySelector("button.end").onclick = event => {
+                phone.end();
+            };
+            div.querySelector("input.exclusive").onclick = event => {
+                phone.exclusive = event.currentTarget.checked;
+            };
+            div.querySelector("input.earlymedia").onclick = event => {
+                phone.earlymedia = event.currentTarget.checked;
+            };
+
+            div.querySelector("input.self").onkeyup = event => {
+                if ((event.keyCode || event.which) == 13) {
+                    setTimeout(()=> {
+                        phone.selfpath = "users/" + div.querySelector("input.self").value + "/phone";
+                    });
+                }
+            };
+            div.querySelector("input.other").onkeyup = event => {
+                if ((event.keyCode || event.which) == 13) {
+                    setTimeout(()=> {
+                        phone.otherpath = "users/" + div.querySelector("input.other").value + "/phone";
+                    });
+                }
+            };
+            if (div.querySelector("input.self").value) {
+                phone.selfpath = "users/" + div.querySelector("input.self").value + "/phone";
+            }
+            if (div.querySelector("input.other").value) {
+                phone.otherpath = "users/" + div.querySelector("input.other").value + "/phone";
+            }
+
+        });
+
+        document.querySelector("shared-storage").log = (...args) => {
+            console.log(...args);
+        };
+    </script>
+</body>
+</html>
