@@ -1,0 +1,19 @@
+{
+  "name": "restserver and streams",
+  "version": "1.0.0",
+  "description": "Lightweight servers for RTC Bricks: data storage resource server and named streams notification server.",
+  "main": "restserver.js",
+  "scripts": {
+    "start": "node restserver.js"
+  },
+  "author": "Kundan Singh <theintencity@gmail.com> (https://kundansingh.com/)",
+  "license": "MIT",
+  "dependencies": {
+    "archiver": "^4.0.1",
+    "fs": "0.0.1-security",
+    "glob": "^7.1.6",
+    "sha1": "^1.1.1",
+    "ws": "^7.2.5",
+    "zlib": "^1.0.5"
+  }
+}
