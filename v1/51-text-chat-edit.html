@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="text-chat.js"></script>
+    <script type="text/javascript" src="web-assets.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        body {
+            position: absolute; width: 100%; height: 100%;
+        }
+        text-chat {
+            width: 300px; height: 400px; max-height: 100%;
+            display: inline-block;
+            border: solid 1px lightgrey;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <alert-sounds id="sounds"></alert-sounds>
+    <yahoo-smileys id="smileys"></yahoo-smileys>
+    <shared-storage id="storage" src="local"></shared-storage>
+    <text-feed-data id="data1" for-storage="storage" allowedit="true"
+        self="alice" displayname="Alice" path="sessions/edit123"></text-feed-data>
+    <text-feed-data id="data2" for-storage="storage" allowedit="true"
+        self="bob" displayname="Bob" path="sessions/edit123"></text-feed-data>
+
+    <text-chat for-data="data1" allowedit="true" maxhistory="10">
+        <text-feed for-smileys="smileys" for-sounds="sounds" allowedit="false"></text-feed>
+    </text-chat>
+    <text-chat for-data="data2" allowedit="true" maxhistory="10">
+        <text-feed for-smileys="smileys" for-sounds="sounds" allowedit="true"></text-feed>
+    </text-chat>
+</body>
+</html>

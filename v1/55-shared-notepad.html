@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <script type="text/javascript" src="restserver-storage.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="locked-notepad.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
+    <style type="text/css">
+        body {
+            position: absolute; width: 100%; height: 100%;
+            display: flex; flex-flow: row nowrap; align-items: stretch;
+        }
+        locked-notepad {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <!--<shared-storage id="storage" src="ws://localhost:8080/restserver"></shared-storage>-->
+    <shared-storage id="storage" src="local"></shared-storage>
+    <locked-notepad-data id="data1" for-storage="storage" self="alice" path="sessions/pad123"></locked-notepad-data>
+    <locked-notepad for-data="data1"></locked-notepad>
+    <locked-notepad-data id="data2" for-storage="storage" self="bob" path="sessions/pad123"></locked-notepad-data>
+    <locked-notepad for-data="data2"></locked-notepad>
+</body>
+</html>

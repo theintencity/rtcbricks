@@ -14,7 +14,8 @@
         { "protocol": "web+vpub", "url": "/v1/video-io.html?launch=%s" },
         { "protocol": "web+vsub", "url": "/v1/video-io.html?launch=%s" },
         { "protocol": "web+ezpub", "url": "/v1/video-io.html?launch=%s" },
-        { "protocol": "web+ezsub", "url": "/v1/video-io.html?launch=%s" }
+        { "protocol": "web+ezsub", "url": "/v1/video-io.html?launch=%s" },
+        { "protocol": "web+ezcfg", "url": "/v1/video-io.html?launch=%s" }
     ],
     "capture_links": "existing_client_event",
     "launch_handler": {

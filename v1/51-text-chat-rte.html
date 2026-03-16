@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+<head>
+    <!-- https://github.com/taufik-nurrohman/rich-text-editor -->
+    <link rel="stylesheet" type="text/css" href="rich-text-editor.css">
+    <script type="text/javascript" src="rich-text-editor.js"></script>
+
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="text-chat.js"></script>
+    <script type="text/javascript" src="text-chat-bubbles.js"></script>
+    <script type="text/javascript" src="shared-editor.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        body {
+            position: absolute; width: 100%; height: 100%;
+            display: flex; flex-flow: row nowrap; align-items: stretch;
+        }
+        shared-storage {
+            display: none; visibility: hidden;
+        }
+        shared-editor {
+            height: 120px;
+        }
+        div.chat, text-chat {
+            position: relative; flex: 1;
+        }
+        div > shared-editor, text-chat {
+            margin: 4px;
+        }
+        div.chat {
+            display: flex; flex-flow: column nowrap;
+        }
+
+        text-chat {
+            border: solid 1px lightgrey;
+            box-sizing: border-box;
+        }
+        .rich-text-editor, .rich-text-editor-tools {
+            border-color: lightgrey !important;
+        }
+
+    </style>
+</head>
+<body>
+    <shared-storage id="storage" src="local"></shared-storage>
+
+    <div class="chat">
+        <text-feed-data id="data1" for-storage="storage" self="alice" displayname="Alice" path="sessions/chat748"></text-feed-data>
+        <text-chat for-data="data1" input="false">
+            <text-feed-bubbles showtyping="true" arrow="c-lower" label="other"
+                style="--background-color-self: lightblue; --background-color-other: lightgreen;">
+            </text-feed-bubbles>
+        </text-chat>
+        <shared-editor disabled="code,abbr,upload,download,pointer,lock,close,resize" wraptext="true"></shared-editor>
+    </div>
+    <div class="chat">
+        <text-feed-data id="data2" for-storage="storage" self="bob" displayname="Bob" path="sessions/chat748"></text-feed-data>
+        <text-chat for-data="data2">
+            <text-feed-bubbles showtyping="true" arrow="c-lower" input="none" label="other"
+                style="--background-color-self: lightgreen; --background-color-other: lightblue;">
+            </text-feed-bubbles>
+            <shared-editor slot="inputarea" disabled="code,abbr,upload,download,pointer,lock,close,resize" wraptext="true"></shared-editor>
+        </text-chat>
+    </div>
+
+    <text-feed-data id="data3" for-storage="storage" self="carol" displayname="Carol" path="sessions/chat748"></text-feed-data>
+    <text-chat for-data="data3">
+        <text-feed></text-feed>
+    </text-chat>
+
+    <script type="text/javascript">
+        [].slice.call(document.querySelectorAll("shared-editor")).forEach(editor => {
+            editor.addEventListener("enter", event => {
+                const editor = event.currentTarget;
+                let text = editor.content;
+                setTimeout(() => { // so that enter is processed.
+                    editor.content = "";
+                });
+                let type = "text/html";
+                // const hex = text.split("")
+                //     .map(c => c.charCodeAt(0).toString(16).padStart(2, "0"))
+                //     .join(" ");
+                // console.log(text + "\n" + hex);
+                const match = text.match(/^<p>([\s\S]*)<\/p>$/m);
+                if (match) {
+                    text = match[1];
+                }
+                if (text.indexOf("<") < 0) {
+                    type = undefined;
+                    const t = document.createElement("textarea");
+                    t.innerHTML = text;
+                    text = t.value; // unescape entities, but keep tags if any.
+                }
+                let chat = editor.previousElementSibling;
+                if (chat && chat.send && chat.localName == "text-chat") {
+                    chat.send({type, text});
+                } else {
+                    const data = {type, text};
+                    editor.dispatchEvent(Object.assign(new Event("textinput"), {data: {type, text}}));
+                }
+            });
+
+            editor.addEventListener("typing", event => {
+                const editor = event.currentTarget;
+                let chat = editor.previousElementSibling;
+                if (chat && chat._send_typing && chat.localName == "text-chat") {
+                    chat._typing = event.value;
+                    chat._send_typing(); // TODO: fix this hack.
+                }
+            });
+        });
+    </script>
+</body>
+</html>

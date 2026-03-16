@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="white-board.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
+    <style type="text/css">
+        body {
+            position: absolute; width: 100%; height: 100%; display: flex; flex-flow: row nowrap;
+        }
+        white-board {
+            position: relative; width: 50%; height: 100%;
+            border: solid 1px grey;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <shared-storage id="storage" src="local"></shared-storage>
+    <white-board-data id="data1" for-storage="storage" path="sessions/wb123"></white-board-data>
+    <white-board for-data="data1" position="top-right" label="Alice"></white-board>
+    <white-board-data id="data2" for-storage="storage" path="sessions/wb123"></white-board-data>
+    <white-board for-data="data2" label="Bob"></white-board>
+</body>
+</html>

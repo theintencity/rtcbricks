@@ -17,10 +17,15 @@
     
     <script type="text/javascript"src="user-roster.js"></script>
     <script type="text/javascript"src="media-chat.js"></script>
+    <script type="text/javascript"src="white-board.js"></script>
+    <script type="text/javascript"src="locked-notepad.js"></script>
+    <script type="text/javascript"src="rich-text-editor.js"></script>
+    <script type="text/javascript"src="shared-editor.js"></script>
     
     <script type="text/javascript"src="phone-call.js"></script>
     <script type="text/javascript"src="click-to-call.js"></script>
     <script type="text/javascript"src="device-selector.js"></script>
+    
     
     <link href="index.css"rel="stylesheet"type="text/css">
     <script type="text/javascript"src="index.js"></script>
@@ -79,14 +84,15 @@ These include advanced usages such as video image manipulation and multi-party
 conferencing, and include other components such as <code>flex-box</code>
 for conference display layout and <code>shared-storage</code> for generic end-point driven
 software implementations of communication applications. Web components for several common
-scenarios are also described, e.g., <code>text-chat</code>.</p>
+scenarios are also described, e.g., <code>text-chat</code>, <code>locked-notepad</code> or 
+<code>click-to-call</code>.</p>
 
 
 <ol class="toc"></ol>
 
 
 
-<h2 id="abstract"category="Basic"cat="Intro"position="3,-35"short="what's video-io?">What is video-io?</h2>
+<h2 id="abstract"category="Basic"cat="Intro"position="8,-35"spread="10"short="what's video-io?">What is video-io?</h2>
 
 <p>Video-io is a web component demonstrating several generic WebRTC related use cases, e.g., 
 live camera view, recording of multimedia messages, live video call or conferencing, in 
@@ -932,7 +938,7 @@ These attributes and properties are summarized below.</p>
 
 
 
-<h2 id="topic-api"category="Advanced - API"cat="API"position="50,-25"short="video-io">How to use the video-io API? (complete reference)</h2>
+<h2 id="topic-api"category="Advanced - API"cat="API"position="50,-20"spread="12"short="video-io">How to use the video-io API? (complete reference)</h2>
 
 <p>Previously, we have shown several examples of attributes and properties. Here we formally define those
 and enumerate and describe all the available values.</p>
@@ -1076,26 +1082,30 @@ multiple video-io or other elements.</p>
     <img class="image"src="11-pwa-2.png"style="height: 275px;">
 </p>
 
-<h3 short="PWA">Progressive web app (PWA)</h3>
+<h3 short="PWA"angle="90">Progressive web app (PWA)</h3>
 
 <p>This video-io standalone web app can be installed as a progressive web app (PWA),
 on desktop or mobile. To use the installed app, first launch the web app in the browser,
 then use the browser's prompt or the install button near the address bar to
-install it locally.</p>
+install it locally. Try the following to launch the web app with a local camera preview,
+and a local subscribed view of the same, and then click the install button near the address bar.</p>
 
-<button class="tryit"shift nocode path="video-io.html"></button>
+<pre><code class="lang-js">https://rtcbricks.kundansingh.com/v1/video-io.html?publish=...&subscribe=...
+</code></pre>
+
+<button class="tryit"shift nocode path="video-io.html?publish=one&subscribe=one"></button>
 
 <p>Note that the PWA manifest file for this app expects
 the web page of the app to be at <code>/v1/video-io.html</code>. So if your testing
 is not on this path, it may not allow or show the install button. Alternatively,
 you can edit the video-io.json file for another path as per your hosting.</p>
 
-<p>The user interface allows publish or subscribe of named streams, e.g., 
-by entering publish=alice or subscribe=alice. It attaches a video-io component
-to each such stream. For testing with external named streams, you need to specify
-the full description, e.g., 
+<p>The user interface allows publish or subscribe of the named streams, e.g., 
+by entering publish=alice or subscribe=alice it uses the local named-stream components, 
+and it attaches a video-io component to each such stream. For testing with
+external named streams, you need to specify the full description, e.g., 
 <span style="word-break: break-all; font-family: monospace;">publish=rtclite:ws://localhost:8080/streams/1234</span> 
-will publish to that named stream using rtclite-stream component. A list of publish and subscribe
+will publish to that named stream using the rtclite-stream component. A list of publish and subscribe
 parameters can also be supplied on launch. It can also be launched on
 desktop, if not already open, to add a new stream using its URL protocol handlers: 
 <code>web+ezpub</code> or <code>web+ezsub</code>, for publish or subscribe, respectively. 
@@ -1123,6 +1133,9 @@ elements. Consider the following example of the URL parameter:</p>
 <pre><code class="lang-js">?publish=...&config=video1.screen%3Dtrue%26video.style.object-fit%3Dcontain
 </code></pre>
 
+<button class="tryit"shift nocode path="video-io.html?publish=one&config=video1.screen%3Dtrue%26video.style.object-fit%3Dcontain"></button>
+
+
 <p>Note that the parameters are parsed and processed sequentially. 
 It creates a publish video-io first after processing the publish parameter, and labels it as <code>video1</code>.
 Then the config parametre is parsed, to interpret two actual values as follows. Note that
@@ -1149,12 +1162,23 @@ box.display=pip
 video2.float=
 </code></pre>
 
+<button class="tryit"shift nocode path="video-io.html?publish=one&subscribe=one&config=box.display%3Dpip%26video2.float%3D"></button>
+
+<p>All the properties and styles of the video-io components are detailed in the 
+previous chapter, <a href="#topic-api">How to use the video-io API?</a>
+Additionally, standard CSS styles can be used too.</p>
+
 <p>The goal of this video-io app, separate from the video-io web component, is to
 create a generic user interface for web video conferencing applications, where
 the conferencing app logic can reside in external software, which invokes this app
 to display, capture, publish and subscribe various media streams using the protocol
 handler. The extensive video-io component API can be used to further customize
 its behavior using the URL parameters.</p>
+
+
+
+
+
 
 
 
@@ -1308,9 +1332,8 @@ with the supplied server information.</p>
 
 <p>The <code>id</code> attribute of the <code>shared-storage</code> instance identifies the
 shared storage element on the web page, and can be used by other components to link to this
-data storage. Such other components are described 
-
-later in this document. Those components accept the storage element identifier
+data storage. Such other components are described later in this document including in 
+the collaboration and telephony topics. Those components accept the storage element identifier
 using the <code>for-storage</code> attribute as shown below.</p>
 
 <pre><code class="lang-html">&lt;text-feed-data for-storage="storage" ...&gt;&lt;/text-feed-data&gt;
@@ -1915,7 +1938,11 @@ component internally uses those CSS styles, and allows customizing the display
 using a few attributes, while catering to a wide range of display scenarios suitable
 for video conferencing.</p>
 
+<p>Try the example below for join-leave style multi-party conference, but using the
+<code>flex-box</code> container for video layout. It allows seeing the behavior
+as the window size changes, or the video orientation is altered for a participant.</p>
 
+<button class="tryit"path="34-join-flex-box.html"width="800"height="650"></button>
 
 <p>The basic usage of the <code>flex-box</code> component is shown below. 
 In this example the container <code>flex-box</code> contains three <code>div</code> elements.
@@ -2964,11 +2991,10 @@ frame is not required either.</p>
 
 
 
-<h2 category="Advanced - Collaboration"cat="Collab"position="-45,-45"short="create components">How to create components using shared storage?</h2>
+<h2 category="Advanced - Collaboration"cat="Collab"position="-42,-47"short="create components">How to create components using shared storage?</h2>
 
 <p>We have created several web components to support multimedia collaboration
-use cases such as text chat, user roster,
- 
+use cases such as text chat, user roster, white board, notepad,
 and multimedia conference. These components use the shared storage abstraction described in 
 <a href="#storage">How to use shared data?</a> The basic idea is to provide the
 data model for the component via a <code>shared-storage</code> instance,
@@ -2995,8 +3021,10 @@ discussed earlier, there are several other supporting implementations in
 <code>shared-storage.js</code> as shown below. These are used in implementing
 the various collaboration use cases described in subsequent sections using the
 model-view design pattern. In particular, the main collaboration use case
-is implemented in the view component such as <code>text-feed</code>, and <code>shared-storage</code> based data model is 
-implemented in a separate component such as <code>text-feed-data</code>. The programming interface of the data model
+is implemented in the view component such as <code>text-feed</code> or
+<code>shared-editor</code>, and <code>shared-storage</code> based data model is 
+implemented in a separate component such as <code>text-feed-data</code>
+or <code>shared-editor-data</code>. The programming interface of the data model
 component is designed to be generic enough, such that it can be replaced 
 with another component implementation using the same interface, but a different
 backend service, instead of the storage based one, such as 
@@ -3404,13 +3432,77 @@ sending and receiving of messages. Only file sharing needs the data model in the
 <p>Similar to the <code>text-chat</code> and <code>text-feed</code>
 components, you can share files using drag-and-drop, send HTML content,
 send smileys, and convert typed URLs to clickable links, in the message display.
+Alternatively, you can use another rich text editor such as the <code>shared-editor</code>
+component, described later, to facilitate HTML editing for use with 
+sending HTML content. In that case, you should disable the built-in input area
+using the <code>input</code> attribute. The <code>enter</code> event from the 
+editor instance should be used to explicitly send a chat message, using
+the correct <code>type</code>. In particular, if the content is not HTML,
+it should use "text/plain", and if the content is HTML, it should use "text/html".</p>
 
+<p>Example code snippet is shown below.</p>
+
+<pre><code class="lang-html">&lt;text-chat ... input="false"&gt;
+    &lt;text-feed-bubbles ...&gt;&lt;/text-feed-bubbles&gt;
+&lt;/text-chat&gt;
+&lt;shared-editor disabled="..." wraptext="true"&gt;&lt;/shared-editor&gt;
+</code></pre>
+<pre><code class="lang-js">const editor = document.querySelector("shared-editor");
+const chat = document.querySelector("text-chat");
+editor.addEventListener("enter", event => {
+    let text = editor.content;
+    setTimeout(() => { editor.content = ""; });
+    let type = "text/html";
+    const match = text.match(/^&lt;p&gt;([\s\S]*)&lt;\/p&gt;$/m);
+    if (match)
+        text = match[1];
+    const type = (text.indexOf("&lt;") &lt; 0) ? undefined : "text/html";
+    chat.send({type, text});
+});
+</code></pre>
+
+<p>Instead of using an external <code>shared-editor</code>, you can embed it 
+by including as a child of <code>text-chat</code> in the <code>inputarea</code>
+slot as follows. Note that in this mode, it should not disable chat input, and
+it should use events on the
+editor to inform the parent <code>text-chat</code> about this new text input.
+Since the editor is included in the chat component as <code>inputarea</code>,
+the chat component can listen to the <code>textinput</code> and <code>typing</code>
+events from the embedded editor.</p>
+
+<pre><code class="lang-html">&lt;text-chat ...&gt;
+    &lt;text-feed-bubbles ...&gt;&lt;/text-feed-bubbles&gt;
+    &lt;shared-editor slot="inputarea" disabled="..." wraptext="true"&gt;&lt;/shared-editor&gt;
+&lt;/text-chat&gt;
+</code></pre>
+<pre><code class="lang-js">const editor = document.querySelector("shared-editor");
+editor.addEventListener("enter", event => {
+    let text = editor.content;
+    setTimeout(() => { editor.content = ""; });
+    let type = "text/html";
+    const match = text.match(/^&lt;p&gt;([\s\S]*)&lt;\/p&gt;$/m);
+    if (match)
+        text = match[1];
+    const type = (text.indexOf("&lt;") &lt; 0) ? undefined : "text/html";
+    const ev = new Event("textinput");
+    ev.data = {type, text};
+    editor.dispatchEvent(ev);
+});
+</code></pre>
+
+<p>Try the following example, with two instances of the <code>text-chat</code> component
+attached to two instances of <code>shared-editor</code>, and a third <code>text-chat</code>
+component with default input, representing three separate users in a chat conversation.
+The first instance uses an external <code>shared-editor</code> whereas the second
+one uses an embedded <code>shared-editor</code>.</p>
+
+<button class="tryit"path="51-text-chat-rte.html"preview width="760"height="540"></button>
 
 <script type="text/javascript">
     tabulateComponent("text-feed-bubbles");
 </script>
 
-</p><p>Currently, the <code>text-feed-bubbles</code> implementation has some limitations
+<p>Currently, the <code>text-feed-bubbles</code> implementation has some limitations
 such as lack of pagination or scrolling, and inability to delete a message. These 
 may be improved in the future.</p>
 
@@ -3473,6 +3565,58 @@ display.</p>
 
 <p>All the styles described in <code>text-feed-bubbles</code> also apply to
 <code>text-item-bubbles</code>, and may be set on that component, if needed.</p>
+
+<h3>Editable message</h3>
+
+<p>By default, once a message is sent, it cannot be changed. However, message editing
+feature can be enabled in various components using the <code>allowedit</code> property.
+Enabling it on <code>text-chat</code> allows use of up and down arrow to select a
+previous message from the history of messages sent from this instance, and be able to
+edit and re-send it. Enabling it on <code>text-feed</code> or <code>text-feed-bubbles</code>
+allows replacing an existing
+message with the edited one received from the data model. Enabling it on the <code>text-feed-data</code>
+data model allows replacing the actual message in the storage, and triggering the right
+update event to inform the attached <code>text-feed</code> element to update its interface.</p>
+
+<p>To enable the editable message feature, all the three components should have <code>allowedit</code> set,
+and additionally, the <code>text-chat</code> component should have the <code>maxhistory</code>
+set, as shown below.</p>
+
+<pre><code class="lang-html">&lt;text-feed-data id="data" ... allowedit="true"&gt;&lt;/text-feed-data&gt;
+&lt;text-chat for-data="data" allowedit="true" maxhistory="10"&gt;
+    &lt;text-feed ... allowedit="true"&gt;&lt;/text-feed&gt;
+&lt;/text-chat&gt;
+</code></pre>
+
+<p>Try the following example emulating two users in a text chat using <code>text-feed</code>. After sending new
+messages, use the up arrow to select one of the previously sent message, edit it, and
+press enter to send an update.</p>
+
+<button class="tryit"path="51-text-chat-edit.html"width="630"height="310"></button>
+
+<p>The only difference is that the left one does not have <code>allowedit</code> for the <code>text-feed</code>
+component. Thus, when an update or edit is received, the left one strikes out the
+previous message, and adds the new one at the end, whereas the right one with
+<code>allowedit</code> for its <code>text-feed</code> replaces
+the previous message with the new one.</p>
+
+<p>The <code>allowedit</code> property on the parent <code>text-chat</code> component enables viewing
+historical message in the input area, and when a message from history is edited, it
+enables storing the message edit event in the chat history. The <code>allowedit</code>
+property on the <code>text-feed</code> component enable replacing a message from history with the
+edit, and without that property, it appends at the end, while striking out the message from history.
+In addition to replacing a previous message with an edit, it also enables removing the previous 
+message if the edit deletes the message text.</p>
+
+<p>Now try again with the <code>text-feed-bubbles</code> component used by the first two
+users, and <code>text-feed</code> without <code>allowedit</code> by the third.</p>
+
+<button class="tryit"path="51-text-chat-bubbles-edit.html"width="630"height="310"></button>
+
+<p>The above example is similar to the earlier one, except that <code>allowedit</code> is set 
+on various components. Note that the <code>text-feed-bubbles</code> component hides an empty
+or deleted message only when <code>showempty</code> is set to false, which is done for the
+second chat component in the example above, but not the first one.</p>
 
 
 
@@ -3748,7 +3892,15 @@ change on clicking the toggle button, or automatically on resize depending on th
 width of the component. In hangout display, the toggle button can be click-dragged
 to resize the chat versus videos area.</p>
 
+<p>Try the following example to see the various properties of various connected
+components in action. It also allows changing the toolbar and menu items.</p>
 
+<button class="tryit"path="53-media-chat-attrs.html"preview width="1000"height="500"></button>
+
+<p>The left side in the above example allows changing various properties and styles.
+The right side shows the component in action. There are some pre-configured items in
+the user-roster and text-chat for demonstration purpose. The left side also allows sending
+a sample text message from another user.</p>
 
 <h3 name="toolbar-buttons"short="Toolbar/Menu">toolbar-buttons and overlay-menu</h3>
 
@@ -3970,16 +4122,284 @@ and customizable using its various properties such as display, speakervideo, all
 allowaction, and others.</p>
 
 
+<h2 short="whiteboard">How to use a shared whiteboard?</h2>
+
+<p>Shared white board is an important collaboration tool. The <code>white-board</code>
+component implements a simple white board which can be attached to a <code>white-board-data</code> data model
+to enable shared white board.</p>
+
+<p>Try the following example to see the <code>white-board</code> component
+in action.</p>
+
+<pre><code class="lang-html">&lt;white-board&gt;&lt;/white-board&gt;
+</code></pre>
+
+<button class="tryit"path="54-white-board.html"preview width="600"height="400"></button>
+
+<p>Besides drawings and text inserts, it also allows drag and drop of image
+files.</p>
+
+<p>Try the following example of two shared <code>white-board</code>
+instances attached to the same storage path using two separate
+<code>white-board-data</code> instances, representing two 
+collaborating users.</p>
+
+<pre><code class="lang-html">&lt;white-board-data id="data1" for-storage="..." path="..." &gt;&lt;/white-board-data&gt;
+&lt;white-board for-data="data1"&gt;&lt;/white-board&gt;
+</code></pre>
+
+<button class="tryit"path="54-white-board-shared.html"preview width="820"height="400"></button>
+
+<p>The data architecture uses a list of drawings, text or content information in
+the shared storage. The ordering of the list items is important. The item
+data includes all the information needed to render the drawing, text or content.</p>
+
+<h3 id="white-board">white-board</h3>
+
+<script type="text/javascript">
+    tabulateComponent("white-board");
+    tabulateComponent("white-board-data");
+</script>
+
+
+<h2 short="notepad">How to use a shared notepad?</h2>
+
+<p>Shared notepad is an important collaboration tool. The <code>locked-notepad</code>
+component implements a text editor that can be locked for editing to avoid 
+conflict. It can be attached to a <code>locked-notepad-data</code> data model
+to enable shared notepad.</p>
+
+<pre><code class="lang-html">&lt;locked-notepad&gt;&lt;/locked-notepad&gt;
+</code></pre>
+
+<p>Try the following example of two <code>locked-notepad</code>
+instances attached to the same path on storage using two separate
+<code>locked-notepad-data</code> instances, representing two 
+collaborating users.</p>
+
+<pre><code class="lang-html">&lt;locked-notepad-data id="data1" self="alice" for-storage="..." path="..." &gt;&lt;/locked-notepad-data&gt;
+&lt;locked-notepad for-data="data1"&gt;&lt;/locked-notepad&gt;
+</code></pre>
+
+<button class="tryit"path="55-shared-notepad.html"preview width="700"height="400"></button>
+
+<p>Only one user may have the editing lock at any time.
+Note that editing is allowed only when lock is acquired, as indicated by the pencil icon.
+To gain the lock, click on the lock icon at the bottom. If the 
+lock is actively used by the other user, that user must release
+the lock first by clicking on the pencil icon. On inactivity, the 
+lock is automatically released. The identifier of the user
+indicated by the <code>self</code> attribute is used to store the 
+lock in the storage. </p>
+
+<p>The component also supports various non-trivial forms for editing
+such as copy, cut and paste. The editing is propagated to other
+instances on the storage path using the notification messages of
+the shared storage. The data architecture uses the last commited copy
+of the entire text followed by delta changes of the current editing
+session. Once the editing lock is released by this user,
+or acquired by another user, the delta changes are merged and the commited 
+copy is updated.</p>
+
+
+<p>The <code>shared-editor</code> component, on the other hand, includes a
+rich-text-editor. Unlike the previous component, this one does not require
+locking to edit the text, although locking is supported to avoid conflict.
+Like the previous component, this one can also be attached to a data model,
+<code>shared-editor-data</code>, and a shared storage to enable shared editing.</p>
+
+<pre><code class="lang-html">&lt;shared-editor&gt;&lt;/shared-editor&gt;
+</code></pre>
+
+<p>Try the following example of two <code>shared-editor</code>
+instances attached to the same path on storage, representing two 
+collaborating users.</p>
+
+<pre><code class="lang-html">&lt;shared-editor-data id="data1" self="alice" for-storage="..." path="..." &gt;&lt;/shared-editor-data&gt;
+&lt;shared-editor for-data="data1"&gt;&lt;/shared-editor&gt;
+</code></pre>
+
+<button class="tryit"path="55-shared-editor.html"preview width="700"height="500"></button>
+
+<p>Our implementation has only some of the basic rich text editing support.
+Moreover, the real-time synchronization of the shared text can have inconsistencies 
+due to conflicts in simultaneous editing on connected instances. 
+However, it shows the concept, and in the future, the consistency may be 
+improved using operational transforms.</p> 
+
+<p>In the current implementation,
+to work around the inconsistencies, we provide a feature to perform locked 
+editing and upload. When the editor is locked, only the owner can edit
+the shared text, and others see a copy of it. When the owner unlocks the editor, he can
+upload her local edited copy to the shared storage, which gets delivered to
+other connected instances.</p>
+
+<p>At most one user may have the editing lock at any time. However, 
+if no user has the editing lock, then any user can edit the shared text.</p>
+
+<p>The tools bar includes several rich text editing options, in addition to
+other functions such as to upload the text to shared storage or to download
+the text from shared storage. The source text is stored as HTML. Inserting an 
+image is allowed. Clicking on an inserted image allows adjusting the size.
+However, the size change is not propagated implicitly to the shared storage or
+other users, because there is no easy way to identify the same image on
+the receiver side. This may get fixed in the future.
+The tools bar size is reduced when the component size
+falls below some threshold in width or height. You can try that by resizing the
+component.</p>
+
+<p>The component can be used as a standalone rich text editor without a shared storage.
+Try the following example of a standalone editor, with various features 
+enabled or disabled.</p>
+    
+<button class="tryit"path="55-shared-editor-attrs.html"preview width="600"height="500"></button>
+    
+<p>When a data model is attached, it uses the data model for the baseline
+text, incremental changes, and the editing lock, if any. The caret and/or cursor position of the 
+remote users on the shared editor is also shown. Similar to the previous
+component, this one commits the incremental changes on certain events such
+as when the upload button is clicked, or the source HTML editing is 
+completed.</p>
+
+
+<h3 id="locked-notepad">locked-notepad</h3>
+
+<script type="text/javascript">
+    tabulateComponent("locked-notepad");
+    tabulateComponent("locked-notepad-data");
+</script>
+
+<h3 id="shared-editor"angle="10">shared-editor</h3>
+
+<p>The complete list of features in the tools bar are as follows:</p>
+
+<table class="properties nowrap">
+    <tr><th>Feature</th><th>Example and description</th></tr>
+    <tr><td>Bold</td>
+    <td><code>This is &lt;strong&gt;<strong>bold</strong>&lt;/strong&gt;</code></td></tr><tr><td></td><td>
+Bold text using the &lt;strong&gt; tag. Select some text and click on button. If the
+selection is already a part of an existing such tag, then the tag is removed. Shortcut is ctrl+B
+    </td></tr><tr><td>Italic</td>
+    <td><code>This is &lt;em&gt;<em>italic</em>&lt;/em&gt;</code></td></tr><tr><td></td><td>
+Italic text using the &lt;em&gt; tag. Select some text and click on button. If the
+selection is already a part of an existing such tag, then the tag is removed. Shortcut is ctrl+I
+    </td></tr><tr><td>Underline</td>
+    <td><code>This is &lt;u&gt;<u>underline</u>&lt;/u&gt;</code></td></tr><tr><td></td><td>
+Underline text using the &lt;i&gt; tag. Select some text and click on button. If the
+selection is already a part of an existing such tag, then the tag is removed. Shortcut is ctrl+U. 
+    </td></tr><tr><td>Link</td>
+    <td><code>This is a &lt;a href="http://something"&gt;link text&lt;/a&gt;</code></td></tr><tr><td></td><td>
+Anchor link using the &lt;a href="..."&gt; tag. If the button is clicked, it converts the selected URL text if 
+any to a link. If non-URL text is selected, it prompts to enter the URL. If no text is 
+selected, it prompts to enter the URL and inserts that as link text. If the 
+selection is already part of an existing such tag, then only the href attribute is changed.
+Empty value entered in the prompt causes removal of the tag. Shortcut is ctrl+L.
+    </td></tr><tr><td>Source</td>
+    <td></td></tr><tr><td></td><td>
+Clicking this button toggles the view between rich text editor view and source HTML view.
+In the rich text editor view, any update is immediately propagated to the shared storage,
+and to other connected instances. In the source HTML view, editing is not propagated immediately.
+When the button is clicked again in the source HTML view, at that time the locally edited source HTML
+text is saved in the shared storage, and it switches to the rich text editor view.
+If the editor is locked by another connected instance, and saving the text is not allowed
+at the moment, then it indicates that state, and remains in the source HTML view.
+However, if the close button is clicked, the local changes in the source HTML view are
+discarded without saving. Shortcut is ctrl+X.
+    </td></tr><tr><td>Code</td>
+    <td><code>This is &lt;code&gt;code format&lt;/code&gt;</code></td></tr><tr><td></td><td>
+Pre-formatted text using the &lt;code&gt; tag. Select some text and click on button. If the
+selection is already a part of an existing such tag, then the tag is removed.
+    </td></tr><tr><td>Font Size</td>
+    <td><code>&lt;span style="font-size: 150%"&gt;some text&lt;/span&gt;</code></td></tr><tr><td></td><td>
+When the button is clicked, the font size of the selected text is changed, and applied 
+using the &lt;span style="font-size: ..."&gt; tag. The selection is changed on subsequent clicks in round robin,
+to these values: 125%, 150%, 200%, 300%, 25%, 50%, 75% and back to 100%.
+    </td></tr><tr><td>Font Face</td>
+    <td><code>&lt;span style="font-family: arial,sans-serif"&gt;some text&lt;/span&gt;</code></td></tr><tr><td></td><td>
+When the button is clicked, the font family of the selected text is changed, and applied
+using the &lt;span style="font-family: ..."&gt; tag. The selection is changed on subsequent clicks in round robin,
+to these values: Arial, Times New Roman, Georgia, Verdana, Tahoma, Trebuchet, Courier New, 
+and Fantasy.
+    </td></tr><tr><td>Color</td>
+    <td><code>&lt;span style="color: red"&gt;some text&lt;/span&gt;</code></td></tr><tr><td></td><td>
+When the button is clicked, it prompts for the text color name or code, and applies that
+to the selected text using the &lt;span style="color: ..."&gt; tag. User can enter color name recognized in CSS, such as red, blue, darkgreen,
+redorange, etc., or can enter the code such as #ff8080. If the
+selection is already a part of an existing such tag, then only the style is changed.
+Empty value entered in the prompt causes removal of the style or the tag.
+    </td></tr><tr><td>Background</td>
+    <td><code>&lt;span style="background-color: lightblue"&gt;some text&lt;/span&gt;</code></td></tr><tr><td></td><td>
+When the button is clicked, it prompts for the text background color name or code, and
+applies that to the selected text using the &lt;span style="background-color: ..."&gt;. Similar to previous, the user can enter the color name
+or code, recognized in CSS. If the
+selection is already a part of an existing such tag, then only the style is changed.
+Empty value entered in the prompt causes removal of the style or the tag.
+    </td></tr><tr><td>Abbreviation</td>
+    <td><code>This uses &lt;abbr title="cascading style sheet"&gt;CSS&lt;/abbr&gt;</code></td></tr><tr><td></td><td>
+When the button is clicked, it prompts for the meaning or content for the abbreviated
+text, and applies it to the selected text using the &lt;abbr title="..."&gt; tag. If the
+selection is already a part of an existing such tag, then only the title attribute is changed.
+Empty value entered in the prompt causes removal of the tag.
+    </td></tr><tr><td>Image</td>
+    <td><code>&lt;img alt="" src="data:image/jpg;..."&gt;</code></td></tr><tr><td></td><td>
+When the button is clicked, it opens the file selection dialog box to select an image
+file, and inserts it in the text, using the &lt;img alt="" src="..."&gt; tag. It uses
+a data URL for the <code>src</code> attribute. If the
+selection is already part of an existing such tag, then only the <code>src</code>
+attribute is changed.
+    </td></tr><tr><td>Pointer</td>
+    <td></td></tr><tr><td></td><td>
+Clicking the button toggles the mouse pointer display state. When enabled, it sends the
+mouse pointer's coordinates to all the other instances, which then display the
+mouse pointer annotated with its label. This feature allows pointing to a part of the
+editor text, and the pointer is visible to other connected instances' users. Note that
+text editing caret display state is enabled by default.
+    </td></tr><tr><td>Upload</td>
+    <td></td></tr><tr><td></td><td>
+When the button is clicked, it uploads the local editor's text to the shared storage, so
+that other connected instances are synced to this instance's text. It may override
+other connected instances' text. It also cleans up the shared storage, so that the incremental
+changes are collapsed, and only the final text copy is saved.
+    </td></tr><tr><td>Download</td>
+    <td></td></tr><tr><td></td><td>
+When the button is clicked, it downloads the text from the shared storage, and updates
+the local editor's text with that. It may override and discard local editor's content
+and unsaved changes. It first loads the text, and then applies any incremental changes,
+to the local editor's text. This operation is allowed even when the editing is locked
+by another instance.
+    </td></tr><tr><td>Lock</td>
+    <td></td></tr><tr><td></td><td>
+When the button is clicked, it attempts to toggle the lock state of the editor. If
+the editor is not locked, then it grabs the lock, thus preventing other connected instances
+from editing the text. If the editor is already locked by this instance, then it
+releases the lock, thus allowing other connected instances to edit or grab the lock.
+If the editor is already lock by another instance, then it delivers a message to that
+instance about the lock request. The lock button's icon turns red or green depending
+on the state of locked by another instance or locked by self, respectively.
+    </td></tr><tr><td>Close</td>
+    <td></td></tr><tr><td></td><td>
+In the source HTML view, an additional close button is shown. When the button is clicked,
+it discards any local editing in the source HTML view, and goes back to the rich text
+editor view, without saving the changes to the shared storage.
+    </td></tr><tr><td>Resize</td>
+    <td></td></tr><tr><td></td><td>
+This is not in the tools bar, but appears as a resize control at the bottom right corner
+of the editor. Click-and-drag on this control allows resizing the editor's user 
+interface.
+    </td></tr>
+</table>
+
+<script type="text/javascript">
+    tabulateComponent("shared-editor");
+    tabulateComponent("shared-editor-data");
+</script>
 
 
 
 
 
 
-
-
-
-<h2 category="Advanced - Telephony"cat="Telephony"position="-23,-1"short="phone state">What is a phone state?</h2>
+<h2 category="Advanced - Telephony"cat="Telephony"position="-43,0"spread="12"short="phone state">What is a phone state?</h2>
 
 <p>Earlier in <a href="#topic-twoparty">How to do two-party video call?</a> we described
 and illustrated state machines for single line and multiple line video phone device engaged in 
@@ -4206,7 +4626,7 @@ methods described later.</p>
 
 <button class="tryit"path="63-click-to-call.html"preview width="880"height="910"></button>
 
-<h3 id="click-to-call">click-to-call</h3>
+<h3 id="click-to-call"angle="-90">click-to-call</h3>
 
 <script type="text/javascript">
     tabulateComponent("click-to-call");
@@ -4312,7 +4732,7 @@ as well as to try new things by extending the existing applications.</p>
     </td></tr>
     <tr><td>collaboration</td><td></td></tr>
     <tr><td></td><td>
-        Components for text chat, and media chat.
+        Components for text chat, media chat, white board, and locked notepad.
         All these work with the shared-storage component.
         <table class="properties nowrap">
             <tr><th>Component</th><th>Description</th></tr>
@@ -4385,6 +4805,33 @@ as well as to try new things by extending the existing applications.</p>
             <tr><td><a href="#volume-level">volume-level</a></td><td>Include media-chat.js</td></tr>
             <tr><td></td><td>
                 Sound activity and volume control to be used in media-chat.
+            </td></tr>
+            <tr><td><a href="#white-board">white-board</a></td><td>Include white-board.js</td></tr>
+            <tr><td></td><td>
+                Implements white board, allows drawings, texts and drag-and-drop images,
+                and if attached to a data model, enables shared white board.
+            </td></tr>
+            <tr><td>white-board-data</td><td>Include white-board.js</td></tr>
+            <tr><td></td><td>
+                Data model for white-board, using shared storage.
+            </td></tr>
+            <tr><td><a href="#locked-notepad">locked-notepad</a></td><td>Include locked-notepad.js</td></tr>
+            <tr><td></td><td>
+                Implements locked text editor, and if attached to data model,
+                enables shared notepad.
+            </td></tr>
+            <tr><td>locked-notepad-data</td><td>Include locked-notepad.js</td></tr>
+            <tr><td></td><td>
+                Data model for locked-notepad, using shared storage.
+            </td></tr>
+            <tr><td><a href="#shared-editor">shared-editor</a></td><td>Include shared-editor.js</td></tr>
+            <tr><td></td><td>
+                Implements rich text editor, and if attached to a data model,
+                enables shared editing.
+            </td></tr>
+            <tr><td>shared-editor-data</td><td>Include shared-editor.js</td></tr>
+            <tr><td></td><td>
+                Data model for shared-editor, using shared storage.
             </td></tr>
             
         </table>

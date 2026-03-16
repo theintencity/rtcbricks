@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+
+    <!-- https://github.com/taufik-nurrohman/rich-text-editor -->
+    <link rel="stylesheet" type="text/css" href="rich-text-editor.css">
+    <script type="text/javascript" src="rich-text-editor.js"></script>
+
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="shared-editor.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
+    <style type="text/css">
+        body {
+            position: absolute; width: 100%; height: 100%;
+            display: flex; flex-flow: row nowrap; align-items: stretch;
+        }
+        shared-editor {
+            position: relative; flex: 1; margin: 1ch;
+        }
+        div.form {
+            margin: 1ch;
+            width: 200px;
+            display: grid;
+            align-content: flex-start;
+            justify-items: flex-start;
+            grid-template-columns: 30px 1fr;
+            grid-gap: 4px;
+        }
+        div.form label {
+            white-space: nowrap;
+        }
+        div.form input {
+            width: 30px;
+        }
+    </style>
+</head>
+<body>
+    <shared-editor enabled="b,i,u,a,code,fontsize,font,color,background,x,close,resize"></shared-editor>
+    <div class="form"></div>
+    <script type="text/javascript">
+        const editor = document.querySelector("shared-editor");
+        const form = document.querySelector("div.form");
+
+        editor.buttons.forEach(data => {
+            const label = document.createElement("label");
+            label.innerText = data.name;
+            const input = document.createElement("input");
+            input.setAttribute("type", "checkbox");
+            input.setAttribute("name", data.name);
+            input.title = data.title;
+            input.checked = data.visible;
+
+            form.append(input);
+            form.append(label);
+
+            input.onclick = event => {
+                const disabled = [].slice.call(form.querySelectorAll("input[type='checkbox']"))
+                    .filter(input => { return !input.checked; })
+                    .map(input => input.getAttribute("name"));
+                editor.disabled = disabled.join(",");
+            };
+        });
+
+        editor.content = `<p><span style="font-size: 200%; font-family: arial, sans-serif;">Heading</span></p>\n\n<p>A text can include <strong>bold</strong>, <em>italic</em>, <u>underline</u>,<br>\n<code>code&nbsp;fragments</code>, or links <a href="http://something" rel="nofollow" target="_blank">http://something</a>.</p>\n\n<p>Text can have <span style="color: red;">color</span> or <span style="background-color: lightblue;">background color</span></p>\n\n<p>Finally locking, upload, download and<br>\nsource editing are available. You can include<br>\nimages too.<br>\n</p>`;
+
+
+    </script>
+</body>
+</html>
