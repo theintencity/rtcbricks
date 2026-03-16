@@ -626,7 +626,24 @@ file and an example client is in
 <a target="_blank"href="https://github.com/theintencity/rtclite/blob/master/rtclite/app/web/rtc/streams.html">streams.html</a>.</p>
 
 <p>First, follow the instructions there to install and run the notification server, and try out the example client
-code. Next, use the <code>rtclite-stream</code> component instead of the default named-stream, 
+code. I run the notication service for local testing as follows, using Python 2.7, on TCP port 8080.</p>
+<pre><code class="lang-bash">python -m rtclite.app.web.rtc.streams -l tcp:0.0.0.0:8080 -d
+</code></pre>
+
+<p>I have also ported that notificaion server to NodeJS, and included in this project for
+convenience. I run this notification server for local testing as follows, after
+installing the dependencies.</p>
+
+<pre><code class="lang-bash">cd srv
+npm install
+node streams.js -p 8080 -d
+</code></pre>
+
+<p>Default port is already 8080, so the <code>-p</code> option above is redundant.
+Default log level is <code>info</code>, and <code>-d</code> option creates verbose log, 
+whereas <code>-q</code> is for the quieter mode with only error logging.</p>
+
+<p>Next, use the <code>rtclite-stream</code> component instead of the default named-stream, 
 and try it out below. Note that the named streams in separate web pages refer to the same stream at the 
 notification server, if the same <code>src</code> attribute is used.</p>
 
@@ -646,10 +663,6 @@ notification server, if the same <code>src</code> attribute is used.</p>
 </code></pre>
 
 <button class="tryit"path="04-notify-rtclite.html"preview width="800"height="580"></button>
-
-<p>I run the notication service for local testing as follows, using Python 2.7, on TCP port 8080.</p>
-<pre><code class="lang-bash">python -m rtclite.app.web.rtc.streams -l tcp:0.0.0.0:8080 -d
-</code></pre>
 
 <p class="no-print">Try the following to launch one publisher and one or more subscribers for a named stream. You can
 pick any randomly unique stream name. This example uses a standalone <code>video.html</code>
@@ -1287,7 +1300,8 @@ entire application logic in the endpoint. </p>
 
 <quote>This type of resource-oriented software architecture
 has been researched and has matured already, e.g., in my previous work on <code>restserver</code> 
-and <code>vvowproject</code>, as well as with the popular Firebase real-time database.</quote>
+and <a href="https://github.com/theintencity/vvowproject"target="_blank"><code>vvowproject</code></a>,
+as well as with the popular Firebase real-time database.</quote>
 
 <h3>Overview</h3>
 
@@ -1533,8 +1547,31 @@ and the subscribers child path is used to send a message to that subscriber.</p>
 of this named stream within a single application, using the localStorage of the browser.
 As mentioned before, the shared storage component can be an external storage service such as
 <code>RestserverStorage</code>, e.g., by specifying a "ws:" or "wss:" URL in the 
-<code>src</code> attribute.</p>
+<code>src</code> attribute. Developers are refered to the
+<a href="https://github.com/theintencity/vvowproject"target="_blank">vvowproject</a>
+for installing and running the Python or PHP-based <code>restserver</code>.</p>
 
+<p>I have also ported that resource server to NodeJS, and included in this project for
+convenience. This ported server implements a subset of the features, e.g., it supports
+only the in-memory database, instead of MySQL, PostgreSQL and SQLite3 supported by the earlier 
+the Python or PHP implementations. I run this resource server for local testing as follows, after
+installing the dependencies.</p>
+
+<pre><code class="lang-bash">cd srv
+npm install
+node restserver.js -p 8080 -d
+</code></pre>
+
+<p>Default port is already 8080, so the <code>-p</code> option above is redundant.
+Default log level is <code>info</code>, and <code>-d</code> option creates verbose log, 
+whereas <code>-q</code> is for the quieter mode with only error logging.</p>
+
+<button class="tryit"path="04-notify-restserver.html"width="800"height="580"></button>
+
+<p>Try the above example, after running the resource server locally, on the
+default port 8080. If you run the resource server on another publicly accessible 
+machine, edit the <code>src</code> attribute of the web components in the above
+example first.</p>
 
 
 <h2 id="peerstorage"short="peer-to-peer">How to use peer-to-peer storage?</h2>
