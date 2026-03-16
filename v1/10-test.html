@@ -80,7 +80,7 @@ let properties = video1.constructor.metadata.properties;
 let order = {bool: 1, number: 2, string: 3, object: 4};
 
 let entries = Object.entries(properties).sort((a, b) => {
-    return (order[a[1].type] - order[b[1].type]) || a[0].localeCompare(b[0]);
+    return ((order[a[1].type] || 99) - (order[b[1].type] || 99)) || a[0].localeCompare(b[0]);
 });
 
 let prop2text = (value, prop) => {
