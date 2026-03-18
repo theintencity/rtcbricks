@@ -14,7 +14,13 @@ In summary, it promotes reuse of media features across different
 applications, reduces vendor lock-in of communication features, and
 provides a flexible, extensible, secure, feature-rich, and end-point
 driven web component to support a large number of communication
-scenarios.
+scenarios. A presentation and demonstration video is also available
+below.
+
+| Video Demonstration | Research paper |
+|:-----:|:-----:|
+| [![Demonstration](https://img.youtube.com/vi/AOIM0-C75y8/0.jpg)](https://youtu.be/AOIM0-C75y8) | [![Paper](page1.png)](https://arxiv.org/pdf/2602.22011) |
+
 
 As I worked through many sample and demo web apps using this
 &lt;video-io&gt; component, I kept creating more abstractions and
