@@ -14,7 +14,7 @@
     <script type="text/javascript"src="flex-box.js"></script>
     <script type="text/javascript"src="text-chat.js"></script>
     <script type="text/javascript"src="text-chat-bubbles.js"></script>
-    
+    <script type="text/javascript"src="text-chat-slack.js"></script>
     <script type="text/javascript"src="user-roster.js"></script>
     <script type="text/javascript"src="media-chat.js"></script>
     <script type="text/javascript"src="white-board.js"></script>
@@ -1095,7 +1095,7 @@ multiple video-io or other elements.</p>
     <img class="image"src="11-pwa-2.png"style="height: 275px;">
 </p>
 
-<h3 short="PWA"angle="90">Progressive web app (PWA)</h3>
+<h3 short="PWA"angle="100">Progressive web app (PWA)</h3>
 
 <p>This video-io standalone web app can be installed as a progressive web app (PWA),
 on desktop or mobile. To use the installed app, first launch the web app in the browser,
@@ -3655,7 +3655,48 @@ on various components. Note that the <code>text-feed-bubbles</code> component hi
 or deleted message only when <code>showempty</code> is set to false, which is done for the
 second chat component in the example above, but not the first one.</p>
 
+<p>Message editing is also allowed in the component described next.</p>
 
+<h3 id="text-feed-slack">text-feed-slack</h3>
+
+<p>To demonstrates the use of web components in enterprise messaging related use cases,
+we also implemented these components: <code>text-feed-slack</code>, <code>text-item-slack</code>,
+<code>text-input-slack</code>, and related <code>text-date-item-slack</code>, <code>text-overlay-file-slack</code>, 
+and <code>text-overlay-item-slack</code> components. The <code>text-feed-slack</code> component
+extends <code>text-feed</code> to implement the user interface inspired by and mimicking the popular Slack
+application. It embeds <code>text-item-slack</code> and <code>text-date-item-slack</code>
+elements to represents chat messages and date demarcation, respectively. Additionally, the
+user interface for overlay on chat message or attachment, are in <code>text-overlay-item-slack</code> 
+and <code>text-overlay-file-slack</code>, respectively.</p>
+
+<pre><code class="lang-html">&lt;script type="text/javascript" src="https://rtcbricks.kundansingh.com/v1/text-chat.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="https://rtcbricks.kundansingh.com/v1/text-chat-slack.js"&gt;&lt;/script&gt;
+...
+&lt;text-feed-slack ...&gt;
+    &lt;text-date-item-slack ...&gt;...&lt;/text-date-item-slack&gt;
+    &lt;text-item-slack ...&gt;...&lt;/text-item-slack&gt;
+    &lt;text-item-slack ...&gt;...&lt;/text-item-slack&gt;
+    ...
+&lt;/text-feed-slack&gt;
+</code></pre>
+
+<p>These components are highly experimental and primitive, and only the basic user interface 
+and connection to storage is implemented for demonstration purpose. These components are not endorsed, supported or related to the official Slack 
+product or its organization in any way.
+
+The goal is to merely show that real-world user interfaces and messaging applications can be
+built using the web components and supporting storage elements described in this project.</p>
+
+<p>The following example shows how to try out these components, in an example message session.</p>
+
+<button class="tryit"path="57-text-chat-slack-attrs.html"preview zoom="0.67"width="630"height="630"></button>
+
+<script type="text/javascript">
+    tabulateComponent("text-feed-slack");
+    tabulateComponent("text-item-slack");
+    tabulateComponent("text-date-item-slack");
+    tabulateComponent("text-input-slack");
+</script>
 
 
 <h2 short="user roster">How to display user roster?</h2>

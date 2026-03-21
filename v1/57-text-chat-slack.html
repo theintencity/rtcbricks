@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="text-chat.js"></script>
+    <script type="text/javascript" src="text-chat-slack.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
+    <style type="text/css">
+        @font-face {
+            font-family: 'Lato';
+            src: url('57-font-lato/Lato-Regular.ttf')  format('truetype');
+        }
+        @font-face {
+            font-family: 'Lato'; font-weight: bold;
+            src: url('57-font-lato/Lato-Bold.ttf')  format('truetype');
+        }
+
+        body {
+            position: absolute; width: 100%; height: 100%;
+            font-family: 'Lato', sans-serif;
+            display: flex; flex-flow: column nowrap;
+        }
+        body > * {
+            flex: 0 0 auto;
+            position: relative;
+        }
+        text-feed-slack {
+            flex: 1 1 0;
+        }
+    </style>
+</head>
+<body>
+    <text-feed-slack>
+        <text-date-item-slack><span>Dec 23rd, 2025</span></text-date-item-slack>
+        <text-item-slack data-from="Kundan Singh" data-fromid="ksingh" data-created="1766524964125">
+            testing
+        </text-item-slack>
+        <text-date-item-slack><span>Mon, Mar 16th</span></text-date-item-slack>
+        <text-item-slack data-from="John Smith" data-fromid="jsmith" data-created="1773703672423" data-icon="51-text-chat-face2.jpg"
+                data-replies='{"thread":"1234","last":1773703702712,"senders":[{},{"image":"51-text-chat-face1.jpg"},{},{},{},{}]}'>
+            Hey Kundan... I've configured the server. Can you test it?
+        </text-item-slack>
+        <text-item-slack data-from="John Smith" data-fromid="jsmith" data-created="1773703702712" data-icon="51-text-chat-face2.jpg" grouped>
+            It should work from your local machine too. Let me know.
+        </text-item-slack>
+        <text-item-slack data-from="Kundan Singh" data-fromid="ksingh" data-created="1773703754516"
+            data-reaction='{"ok_hand":["jsmith;John Smith","agarner;Alice Garner"],"eyes":["ksingh,Kundan Singh"]}'>
+            Sure, I will try later today or tomorrow. Is this the URL? <a target="_blank" href="http://myserver.com/test1">http://myserver.com/test1</a>
+        </text-item-slack>
+        <text-item-slack data-from="John Smith" data-fromid="jsmith" data-created="1773703787268" data-icon="51-text-chat-face2.jpg"
+            data-attach='[{"type":"image/png","src":"51-text-feed.png"}]'>
+            Yes, but on https.
+        </text-item-slack>
+        <text-item-slack data-from="Kundan Singh" data-fromid="ksingh" data-created="1773703932681">
+           Login to the server is <code>ssh ksingh@myserver.com</code> or some other command?
+        </text-item-slack>
+        <text-item-slack data-from="Kundan Singh" data-fromid="ksingh" data-created="1773704014112" grouped>
+            It is timing out for me.
+            <pre>$ ssh -v ksingh@myserver.com
+OpenSSH_8.6p1, LibreSSL 3.3.6
+...
+ssh: connect to host 10.1.2.3 port 22: Operation timed out</pre>
+         </text-item-slack>
+         <text-date-item-slack><span>Yesterday</span></text-date-item-slack>
+         <text-item-slack data-from="Kundan Singh" data-fromid="ksingh" data-created="1773856283727">
+            Do you know what could be wrong <a class="other user">@jsmith</a> or <a class="other user">@agarner</a>?
+         </text-item-slack>
+         <text-item-slack data-from="Alice Garner" data-fromid="agarner" data-created="1773860399821">
+            I am not sure. John probably knows, or can fix it.
+         </text-item-slack>
+         <text-date-item-slack><span>Today</span></text-date-item-slack>
+         <text-item-slack data-from="Kundan Singh" data-fromid="ksingh" data-created="1773932532616"
+            data-attach='[{"type":"image/png","src":"51-text-feed.png"},{"type":"image/png","src":"51-text-chat-bubbles.png"}]'
+            >
+            Some images to use in the demo.
+         </text-item-slack>
+         <!-- ,{"type":"image","src":"51-text-chat.png"},{"type":"image","src":"51-text-chat-rte.png"},{"type":"image","src":"51-text-chat-attrs.png"},{"type":"image","src":"52-user-roster.png"},{"type":"image","src":"53-media-chat.png"} -->
+         <text-item-slack data-from="Bob Wilson" data-fromid="bwilson" data-created="1773974732352">
+            Any progress in this?
+         </text-item-slack>
+      </text-feed-slack>
+      <text-input-slack placeholder="Message #my-channel"></text-input-slack>
+
+      <script type="text/javascript">
+        const from = "Kundan Singh", fromid = "ksingh";
+        const input = document.querySelector("text-input-slack")
+        input.addEventListener("createlink", event => {
+            input.createlink(prompt("URL", window.location.origin));
+        });
+        input.addEventListener("textinput", event => {
+            //console.log(event);
+            document.querySelector("text-feed-slack").add("", Object.assign(event.data, {from, fromid}));
+        });
+      </script>
+</body>
+</html>
