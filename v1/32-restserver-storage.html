@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="restserver-storage.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+    </style>
+</head>
+<body>
+    <restserver-storage id="storage1" src="ws://localhost:8080/restserver"></restserver-storage>
+
+    <script type="text/javascript">
+    window.onload = async () => {
+        fs = document.querySelector("restserver-storage");
+        console.log(`let id = await fs.list("testing").transient().add({name: "test"})`);
+        const id = await fs.list("testing").transient().add({name: "test"});
+        console.log(`// id is ${JSON.stringify(id)}`);
+        console.log(`let value = await fs.object("testing/${id}").read()`);
+        const value = await fs.object("testing/" + id).read();
+        console.log(`// value is ${JSON.stringify(value)}`);
+        console.log(`fs.close()`);
+        fs.close();
+    };
+    </script>
+</body>
+</html>

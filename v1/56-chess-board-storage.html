@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="chess-board.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
+    <style type="text/css">
+        chess-board {
+            display: inline-block; zoom: 0.5;
+        }
+        #chess3, #chess4 {
+            --background-color-corner: #ce5c00;
+            --color-corner: white;
+            --background-color-black: #feac00;
+            --color-piece-black: blue;
+            --color-piece-white: darkblue;
+            --background-color-clicked: lightblue;
+        }
+    </style>
+</head>
+<body>
+    <shared-storage id="storage" src="local"></shared-storage>
+    <chess-board-data id="data1" for-storage="storage" path="sessions/chess123"></chess-board-data>
+    <chess-board for-data="data1" id="chess1"></chess-board>
+    <chess-board-data id="data2" for-storage="storage" path="sessions/chess123"></chess-board-data>
+    <chess-board for-data="data2" id="chess2"></chess-board>
+    <br/>
+    <chess-board-data id="data3" for-storage="storage" path="sessions/chess456"></chess-board-data>
+    <chess-board for-data="data3" id="chess3"></chess-board>
+    <chess-board-data id="data4" for-storage="storage" path="sessions/chess456"></chess-board-data>
+    <chess-board for-data="data4" id="chess4"></chess-board>
+    <script type="text/javascript">
+        document.querySelector("chess-board#chess2").rotate();
+        document.querySelector("chess-board#chess4").rotate();
+    </script>
+</body>
+</html>

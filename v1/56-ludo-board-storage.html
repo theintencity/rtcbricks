@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="ludo-board.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        ludo-board {
+            display: inline-block;
+            zoom: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <shared-storage id="storage" src="local"></shared-storage>
+    <ludo-board-data id="data1" for-storage="storage" path="sessions/ludo123"></ludo-board-data>
+    <ludo-board class="first" for-data="data1"></ludo-board>
+    <ludo-board-data id="data2" for-storage="storage" path="sessions/ludo123"></ludo-board-data>
+    <ludo-board class="second" for-data="data2"></ludo-board>
+</body>
+</html>

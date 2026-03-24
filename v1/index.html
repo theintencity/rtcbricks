@@ -21,6 +21,8 @@
     <script type="text/javascript"src="locked-notepad.js"></script>
     <script type="text/javascript"src="rich-text-editor.js"></script>
     <script type="text/javascript"src="shared-editor.js"></script>
+    <script type="text/javascript"src="chess-board.js"></script>
+    <script type="text/javascript"src="ludo-board.js"></script>
     
     <script type="text/javascript"src="phone-call.js"></script>
     <script type="text/javascript"src="click-to-call.js"></script>
@@ -1455,6 +1457,12 @@ lref.onchange = ({type, value, id}) => { // on list reference
 };
 </code></pre>
 
+<p>Note that if both <code>getall</code> and <code>onchange</code> is used on a list
+reference, then there may be duplicates either due to race condition, timing of
+when the item is added to the list, or a nuance of the actual storage implementation.
+The application should check for duplicates, e.g., by using unique item identifier
+in the list.</p>
+
 <h3>Notify</h3>
 
 <p>Some examples of <code>onnotify</code> and the corresponding <code>notify</code> function
@@ -1504,6 +1512,52 @@ await lref.transient().add({name: "Alice"});
 
 
 
+<br>
+<h3>RestserverStorage</h3>
+
+<p>When the shared storage component uses a "local" source, it enables demonstration
+of this named stream within a single application, using the localStorage of the browser.
+As mentioned before, the shared storage component can be an external storage service such as
+<code>RestserverStorage</code>, e.g., by specifying a "ws:" or "wss:" URL in the 
+<code>src</code> attribute. Developers are refered to the
+<a href="https://github.com/theintencity/vvowproject"target="_blank">vvowproject</a>
+for installing and running the Python or PHP-based <code>restserver</code>.</p>
+
+<p>I have also ported that resource server to NodeJS, and included in this project for
+convenience. This ported server implements a subset of the features, e.g., it supports
+only the in-memory database, instead of MySQL, PostgreSQL and SQLite3 supported by the earlier 
+the Python or PHP implementations. I run this resource server for local testing as follows, after
+installing the dependencies.</p>
+
+<pre><code class="lang-bash">cd srv
+npm install
+node restserver.js -p 8080 -d
+</code></pre>
+
+<p>Default port is already 8080, so the <code>-p</code> option above is redundant.
+Default log level is <code>info</code>, and <code>-d</code> option creates verbose log, 
+whereas <code>-q</code> is for the quieter mode with only error logging.</p>
+
+<button class="tryit"path="32-restserver.html"width="800"height="300"></button>
+
+<p>Try the above example, after running the resource server locally,
+on the default port 8080. This tests the various APIs of the resource server.</p>
+
+<p>The <code>restserver-storage</code> web component extends the <code>shared-storage</code>
+element, to force use RestserverStorage internally, and behaves as if the shared storage's
+<code>src</code> attribute is set to websocket URL. The <code>impl</code> property
+cannot be set directly in this web component.</p>
+
+<pre><code class="lang-js">&lt;restserver-storage id="storage1" src="ws://localhost:8080/restserver"&gt;&lt;/restserver-storage&gt;
+</code></pre>
+
+<button class="tryit"path="32-restserver-storage.html"shift width="10"height="10"></button>
+
+<p>Try the following example, after running the resource server locally, and 
+check the code and JavaScript console.</p>
+
+
+
 <p>As we will see in the next few sections, the shared object abstraction can be used
 to implement a wide range of application scenarios.</p>
 
@@ -1543,35 +1597,18 @@ and subscribers can join or leave in any order, similar to other named streams
 described earlier. The publisher's path is used to send a message to the publisher,
 and the subscribers child path is used to send a message to that subscriber.</p>
 
-<p>When the shared storage component uses a "local" source, it enables demonstration
-of this named stream within a single application, using the localStorage of the browser.
-As mentioned before, the shared storage component can be an external storage service such as
-<code>RestserverStorage</code>, e.g., by specifying a "ws:" or "wss:" URL in the 
-<code>src</code> attribute. Developers are refered to the
-<a href="https://github.com/theintencity/vvowproject"target="_blank">vvowproject</a>
-for installing and running the Python or PHP-based <code>restserver</code>.</p>
-
-<p>I have also ported that resource server to NodeJS, and included in this project for
-convenience. This ported server implements a subset of the features, e.g., it supports
-only the in-memory database, instead of MySQL, PostgreSQL and SQLite3 supported by the earlier 
-the Python or PHP implementations. I run this resource server for local testing as follows, after
-installing the dependencies.</p>
-
-<pre><code class="lang-bash">cd srv
-npm install
-node restserver.js -p 8080 -d
-</code></pre>
-
-<p>Default port is already 8080, so the <code>-p</code> option above is redundant.
-Default log level is <code>info</code>, and <code>-d</code> option creates verbose log, 
-whereas <code>-q</code> is for the quieter mode with only error logging.</p>
+<p>The following example uses external restserver as described in the
+previous section, for shared storage implementation.
+</p>
 
 <button class="tryit"path="04-notify-restserver.html"width="800"height="580"></button>
 
-<p>Try the above example, after running the resource server locally, on the
-default port 8080. If you run the resource server on another publicly accessible 
+<p>Try the above example, to test the storage stream implemented using
+resource server, after running the resource server locally, as described in
+the previous chapter. If you run the resource server on another publicly accessible 
 machine, edit the <code>src</code> attribute of the web components in the above
 example first.</p>
+
 
 
 <h2 id="peerstorage"short="peer-to-peer">How to use peer-to-peer storage?</h2>
@@ -1637,6 +1674,17 @@ for local demonstrations, as the following example show.</p>
   const storages = [...document.querySelectorAll("shared-storage")];
   PeerNetworkImpl.connectall("fullmesh", ...storages);
 &lt;/script&gt;
+</code></pre>
+
+<p>The <code>peer-storage</code> web component extends the <code>shared-storage</code>
+component, and includes both PeerStorageImpl and PeerNetworkImpl. It
+is configured using <code>topology</code> and <code>peerid</code>
+attributes or properties. Internally, it is just a convenient way to
+wrap multiple objects in a single component, and can be used in place
+of <code>shared-storage</code> as shown below.</p>
+
+<pre><code class="lang-html">
+&lt;peer-storage id="storage1" topology="fullmesh" peerid="first"&gt;&lt;/peer-storage&gt;
 </code></pre>
 
 <p>Try the following example to emulate a peer-to-peer network among
@@ -3028,7 +3076,7 @@ frame is not required either.</p>
 
 
 
-<h2 category="Advanced - Collaboration"cat="Collab"position="-42,-47"short="create components">How to create components using shared storage?</h2>
+<h2 category="Advanced - Collaboration"cat="Collab"position="-45,-42"spread="10"short="create components">How to create components using shared storage?</h2>
 
 <p>We have created several web components to support multimedia collaboration
 use cases such as text chat, user roster, white board, notepad,
@@ -3378,6 +3426,8 @@ Besides showing the text messages, it also shows typing indication.</p>
 <p>And here is the same example, but using a peer-to-peer storage.</p>
     
 <button class="tryit"path="51-text-chat-peer.html"width="630"height="310"></button>
+
+
 
 <script type="text/javascript">
     tabulateComponent("text-chat");
@@ -3850,7 +3900,9 @@ in the third.</p>
 
 <button class="tryit"path="53-media-chat-peer.html"width="1000"height="430"></button>
 
-<p>The example above shows the default messenger style display.</p>
+
+
+<p>The examples above show the default messenger style display.</p>
 
 <h3>Messenger vs. Hangout</h3>
 
@@ -4200,9 +4252,9 @@ and customizable using its various properties such as display, speakervideo, all
 allowaction, and others.</p>
 
 
-<h2 short="whiteboard">How to use a shared whiteboard?</h2>
+<h2 short="share tools"angle="5">How to use a shared whiteboard or notepad?</h2>
 
-<p>Shared white board is an important collaboration tool. The <code>white-board</code>
+<p>Shared white board and notepad are important collaboration tool. The <code>white-board</code>
 component implements a simple white board which can be attached to a <code>white-board-data</code> data model
 to enable shared white board.</p>
 
@@ -4232,20 +4284,9 @@ collaborating users.</p>
 the shared storage. The ordering of the list items is important. The item
 data includes all the information needed to render the drawing, text or content.</p>
 
-<h3 id="white-board">white-board</h3>
-
-<script type="text/javascript">
-    tabulateComponent("white-board");
-    tabulateComponent("white-board-data");
-</script>
-
-
-<h2 short="notepad">How to use a shared notepad?</h2>
-
-<p>Shared notepad is an important collaboration tool. The <code>locked-notepad</code>
-component implements a text editor that can be locked for editing to avoid 
-conflict. It can be attached to a <code>locked-notepad-data</code> data model
-to enable shared notepad.</p>
+<p>The <code>locked-notepad</code> component implements a text editor that
+can be locked for editing to avoid conflict. It can be attached to a 
+<code>locked-notepad-data</code> data model to enable shared notepad.</p>
 
 <pre><code class="lang-html">&lt;locked-notepad&gt;&lt;/locked-notepad&gt;
 </code></pre>
@@ -4340,6 +4381,13 @@ as when the upload button is clicked, or the source HTML editing is
 completed.</p>
 
 
+<h3 id="white-board">white-board</h3>
+
+<script type="text/javascript">
+    tabulateComponent("white-board");
+    tabulateComponent("white-board-data");
+</script>
+
 <h3 id="locked-notepad">locked-notepad</h3>
 
 <script type="text/javascript">
@@ -4347,7 +4395,7 @@ completed.</p>
     tabulateComponent("locked-notepad-data");
 </script>
 
-<h3 id="shared-editor"angle="10">shared-editor</h3>
+<h3 id="shared-editor">shared-editor</h3>
 
 <p>The complete list of features in the tools bar are as follows:</p>
 
@@ -4474,10 +4522,97 @@ interface.
 
 
 
+<h2 short="games">How to do shared games?</h2>
+
+<p>The collaboration tools described previously such as for text chat, notepad
+or whiteboard are examples of endpoint driven applications. The shared storage based
+data models for these tools enable collaboration. The shared storage
+based collaboration is not limited to these use cases, but can be
+expanded to others that need shared state among participants such as shared games.</p>
+
+<p>Here, we describe two components to enable shared Chess and Ludo board games.
+The concept can be easily applied to other multiplayer games.</p>
+
+<h3 id="chess-board">chess-board</h3>
+
+<p>Try the following example to see the <code>chess-board</code> component
+in action. It is a clean slate chess board, with no restrictions or rules
+on how the pieces move. Click on a piece and then click on another position
+to move the piece. The movement is recorded on the right side. The last move
+is highlighted. The buttons on the right allow you to reset the board and
+to rotate the board, if needed.</p>
+
+<pre><code class="lang-html">&lt;chess-board&gt;&lt;/chess-board&gt;
+</code></pre>
+
+<button class="tryit"path="56-chess-board.html"preview width="470"height="400"></button>
+
+<p>The component can be attached to a data model, which can be based on storage, such as 
+<code>chess-board-data</code>. In that case it stores
+all the moves in the list data on the storage, and updates the user interface
+when a move is detected.</p>
+
+<pre><code class="lang-html">&lt;chess-board-data id="data" for-storage="..." path="..." &gt;&lt;/chess-board-data&gt;
+&lt;chess-board for-data="data"&gt;&lt;/chess-board&gt;
+</code></pre>
+
+<p>Try the following example with four <code>chess-board</code>
+instances, covering two separate games, by attaching to two separate
+paths on the storage. The styles for the third and fourth instances are 
+altered from their defaults. The second and fourth instances are
+rotated once to appear as the opponent side view. See the <code>rotate</code>
+function described later.</p>
+
+<button class="tryit"path="56-chess-board-storage.html"preview width="620"height="520"></button>
+
+
+<script type="text/javascript">
+    tabulateComponent("chess-board");
+    tabulateComponent("chess-board-data");
+</script>
+
+
+<h3 id="ludo-board">ludo-board</h3>
+
+<p>Try the following example to see the <code>ludo-board</code> component
+in action. It is a clean slate board with no restrictions or rules imposed.
+It is upto the players to follow and impose the rules.</p>
+
+<pre><code class="lang-html">&lt;ludo-board&gt;&lt;/ludo-board&gt;
+</code></pre>
+
+<button class="tryit"path="56-ludo-board.html"preview width="420"height="420"></button>
+
+<p>There are two buttons near the center of the board. One is to clear the board
+to the initial state. The other is to roll the dice using the random function in
+JavaScript to generate the dice value. The pieces can be moved by drag-and-drop
+to any location.</p>
+
+<p>When the board instance is attached to a storage based data model, <code>ludo-board-data</code>, 
+it can use the storage
+to keep track of positions of the pieces and to notify the dice value from the last 
+dice roll. The component instance then uses the storage to update the 
+local user interface.</p>
+
+<pre><code class="lang-html">&lt;ludo-board-data id="data" for-storage="..." path="..." &gt;&lt;/ludo-board-data&gt;
+&lt;ludo-board for-data="data"&gt;&lt;/ludo-board&gt;
+</code></pre>
+
+<p>Try the following example with two <code>ludo-board</code>
+instances, attached to the same path on storage. You can notice the synchronized
+dice roll and piece movements.</p>
+
+<button class="tryit"path="56-ludo-board-storage.html"width="570"height="300"></button>
+
+<script type="text/javascript">
+    tabulateComponent("ludo-board");
+    tabulateComponent("ludo-board-data");
+</script>
 
 
 
-<h2 category="Advanced - Telephony"cat="Telephony"position="-43,0"spread="12"short="phone state">What is a phone state?</h2>
+
+<h2 category="Advanced - Telephony"cat="Telephony"position="-25,3"spread="12"short="phone state">What is a phone state?</h2>
 
 <p>Earlier in <a href="#topic-twoparty">How to do two-party video call?</a> we described
 and illustrated state machines for single line and multiple line video phone device engaged in 
@@ -4811,7 +4946,7 @@ as well as to try new things by extending the existing applications.</p>
     </td></tr>
     <tr><td>collaboration</td><td></td></tr>
     <tr><td></td><td>
-        Components for text chat, media chat, white board, and locked notepad.
+        Components for text chat, media chat, white board, locked notepad, and games.
         All these work with the shared-storage component.
         <table class="properties nowrap">
             <tr><th>Component</th><th>Description</th></tr>
@@ -4911,6 +5046,24 @@ as well as to try new things by extending the existing applications.</p>
             <tr><td>shared-editor-data</td><td>Include shared-editor.js</td></tr>
             <tr><td></td><td>
                 Data model for shared-editor, using shared storage.
+            </td></tr>
+            <tr><td><a href="#chess-board">chess-board</a></td><td>Include chess-board.js</td></tr>
+            <tr><td></td><td>
+                Display a chess board, allows playing without restriction, and 
+                if attached to a data model, enables shared game.
+            </td></tr>
+            <tr><td>chess-board-data</td><td>Include chess-board.js</td></tr>
+            <tr><td></td><td>
+                Data model for chess-board, using shared storage.
+            </td></tr>
+            <tr><td><a href="#ludo-board">ludo-board</a></td><td>Include ludo-board.js</td></tr>
+            <tr><td></td><td>
+                Display a ludo board, allows playing without restriction, and 
+                if attached to a data model, enables shared game.
+            </td></tr>
+            <tr><td>ludo-board-data</td><td>Include ludo-board.js</td></tr>
+            <tr><td></td><td>
+                Data model for ludo-board, using shared storage.
             </td></tr>
             
         </table>

@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="restserver-storage.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        body { 
+            padding: 1ch;
+        }
+        body > div.log {
+            font-family: monospace;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        body > div.log.info {
+            font-style: italic;
+            font-weight: bold;
+            font-family: sans-serif;
+            margin-top: 0.5ch;
+        }
+        body > div.log.error, body > div.log.warn { 
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <script type="text/javascript">
+// const console_ = console;
+console_ = {
+    log:   (...args) => { console.log(...args);   mylog("LOG", ...args);},
+    debug: (...args) => { console.debug(...args); mylog("DEBUG", ...args); },
+    info:  (...args) => { console.info(...args);  mylog("INFO", ...args); },
+    trace: (...args) => { console.trace(...args); mylog("TRACE", ...args); },
+    warn:  (...args) => { console.warn(...args);  mylog("WARN", ...args); },
+    error: (...args) => { console.error(...args); mylog("ERROR", ...args); },
+};
+
+function mylog(type, ...args) {
+    const span = document.createElement("div");
+    span.className = "log " + type.toLowerCase();
+    span.innerText = args.map(a => {
+        let r = a && a.toString();
+        if (r === "[object Object]") {
+            r = JSON.stringify(a);
+        } else if (a === undefined || a === null) {
+            r = "" + a;
+        }
+        return r;
+    }).join(" ");
+    document.body.appendChild(span);
+}
+
+window.onload = async () => {
+    console_.log(`let db = new SharedStorage(new RestserverStorage(...))`);
+    // let db = new SharedStorage();
+    // db.src = "local";
+    let db = new SharedStorage(new RestserverStorage());
+    console_.log(`// db is ${db}`);
+
+    //(await db.list("test/users").getall()).forEach(user => async () => { await user.remove(); });
+    //console.log(await db.list("test/users").getall({deep: 1}))
+
+    console_.log(`let bob = db.object("test").list("users").object("bob")`);
+    let bob = db.object("test").list("users").object("bob");
+    console_.log(`await bob.create({name: "Bob", email: "bob@office.com"})`);
+    await bob.transient().create({name: "Bob", email: "bob@office.com"});
+
+    console_.log(`let data = await bob.read()`);
+    let data = await bob.read();
+    console_.log(`// data is ${JSON.stringify(data)}`);
+
+    console_.log(`await bob.update({name: "Bob Wilson", email: undefined, phone: "+12123334444"})`);
+    await bob.update({name: "Bob Wilson", email: undefined, phone: "+12123334444"});
+    data = await bob.read();
+    console_.log(`// data is ${JSON.stringify(data)}`);
+
+    console_.log(`let users = db.list("test/users")`);
+    let users = db.list("test/users");
+
+    console_.log(`let id = await users.transient().add({name: "Alice", email: "alice@home.com"});`);
+    const id = await users.transient().add({name: "Alice", email: "alice@home.com"});
+    console_.log(`// id is ${id}`);
+
+    console_.log(`let list = await users.getall()`)
+    let list = await users.getall();
+    console_.log(`// list is ${JSON.stringify(list)}`);
+
+    console_.log(`await bob.delete()`);
+    await bob.delete();
+    console_.log(`let list = await users.getall()`)
+    list = await users.getall();
+    console_.log(`// list is ${JSON.stringify(list)}`);
+
+    console_.log(`await users.removeall()`);
+    await users.removeall();
+    console_.log(`let list = await users.getall()`)
+    list = await users.getall();
+    console_.log(`// list is ${JSON.stringify(list)}`);
+
+    //list.forEach(user => async () => { await user.remove(); });
+
+};
+    </script>
+
+</body>
+</html>
