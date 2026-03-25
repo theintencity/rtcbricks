@@ -1557,8 +1557,94 @@ cannot be set directly in this web component.</p>
 check the code and JavaScript console.</p>
 
 
+<h3>FirebaseStorage</h3>
 
-<p>As we will see in the next few sections, the shared object abstraction can be used
+<p>I have also implemented a basic <code>FirebaseStorage</code> component that can attach to the
+shared-storage web component and use the Cloud Firestore behind the scenes.
+This can be done by specifying a "firebase-storage:..." value in the <code>src</code>
+attribute, with the JSON string containing your firebase configuration.</p>
+
+<pre><code class="lang-html">&lt;!-- in &lt;head&gt; --&gt;
+&lt;script type="text/javascript" href="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" href="https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore-compat.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" href="https://rtcbricks.kundansingh.com/v1/shared-storage.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" href="https://rtcbricks.kundansingh.com/v1/firebase-storage.js"&gt;&lt;/script&gt;
+...
+&lt;!-- in &lt;body&gt; --&gt;
+&lt;shared-storage id="stream" src="firebase-storage:..."&gt;&lt;/shared-storage&gt;
+</code></pre>
+
+<p>Alternatively, you can directly assign the implementation, <code>impl</code>,
+to the shared-storage component, as follows.</p>
+
+<pre><code class="lang-js">&lt;shared-storage id="storage" src=""&gt;&lt;/shared-storage&gt;
+&lt;script type="text/javascript"&gt;
+  document.querySelector("#storage").impl = new FirebaseStorage({
+    apiKey: ..., projectId: ..., appId: ...
+  });
+  document.querySelector("#storage").dispatchEvent(new Event("ready"));
+&lt;/script&gt;
+</code></pre>
+
+<p>The actual Firestore APIs, even though operate on similar hierarchical
+data store, are not quite compatible with the shared-storage
+component. In particular, Firestore has no concept of transient resources, i.e., 
+ability to automatically remove some resources on client disconnect,
+the change listener also retrieves the full data set, 
+and there is a constraint of alternating collection and object in the 
+resource path.</p>
+
+<p>This required some changes in my implementation to work around
+the restrictions using timeouts, soft state for transient resources,
+explicit cleanups on beforeunload and initial connection, and ignoring
+initial data set retrieval on the change listener. Moreover, generic
+notification on a resource path, without actual data storage is not available,
+so my workaround uses a temporary short-lived resource to emulate a notification
+This can potentially cause double notifications, or duplicates when
+<code>onchange</code> and <code>getall</code> are used together on the
+same list resource. Item identifier is used to detect duplicates.
+The <code>storage-stream</code> component that does not use alternate list
+and object resources by default, has a <code>fixpath</code> property to enable a
+workaround to support this constraint.
+
+</p><p>My implementationof FirebaseStorage is primitive, good for demonstration
+purpose, but not ready for production. Moving parts of the implementation
+to service worker may mitigate some of the problems in the future.</p>
+
+<p>To make sure that the following demonstration uses the right configuration,
+first set the apiKey, projectId and appId in your localStorage, using the JavaScript console.
+Keep the console open to see any error or warning when you try the example later.</p>
+
+<pre><code class="lang-js">localStorage["firebase-stream"] = JSON.stringify({
+    apiKey: "...", projectId: "...", appId: "..."
+});</code></pre>
+
+<p>Try the following example to see some shared-storage APIs in action,
+using firebase-storage for actual data storage and notifications.</p>
+
+<button class="tryit"path="32-firebase-storage.html"width="800"height="500"></button>
+
+<p>The <code>firebase-storage</code> web component extends the <code>shared-storage</code>
+element, to force use FirebaseStorage internally, and has a convenient <code>config</code>
+property to set the configuration as an object. Try the following example, and check
+the code and JavaScript console.</p>
+
+<pre><code class="lang-js">&lt;firebase-storage id="storage1" src=""&gt;&lt;/firebase-storage&gt;
+&lt;script type="text/javascript"&gt;
+  let storage1 = document.querySelector("#storage1");
+  // storage1.src = "local"; // throws an error
+  // storage1.impl = ...;    // throws an error
+  storage1.config = { apiKey: ..., projectId: ..., appId: ... }; // works
+&lt;/script&gt;
+</code></pre>
+
+<button class="tryit"path="32-firebase-storage-config.html"shift width="10"height="10"></button>
+
+<p>This web component can be used in place of <code>shared-storage</code> when needed,
+as a storage attached to an internal FirebaseStorage,
+instead of having to attach the specific implementation to that storage.</p>
+
+<p>As we will see in the next few sections, the shared storage abstraction can be used
 to implement a wide range of application scenarios.</p>
 
 <h2 id="storage-stream"short="create stream">How to create a stream using shared data?</h2>
@@ -1609,6 +1695,11 @@ the previous chapter. If you run the resource server on another publicly accessi
 machine, edit the <code>src</code> attribute of the web components in the above
 example first.</p>
 
+<button class="tryit"path="04-firebase-storage.html"width="800"height="580"></button>
+
+<p>Try the above example, to test the storage stream implemented using
+Cloud Firestore service, after setting the Firebase configuration in localStorage
+as described earlier.</p>
 
 
 <h2 id="peerstorage"short="peer-to-peer">How to use peer-to-peer storage?</h2>
@@ -3353,7 +3444,7 @@ component reads and subscribes to changes in the list of messages on that storag
 </code></pre>
 
 <p>By changing the storage instance using its <code>src</code> property, the application can use different backend
-databases such as <code>RestserverStorage</code>. By replacing
+databases such as <code>RestserverStorage</code> or <code>FirebaseStorage</code>. By replacing
 the data model of <code>text-feed-data</code> with a different component, the application can
 use a different messaging service instead of the shared storage component.</p>
 
@@ -3427,7 +3518,10 @@ Besides showing the text messages, it also shows typing indication.</p>
     
 <button class="tryit"path="51-text-chat-peer.html"width="630"height="310"></button>
 
-
+<p>And the same example, but using Cloud Firestore storage. Make sure
+to set the right Firebase configuration in localStorage for this to work.</p>
+    
+<button class="tryit"path="51-text-chat-firebase.html"width="630"height="310"></button>
 
 <script type="text/javascript">
     tabulateComponent("text-chat");
@@ -3900,7 +3994,10 @@ in the third.</p>
 
 <button class="tryit"path="53-media-chat-peer.html"width="1000"height="430"></button>
 
+<p>And here is the same example, but using Cloud Firestore storage. Make sure
+to set the right Firebase configuration in localStorage for this to work.</p>
 
+<button class="tryit"path="53-media-chat-firebase.html"width="1000"height="430"></button>
 
 <p>The examples above show the default messenger style display.</p>
 
@@ -4935,7 +5032,10 @@ as well as to try new things by extending the existing applications.</p>
                 Uses peer-to-peer network for storage and notifications using data channel and
                 external signaling to create the peer-to-peer network.
             </td></tr>
-            
+            <tr><td>FirebaseStorage</td><td>Include firebase-storage.js</td></tr>
+            <tr><td></td><td>
+                Uses the popular Cloud Firestore real-time database service.
+            </td></tr>
         </table>
     </td></tr>
     <tr><td><a href="#flex-box">flex-box</a></td><td>Include flex-box.js</td></tr>

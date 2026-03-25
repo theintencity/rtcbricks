@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore-compat.js"></script>
+
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="firebase-storage.js"></script>
+    <script type="text/javascript" src="text-chat.js"></script>
+    <script type="text/javascript" src="web-assets.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        body {
+            position: absolute; width: 100%; height: 100%;
+        }
+        text-chat {
+            width: 300px; height: 400px; max-height: 100%;
+            display: inline-block;
+            border: solid 1px lightgrey;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <alert-sounds id="sounds"></alert-sounds>
+    <yahoo-smileys id="smileys"></yahoo-smileys>
+    <shared-storage id="storage1"></shared-storage>
+    <shared-storage id="storage2"></shared-storage>
+    <text-feed-data id="data1" for-storage="storage1" self="alice" displayname="Alice" path="sessions/chat123/messages"></text-feed-data>
+    <text-feed-data id="data2" for-storage="storage2" self="bob" displayname="Bob" path="sessions/chat123/messages"></text-feed-data>
+
+    <text-chat for-data="data1">
+        <text-feed for-smileys="smileys" for-sounds="sounds"></text-feed>
+    </text-chat>
+    <text-chat for-data="data2">
+        <text-feed for-smileys="smileys" for-sounds="sounds"></text-feed>
+    </text-chat>
+
+    <script type="text/javascript">
+window.onload = () => {
+    let config;
+    try { config = JSON.parse(localStorage["firebase-stream"]); } catch (e) { }
+    if (config === undefined) {
+        console.error(`no firebase config found, please set your firebase config as follows in JS console:`);
+        console.log(`localStorage["firebase-stream"] = JSON.stringify({apiKey: "...", projectId: "...", appId: "...")`);
+        return;
+    }
+
+    const storage1 = document.querySelector("#storage1");
+    const storage2 = document.querySelector("#storage2");
+
+    storage1._impl = new FirebaseStorage(config);
+    storage1.dispatchEvent(new Event("ready"));
+
+    storage2._impl = new FirebaseStorage(config);
+    storage2.dispatchEvent(new Event("ready"));
+};
+    </script>
+</body>
+</html>

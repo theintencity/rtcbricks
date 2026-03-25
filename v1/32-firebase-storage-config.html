@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore-compat.js"></script>
+
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="firebase-storage.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+    </style>
+</head>
+<body>
+    <firebase-storage id="storage1"></firebase-storage>
+
+    <script type="text/javascript">
+    window.onload = async () => {
+        let config;
+        try { config = JSON.parse(localStorage["firebase-stream"]); } catch (e) { }
+        if (config === undefined) {
+            console.error(`no firebase config found, please set your firebase config as follows in JS console:`);
+            console.log(`localStorage["firebase-stream"] = JSON.stringify({apiKey: "...", projectId: "...", appId: "...")`);
+            return;
+        }
+
+        fs = document.querySelector("firebase-storage");
+        console.log("fs.impl = {}");
+        try { fs.impl = {}; } catch (e) {  console.log("// error:", e.message); }
+        console.log(`fs.src = "local"`);
+        try { fs.src = "local"; } catch (e) {  console.log("// error:", e.message); }
+        console.log(`fs.config = {...firebase config...}`);
+        fs.config = config;
+
+        console.log(`let id = await fs.list("testing").transient().add({name: "test"})`);
+        const id = await fs.list("testing").transient().add({name: "test"});
+        console.log(`// id is ${JSON.stringify(id)}`);
+        console.log(`let value = await fs.object("testing/${id}").read()`);
+        const value = await fs.object("testing/" + id).read();
+        console.log(`// value is ${JSON.stringify(value)}`);
+        console.log(`fs.close()`);
+        fs.close();
+    };
+    </script>
+</body>
+</html>

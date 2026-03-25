@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+<head>
+    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore-compat.js"></script>
+
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="firebase-storage.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        body { 
+            padding: 1ch;
+        }
+        body > div.log {
+            font-family: monospace;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        body > div.log.info {
+            font-style: italic;
+            font-weight: bold;
+            font-family: sans-serif;
+            margin-top: 0.5ch;
+        }
+        body > div.log.error, body > div.log.warn { 
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <script type="text/javascript">
+// const console_ = console;
+console_ = {
+    log:   (...args) => { console.log(...args);   mylog("LOG", ...args);},
+    debug: (...args) => { console.debug(...args); mylog("DEBUG", ...args); },
+    info:  (...args) => { console.info(...args);  mylog("INFO", ...args); },
+    trace: (...args) => { console.trace(...args); mylog("TRACE", ...args); },
+    warn:  (...args) => { console.warn(...args);  mylog("WARN", ...args); },
+    error: (...args) => { console.error(...args); mylog("ERROR", ...args); },
+};
+
+function mylog(type, ...args) {
+    const span = document.createElement("div");
+    span.className = "log " + type.toLowerCase();
+    span.innerText = args.map(a => {
+        let r = a && a.toString();
+        if (r === "[object Object]") {
+            r = JSON.stringify(a);
+        } else if (a === undefined || a === null) {
+            r = "" + a;
+        }
+        return r;
+    }).join(" ");
+    document.body.appendChild(span);
+}
+
+window.onload = async () => {
+    let config;
+    try { config = JSON.parse(localStorage["firebase-stream"]); } catch (e) { }
+    if (config === undefined) {
+        console_.error(`no firebase config found, please set your firebase config as follows in JS console:`);
+        console_.log(`localStorage["firebase-stream"] = JSON.stringify({apiKey: "...", projectId: "...", appId: "...")`);
+        return;
+    }
+    console_.log(`let db = new SharedStorage(new FirebaseStorage(${JSON.stringify(config)}))`);
+    let db = window.db = new SharedStorage(new FirebaseStorage(config));
+    console_.log(`// db is ${db}`);
+
+    //(await db.list("users").getall()).forEach(user => async () => { await user.remove(); });
+    //console.log(await db.list("users").getall({deep: 1}))
+
+    db.list("users").onchange = e => console_.log(`db.list("users").onchange(...) => called with ${JSON.stringify(e)}`);
+    db.list("users").onnotify = e => console_.log(`db.list("users").onnotify(...) => called with ${JSON.stringify(e)}`);
+    db.object("users/bob").onchange = e => console_.log(`db.object("users/bob").onchange(...) => called with ${JSON.stringify(e)}`);
+
+    console_.log(`let bob = db.list("users").object("bob")`);
+    let bob = db.list("users").object("bob");
+    console_.log(`await bob.create({name: "Bob", email: "bob@office.com"})`);
+    await bob.transient().create({name: "Bob", email: "bob@office.com"});
+
+    console_.log(`let data = await bob.read()`);
+    let data = await bob.read();
+    console_.log(`// data is ${JSON.stringify(data)}`);
+
+    console_.log(`await bob.update({name: "Bob Wilson", email: undefined, phone: "+12123334444"})`);
+    await bob.update({name: "Bob Wilson", email: undefined, phone: "+12123334444"});
+    console_.log(`let data = await bob.read()`);
+    data = await bob.read();
+    console_.log(`// data is ${JSON.stringify(data)}`);
+
+    console_.log(`let users = db.list("users")`);
+    let users = db.list("users");
+
+    console_.log(`let id = await users.transient().add({name: "Alice", email: "alice@home.com"});`);
+    const id = await users.transient().add({name: "Alice", email: "alice@home.com"});
+    console_.log(`// id is ${id}`);
+
+    console_.log(`let list = await users.getall()`)
+    let list = await users.getall();
+    console_.log(`// list is ${JSON.stringify(list)}`);
+
+    console_.log(`await bob.delete()`);
+    await bob.delete();
+    console_.log(`let list = await users.getall()`)
+    list = await users.getall();
+    console_.log(`// list is ${JSON.stringify(list)}`);
+
+    console_.log(`await users.removeall()`);
+    await users.removeall();
+    console_.log(`let list = await users.getall()`)
+    list = await users.getall();
+    console_.log(`// list is ${JSON.stringify(list)}`);
+
+    console_.log(`await users.notify({type: "testing", value: 1234})`);
+    await users.notify({type: "testing", value: 1234});
+
+    console_.log(`await sleep(10000)`);
+    await sleep(10000);
+
+    users.onchange = users.onnotify = null;
+
+    console_.log(`await sleep(50000)`);
+    await sleep(50000);
+
+    console_.log(`db.close()`);
+    db.close();
+
+    //list.forEach(user => async () => { await user.remove(); });
+
+};
+async function sleep(ms) {
+    return new Promise((resolve,reject) => {
+        setTimeout(() => {
+            resolve();
+        }, ms || 0);
+    });
+}
+    </script>
+
+</body>
+</html>
