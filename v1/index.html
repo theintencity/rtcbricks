@@ -28,7 +28,28 @@
     <script type="text/javascript"src="click-to-call.js"></script>
     <script type="text/javascript"src="device-selector.js"></script>
     
-    
+
+    <script type="text/javascript"src="rtclite-stream.js"></script>
+    <script type="text/javascript"src="firebase-stream.js"></script>
+    <script type="text/javascript"src="dbgun-stream.js"></script>
+    <script type="text/javascript"src="external-stream.js"></script>
+    <script type="text/javascript"src="split-stream.js"></script>
+    <script>
+        // to avoid error in loading js files.
+        let AgoraRTC = {}, JitsiMeetJS = {}, LivekitClient = {}, VideoSDK = {}, Janus = { init: () => {}, randomString: () => {}};
+    </script>
+    <script type="text/javascript"src="janus-stream.js"></script>
+    <script type="text/javascript"src="verto-stream.js"></script>
+    <script type="text/javascript"src="jitsi-stream.js"></script>
+    <script type="text/javascript"src="agora-stream.js"></script>
+    <script type="text/javascript"src="livekit-stream.js"></script>
+    <script type="text/javascript"src="videosdklive-stream.js"></script>
+
+    <script type="text/javascript"src="restserver-storage.js"></script>
+    <script type="text/javascript"src="firebase-storage.js"></script>
+    <script type="text/javascript"src="peer-storage.js"></script>
+    <script type="text/javascript"src="storage-stream.js"></script>
+
     <link href="index.css"rel="stylesheet"type="text/css">
     <script type="text/javascript"src="index.js"></script>
 </head>
@@ -697,6 +718,15 @@ and hence, each such stream instance may be attached to only one <code>video-io<
 It may be extended to add some form of authentication and access control for your need
 on top of the basic connection.</p>
 
+<p>The following table describes all the attributes and properties of the component.
+Additional methods are in the <a href="#stream-methods">named-stream</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("rtclite-stream");
+</script>
+
+
+
 <h3 id="firebase-stream"short="Firebase">Using Firebase for Notification</h3>
 
 <p>I have created another component, <code>firebase-stream</code>, that uses the 
@@ -784,6 +814,13 @@ of the keys. Please read the Firebase and Firestore documentation to secure
 your application by adding appropriate authentication, and access control on your
 database. Also, take measures to secure the app credentials.</p>
 
+<p>The following table describes all the attributes and properties of the component.
+Additional methods are in the <a href="#stream-methods">named-stream</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("firebase-stream");
+</script>
+
 
 <h3 short="Dbgun database">Use the Graph Universe Node database for notification</h3>
 
@@ -815,8 +852,16 @@ to the locally running database as mentioned above.</p>
 
 <button class="tryit"path="04-dbgun.html"width="1000"height="300"></button>
 
+<p>The following table describes all the attributes and properties of the component.
+Additional methods are in the <a href="#stream-methods">named-stream</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("dbgun-stream");
+</script>
+
+
 <p>Use of other databases to implement the notification service is discussed in
-<a href="#storage-stream">How to create a stream using shared data?</a>.
+<a href="#storage-stream">How to create a stream using shared data?</a>
 Use of external media servers such as Janus or FreeSwitch is discussed later in 
 <a href="#topic-mediaserver">How to work with a media server?</a></p>
 
@@ -1065,7 +1110,7 @@ functions in the components.</p>
 
 
 
-<h3>Stream functions</h3>
+<h3 id="stream-methods">Stream functions</h3>
 
 <p>Sample implementations of three named streams are available from us. If you want to implement another 
 named stream component, e.g., to use a different signaling or notification channel for your WebRTC application,
@@ -1512,6 +1557,14 @@ await lref.transient().add({name: "Alice"});
 
 
 
+<h3 id="storage-methods"short="shared-storage">shared-storage
+
+<p>The details of the shared-storage web component API is summarized below.</p>
+
+<script type="text/javascript">
+    tabulateComponent("shared-storage");
+</script>
+
 <br>
 <h3>RestserverStorage</h3>
 
@@ -1551,10 +1604,17 @@ cannot be set directly in this web component.</p>
 <pre><code class="lang-js">&lt;restserver-storage id="storage1" src="ws://localhost:8080/restserver"&gt;&lt;/restserver-storage&gt;
 </code></pre>
 
-<button class="tryit"path="32-restserver-storage.html"shift width="10"height="10"></button>
-
 <p>Try the following example, after running the resource server locally, and 
 check the code and JavaScript console.</p>
+
+<button class="tryit"path="32-restserver-storage.html"shift width="10"height="10"></button>
+
+<p>The following table describes all the attributes and properties of the component.
+Additional properties and methods are in the <a href="#storage-methods">shared-storage</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("restserver-storage");
+</script>
 
 
 <h3>FirebaseStorage</h3>
@@ -1644,6 +1704,14 @@ the code and JavaScript console.</p>
 as a storage attached to an internal FirebaseStorage,
 instead of having to attach the specific implementation to that storage.</p>
 
+<p>The following table describes all the attributes and properties of the component.
+Additional properties and methods are in the <a href="#storage-methods">shared-storage</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("firebase-storage");
+</script>
+
+
 <p>As we will see in the next few sections, the shared storage abstraction can be used
 to implement a wide range of application scenarios.</p>
 
@@ -1700,6 +1768,13 @@ example first.</p>
 <p>Try the above example, to test the storage stream implemented using
 Cloud Firestore service, after setting the Firebase configuration in localStorage
 as described earlier.</p>
+
+<p>The following table describes all the attributes and properties of the component.
+Additional properties and methods are in the <a href="#stream-methods">named-stream</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("storage-stream");
+</script>
 
 
 <h2 id="peerstorage"short="peer-to-peer">How to use peer-to-peer storage?</h2>
@@ -1789,6 +1864,13 @@ of the default 6. It can emulate up to 30 users or nodes for local testing
 of text chat, and peer-to-peer network and storage,
 but the media conference will get overwhelmed with more than 4
 simultaneous video users.</p>
+
+<p>The following table describes all the attributes and properties of the component.
+Additional properties and methods are in the <a href="#storage-methods">shared-storage</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("peer-storage");
+</script>
 
 
 
@@ -2615,6 +2697,14 @@ pick any randomly unique number for room and feed ID.</p>
 <p>In your real application, you may want to install your own Janus server, and connect using websocket
 URL.</p>
 
+<p>The following table describes all the attributes and properties of the component.
+Additional methods are in the <a href="#stream-methods">named-stream</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("janus-stream");
+</script>
+
+
 <h3 short="Freeswitch">Using FreeSwitch as media server</h3>
 
 <p>The <code>verto-stream</code> component alows using the <code>video-io</code> instances with the 
@@ -2695,6 +2785,14 @@ library is too involved with tight coupling of notification and media features.
 So I decided to not use that, and directly implement the low level communication over web
 socket, for the minimum set of features needed for this project.</p>
 
+<p>The following table describes all the attributes and properties of the component.
+Additional methods are in the <a href="#stream-methods">named-stream</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("verto-stream");
+</script>
+
+
 
 
 
@@ -2743,6 +2841,13 @@ media server.</p>
 
 <button class="tryit"path="35-jitsi-stream.html"form="jitsi-form"width="1100"height="300"></button>
 
+<p>The following table describes all the attributes and properties of the component.
+Additional methods are in the <a href="#stream-methods">named-stream</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("jitsi-stream");
+</script>
+
 <br>
 <h3 short="Agora">Using Agora service</h3>
 
@@ -2768,6 +2873,14 @@ trying the example below.</p>
 
 
 <button class="tryit"path="35-agora-stream.html"form="agora-form"width="1100"height="300"></button>
+
+<p>The following table describes all the attributes and properties of the component.
+Additional methods are in the <a href="#stream-methods">named-stream</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("agora-stream");
+</script>
+
 
 <br>
 <h3 short="LiveKit">Using LiveKit service</h3>
@@ -2795,6 +2908,14 @@ trying the example below.</p>
 
 <button class="tryit"path="35-livekit-stream.html"form="livekit-form"width="1100"height="300"></button>
 
+<p>The following table describes all the attributes and properties of the component.
+Additional methods are in the <a href="#stream-methods">named-stream</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("livekit-stream");
+</script>
+
+
 <br>
 <h3 short="VideoSDK.live">Using VideoSDK.live service</h3>
 
@@ -2818,6 +2939,14 @@ trying the example below.</p>
 
 
 <button class="tryit"path="35-videosdklive-stream.html"form="videosdklive-form"width="1100"height="300"></button>
+
+<p>The following table describes all the attributes and properties of the component.
+Additional methods are in the <a href="#stream-methods">named-stream</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("videosdklive-stream");
+</script>
+
 
 <p>The examples shown above with four specific hosted services are for 
 demonstration only, and we do not endorse, ensourage or discourage use of any specific service.
@@ -2866,6 +2995,14 @@ at this URL before trying the example below.</p>
 
 <button class="tryit"path="35-external-stream-popup.html"width="1100"height="300"></button>
 
+<p>The following table describes all the attributes and properties of the component.
+Additional methods are in the <a href="#stream-methods">named-stream</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("external-stream");
+</script>
+
+
 <br>
 <h3 short="split-stream">Using split-stream</h3>
 
@@ -2898,6 +3035,7 @@ subscriber video-io attaches to the individual child named stream.</p>
 <p>Try this example which uses the basic named-stream components inside the split-stream.</p>
 
 <button class="tryit"path="35-split-stream.html"width="1100"height="300"></button>
+
 
 
 
@@ -5216,5 +5354,5 @@ document.querySelector("#end-year").innerText = Math.min(2026, new Date().getFul
 </script>
 <div id="buttons"></div>
 
-</body>
+</h3></body>
 </html>
