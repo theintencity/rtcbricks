@@ -1,0 +1,83 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="restserver-storage.js"></script>
+    <script type="text/javascript" src="redundant-storage.js"></script>
+    <script type="text/javascript" src="storage-stream.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        div.table {
+            display: table;
+        }
+        div.table > div {
+            display: table-row;
+        }
+        div.table > div > div {
+            display: table-cell;
+            padding: 1ch;
+        }
+    </style>
+</head>
+<body>
+    <partition-storage id="storage1">
+        <restserver-storage src="ws://localhost:8080/restserver"></restserver-storage>
+        <restserver-storage src="ws://localhost:8082/restserver"></restserver-storage>
+    </partition-storage>
+    <partition-storage id="storage2">
+        <restserver-storage src="ws://localhost:8080/restserver"></restserver-storage>
+        <restserver-storage src="ws://localhost:8082/restserver"></restserver-storage>
+    </partition-storage>
+    <partition-storage id="storage3">
+        <restserver-storage src="ws://localhost:8080/restserver"></restserver-storage>
+        <restserver-storage src="ws://localhost:8082/restserver"></restserver-storage>
+    </partition-storage>
+    
+    <!-- requires fixpath for partition-storage -->
+    <storage-stream id="stream1" for-storage="storage1" fixpath="true"></storage-stream>
+    <storage-stream id="stream2" for-storage="storage2" fixpath="true"></storage-stream>
+    <storage-stream id="stream3" for-storage="storage3" fixpath="true"></storage-stream>
+
+    <div class="table">
+        <div>
+            <div><video-io id="video1" controls for="stream1"></video-io></div>
+            <div><video-io id="video2" controls for="stream2"></video-io></div>
+            <div><video-io id="video3" controls for="stream3"></video-io></div>
+        </div>
+        <div>
+            <div><button id="button1">publish</button></div>
+            <div><button id="button2">subscribe</button></div>
+            <div><button id="button3">subscribe</button></div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        const streampath = "stream/" + ("" + Math.random()).substring(2, 6);
+        [...document.querySelectorAll("storage-stream")].forEach(stream => {
+            stream.path = streampath;
+        });
+
+        button1.onclick = button2.onclick = button3.onclick = e => {
+            let button = e.currentTarget;
+            let video = document.querySelector(button.id.replace(/button/, '#video'));
+            if (button.innerText == "stop") {
+                if (button.id == "button1") {
+                    button.innerText = "publish";
+                    video.publish = false;
+                } else {
+                    button.innerText = "subscribe";
+                    video.subscribe = false;
+                }
+            } else {
+                button.innerText = "stop";
+                if (button.id == "button1") {
+                    video.publish = true;
+                } else {
+                    video.subscribe = true;
+                }
+            }
+        };
+    </script>
+</body>
+</html>
