@@ -49,6 +49,7 @@
     <script type="text/javascript"src="restserver-storage.js"></script>
     <script type="text/javascript"src="firebase-storage.js"></script>
     <script type="text/javascript"src="peer-storage.js"></script>
+    <script type="text/javascript"src="redundant-storage.js"></script>
     <script type="text/javascript"src="storage-stream.js"></script>
 
     <link href="index.css"rel="stylesheet"type="text/css">
@@ -1255,7 +1256,7 @@ component automatically adjust on resize.</p>
 has multiple devices such as two webcams or two microphones.</p>
 <button class="tryit"path="19-device-selector.html"preview width="700"height="360"></button>
 
-<h3 id="device-selector">device-selector</h3>
+<h3 id="device-selector"angle="70">device-selector</h3>
 
 <p>The following table describes all the properties of the component.</p>
 
@@ -1282,7 +1283,7 @@ has multiple devices such as two webcams or two microphones.</p>
 
 
 
-<h2 category="Advanced - Data"cat="Data"position="50,17"short="data channel">How to use the data channel?</h2>
+<h2 category="Advanced - Data"cat="Data"position="50,20"spread="13"short="data channel">How to use the data channel?</h2>
 
 <p>The <code>channel</code> property of the <code>video-io</code> component can be used to enable the
 underlying data channel between publisher and subscribers, similar to the media path, but
@@ -1337,7 +1338,7 @@ shared data, described next.</p>
 
 
 
-<h2 id="storage"short="shared data">How to use shared data?</h2>
+<h2 id="storage"short="shared data"radius="260"angle="75">How to use shared data?</h2>
 
 <p>The ability to access and modify shared data is crucial in a distributed application such as
 two-party call, multi-party conference or online panel discussion. Furthermore, the clients
@@ -1567,11 +1568,17 @@ await lref.transient().add({name: "Alice"});
 </script>
 
 <br>
-<h3>RestserverStorage</h3>
+
+<h2 short="storage service"radius="200"angle="130">How to store data externally?</h2>
 
 <p>When the shared storage component uses a "local" source, it enables demonstration
 of this named stream within a single application, using the localStorage of the browser.
-As mentioned before, the shared storage component can be an external storage service such as
+Here, we describe how to attach external storage services to the shared storage,
+such as using RestserverStorage or FirebaseStorage.</p>
+
+<h3>RestserverStorage</h3>
+
+<p>As mentioned before, the shared storage component can be an external storage service such as
 <code>RestserverStorage</code>, e.g., by specifying a "ws:" or "wss:" URL in the 
 <code>src</code> attribute. Developers are refered to the
 <a href="https://github.com/theintencity/vvowproject"target="_blank">vvowproject</a>
@@ -1596,6 +1603,9 @@ whereas <code>-q</code> is for the quieter mode with only error logging.</p>
 
 <p>Try the above example, after running the resource server locally,
 on the default port 8080. This tests the various APIs of the resource server.</p>
+
+
+<h3>restserver-storage</h3>
 
 <p>The <code>restserver-storage</code> web component extends the <code>shared-storage</code>
 element, to force use RestserverStorage internally, and behaves as if the shared storage's
@@ -1632,7 +1642,7 @@ attribute, with the JSON string containing your firebase configuration.</p>
 &lt;script type="text/javascript" href="https://rtcbricks.kundansingh.com/v1/firebase-storage.js"&gt;&lt;/script&gt;
 ...
 &lt;!-- in &lt;body&gt; --&gt;
-&lt;shared-storage id="stream" src="firebase-storage:..."&gt;&lt;/shared-storage&gt;
+&lt;shared-storage id="storage1" src="firebase-storage:..."&gt;&lt;/shared-storage&gt;
 </code></pre>
 
 <p>Alternatively, you can directly assign the implementation, <code>impl</code>,
@@ -1685,6 +1695,8 @@ using firebase-storage for actual data storage and notifications.</p>
 
 <button class="tryit"path="32-firebase-storage.html"width="800"height="500"></button>
 
+<h3>firebase-storage</h3>
+
 <p>The <code>firebase-storage</code> web component extends the <code>shared-storage</code>
 element, to force use FirebaseStorage internally, and has a convenient <code>config</code>
 property to set the configuration as an object. Try the following example, and check
@@ -1712,11 +1724,97 @@ Additional properties and methods are in the <a href="#storage-methods">shared-s
     tabulateProperties("firebase-storage");
 </script>
 
+<h3>redundant-storage</h3>
+
+<p>The <code>redundant-storage</code> web component, and the corresponding <code>RedundantStorage</code>
+implementation enable storage redundancy for reliability. Notethat the RedundantStorage object
+is internally used automatically in the web component, and is not available to app directly.</p>
+
+<p>The implementation is primitive, only supports restserver-storage currently, and may be
+improved in the future. The following example shows how to use the component to include
+two separate restserver-storage so that data is stored at two servers, and any of them can
+be used to read. If one server is terminated or crashes, the app continues to work.</p>
+
+<pre><code class="lang-html">&lt;!-- in &lt;head&gt; --&gt;
+&lt;script type="text/javascript" href="https://rtcbricks.kundansingh.com/v1/restserver-storage.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" href="https://rtcbricks.kundansingh.com/v1/redundant-storage.js"&gt;&lt;/script&gt;
+...
+&lt;!-- in &lt;body&gt; --&gt;
+&lt;redundant-storage id="storage1"&gt;
+    &lt;restserver-storage src="ws://localhost:8080/restserver"&gt;&lt;/restserver-storage&gt;
+    &lt;restserver-storage src="ws://localhost:8082/restserver"&gt;&lt;/restserver-storage&gt;
+&lt;/redundant-storage&gt;
+</code></pre>
+
+<p>Internally, this component modifies some of the data access and notification APIs, to
+ensure that data stored on all the storage services are consistent. For many of the write APIs
+such as <code>create</code>, <code>update</code>, <code>read</code>, <code>delete</code>,
+<code>removeall</code> it just invokes the similar API on all the included components. For the 
+read APIs such as <code>read</code> or <code>getall</code> it invokes the similar API on
+all the included components, and succeeds if any of them reponds -- the first response is used.
+One write API to list, <code>add</code>, is non-trivial, because invoking this on all the included
+components will create separate identifiers for the new object in the list. Since this identifier 
+is used by the app logic, this is not derirable. Hence, the component attempts to <code>add</code>
+the object on one of the active included storage component first, and then uses that returned
+identifier to <code>create</code> that object on all the other included components.
+This opens door for race conditions, that should be detected and worked
+around by the application.</p>
+
+<p>Internally, the component sends any notification to all the included components,
+but detects and avoids duplicates when a notification is received. This may be improved in the 
+future to use sequential notification sending, to avoid unnecessary traffic, for
+<code>notify</code> and <code>onnotify</code>. However, duplicate avoidance is still
+needed for <code>onchange</code> notifications, unless the actual service is updated
+to avoid sending such change notifications.</p>
+
+
+
+<h3>partition-storage</h3>
+
+<p>The <code>partition-storage</code> web component can be implemented for scalability, 
+e.g., by sharding based on the resource path of the collection (list), and requiring that
+collection and object are alternating in the path. This is needed to ensure that the
+a list resource and the objects of that list resource are both handled by the same
+partition.</p>
+
+<p>The following example shows three <code>restserver-storage</code> destinations
+included in the partition storage, so that on average each storage will handle one third
+of the resource paths.</p>
+
+<pre><code class="lang-html">
+&lt;partition-storage id="storage1"&gt;
+    &lt;restserver-storage src="ws://localhost:8080/restserver"&gt;&lt;/restserver-storage&gt;
+    &lt;restserver-storage src="ws://localhost:8082/restserver"&gt;&lt;/restserver-storage&gt;
+    &lt;restserver-storage src="ws://localhost:8084/restserver"&gt;&lt;/restserver-storage&gt;
+&lt;/partition-storage&gt;
+</code></pre>
+
+<p>The following example shows how to combine the partition (scalability) and redundant (reliability)
+storage. Here, the same three destinations are used, but each destination also acts as a backup 
+to another destination. Thus, each resource path gets stored at two servers, depending on
+ther primary and secondary redundant storage in that partition.</p>
+
+<pre><code class="lang-html">
+&lt;partition-storage id="storage1"&gt;
+    &lt;redundant-storage id="storage1"&gt;
+        &lt;restserver-storage src="ws://localhost:8080/restserver"&gt;&lt;/restserver-storage&gt;
+        &lt;restserver-storage src="ws://localhost:8082/restserver"&gt;&lt;/restserver-storage&gt;
+    &lt;/redundant-storage&gt;
+    &lt;redundant-storage id="storage1"&gt;
+        &lt;restserver-storage src="ws://localhost:8082/restserver"&gt;&lt;/restserver-storage&gt;
+        &lt;restserver-storage src="ws://localhost:8084/restserver"&gt;&lt;/restserver-storage&gt;
+    &lt;/redundant-storage&gt;
+    &lt;redundant-storage id="storage1"&gt;
+        &lt;restserver-storage src="ws://localhost:8084/restserver"&gt;&lt;/restserver-storage&gt;
+        &lt;restserver-storage src="ws://localhost:8080/restserver"&gt;&lt;/restserver-storage&gt;
+    &lt;/redundant-storage&gt;
+&lt;/partition-storage&gt;
+</code></pre>
 
 <p>As we will see in the next few sections, the shared storage abstraction can be used
 to implement a wide range of application scenarios.</p>
 
-<h2 id="storage-stream"short="create stream">How to create a stream using shared data?</h2>
+<h2 id="storage-stream"short="create stream"angle="100">How to create a stream using shared data?</h2>
 
 <p>A new named stream component, <code>storage-stream</code>, is implemented using the 
 <code>shared-storage</code> component. This enables use of single application service for
@@ -1752,6 +1850,13 @@ and subscribers can join or leave in any order, similar to other named streams
 described earlier. The publisher's path is used to send a message to the publisher,
 and the subscribers child path is used to send a message to that subscriber.</p>
 
+<p>The following table describes all the attributes and properties of the <code>storage-stream</code> component.
+Additional properties and methods are in the <a href="#stream-methods">named-stream</a> base class.</p>
+
+<script type="text/javascript">
+    tabulateProperties("storage-stream");
+</script>
+
 <p>The following example uses external restserver as described in the
 previous section, for shared storage implementation.
 </p>
@@ -1770,15 +1875,24 @@ example first.</p>
 Cloud Firestore service, after setting the Firebase configuration in localStorage
 as described earlier.</p>
 
-<p>The following table describes all the attributes and properties of the component.
-Additional properties and methods are in the <a href="#stream-methods">named-stream</a> base class.</p>
+<p>Try the following example to test the <code>redundant-storage</code> component for
+reliability, after running two instances of the resource server locally
+on ports 8080 and 8082. During the session, try terminating one instance, and see how 
+the client behaves for subsequent tests.</p>
 
-<script type="text/javascript">
-    tabulateProperties("storage-stream");
-</script>
+<button class="tryit"path="04-redundant-storage.html"width="1100"height="300"></button>
+
+<p>Try the following example to test the <code>partition-storage</code> component for
+scalability, after running two instances of the resource server locally
+on ports 8080 and 8082. Each run uses a new random stream name, which may get assigned
+to the first or the second server. Notice that only one of the server will be used, depending
+on which partition the resource path maps to.</p>
+
+<button class="tryit"path="04-partition-storage.html"width="1100"height="300"></button>
 
 
-<h2 id="peerstorage"short="peer-to-peer">How to use peer-to-peer storage?</h2>
+
+<h2 id="peerstorage"short="peer-to-peer"angle="170">How to use peer-to-peer storage?</h2>
 
 <p>My other project, <a target="_blank"href="https://github.com/theintencity/ezcall">Ezcall</a>, 
 uses a peer-to-peer network and storage for video conferencing. The peer-to-peer
@@ -3323,12 +3437,12 @@ the view and functionality of the collaboration use case, from its data, and
 more importantly, allows replacing with a different data model that does not use 
 our shared storage based architecture.</quote>
 
-<p>The following diagram shows how various collaboration web components are
-related.</p>
+<p>The following diagram shows how various web components including the collaboration
+components are related, use the shared storage, and interact with other components.</p>
 
 <p>
     
-    <img class="image"src="51-collab-components.png"style="width: 677px;">
+    <img class="image"src="51-web-components.png"style="width: 1100px;">
 </p>
 
 <p>Besides the <code>list</code> and <code>object</code> data abstractions
@@ -5089,6 +5203,15 @@ methods described later.</p>
 range of communicating applications such as video call, broadcast, conference, and so on.
 This document includes many code snippets and sample applications to get started quickly,
 as well as to try new things by extending the existing applications.</p>
+
+<p>The following diagram shows all the web components included in the project, how they are
+related to each other, and how they interact with each other.</p>
+
+<p>
+    <img class="image"src="51-web-components.png"style="width: 1100px;">
+</p>
+
+
 
 <p>The components and classes are summarized below.</p>
 
