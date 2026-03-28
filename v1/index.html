@@ -65,7 +65,7 @@
 <h4 class="no-print">By <a href="https://kundansingh.com">Kundan Singh, PhD</a></h4>
 
 <p>This project aims to unleash WebRTC creativity using web components.
-It has a collection of about 40 web components for building a wide range of
+It has a collection of more than <a href="#summary">fifty web components</a> for building a wide range of
 real-time communication and collaboration web applications.</p>
 
 <p>I started this project with one generic web component, &lt;video-io&gt;, 
@@ -110,8 +110,53 @@ conferencing, and include other components such as <code>flex-box</code>
 for conference display layout and <code>shared-storage</code> for generic end-point driven
 software implementations of communication applications. Web components for several common
 scenarios are also described, e.g., <code>text-chat</code>, <code>locked-notepad</code> or 
-<code>click-to-call</code>.</p>
+<code>click-to-call</code>. A navigatable and interactive content is shown below.</p>
 
+<div class="svgtoc"></div>
+
+<dl><dt>Intro</dt><dd>First, in the basic part
+we go over the video-io component, its styling and appearance, and how it is used with
+the named-stream component to publish or subscribe, including a few implementations of
+named-streams using external storage services or real-time databases such as Firebase and RTCLite.
+It also covers certain user interface features such as zooming, and client side recording.</dd>
+
+<dt>API</dt><dd>The next part provides a complete reference for various properties, methods and
+events on the video-io and named-stream components, mechanics of the installed app, both
+PWA and native electron helper app, and the device selection related component.</dd>
+
+<dt>Data</dt><dd>This is 
+followed by the Data part that shows how to use data channel as well as shared storage
+for a wide range of application logic. It also covers the generic storage stream component,
+a few external storages beyond just named stream support including Firestore, Restserver and 
+peer-to-peer network, and how to use the redundancy and data partition components for 
+reliability and scalability of the real-time database.</dd>
+
+<dt>N-party</dt><dd>This part is a
+potpourrie of several concepts such as how to use the shared storage components for two-party,
+multi-party, or one-to-many broadcast application logic, and to display various multi-party
+video layout in a flexible, adaptive and dynamic manner. It also includes various
+components to enable interaction with external media servers and hosted conference services
+such as Janus, Jitsi, Agora, LiveKit, or more, and also to support peer-to-peer
+media broadcast without a media server.</dd>
+
+<dt>Media</dt><dd>This part includes topics related to
+audio/video manipulation and improvement such as virtual background, image processing,
+and end-to-end encryption.</dd>
+
+<dt>Collab</dt><dd>There are numerous collaboration use cases and components
+described in this part including text-chat, multimedia conference, user
+roster display, and many shared tools and games such as whiteboard, shared editor
+or slide show. Many of these are further extended such as to support modern Slack-style enterprise
+messaging interface, adaptive conference layout, as well as nuanced conferencing
+and collaboration features.</dd>
+
+<dt>Telephony</dt><dd>Finally, this part covers the
+telephony style application logic and use cases including call signaling and conference join
+models, call queues for contact center, or call distribution for campaigns, all using
+the generic shared storage interface.</dd></dl>
+
+<div style="break-after: page;"></div>
+<span style="font-size: 28px;">Table of Content</span>
 
 <ol class="toc"></ol>
 
@@ -824,7 +869,7 @@ Additional methods are in the <a href="#stream-methods">named-stream</a> base cl
 </script>
 
 
-<h3 short="Dbgun database">Use the Graph Universe Node database for notification</h3>
+<h3 id="dbgun-stream"short="Dbgun database">Use the Graph Universe Node database for notification</h3>
 
 <p>Graph Universe Node database is an open source 
 <a target="_blank"href="https://github.com/amark/gun">project</a>
@@ -1576,7 +1621,7 @@ of this named stream within a single application, using the localStorage of the 
 Here, we describe how to attach external storage services to the shared storage,
 such as using RestserverStorage or FirebaseStorage.</p>
 
-<h3>RestserverStorage</h3>
+<h3 id="restserverstorage">RestserverStorage</h3>
 
 <p>As mentioned before, the shared storage component can be an external storage service such as
 <code>RestserverStorage</code>, e.g., by specifying a "ws:" or "wss:" URL in the 
@@ -1605,7 +1650,7 @@ whereas <code>-q</code> is for the quieter mode with only error logging.</p>
 on the default port 8080. This tests the various APIs of the resource server.</p>
 
 
-<h3>restserver-storage</h3>
+<h3 id="restserver-storage">restserver-storage</h3>
 
 <p>The <code>restserver-storage</code> web component extends the <code>shared-storage</code>
 element, to force use RestserverStorage internally, and behaves as if the shared storage's
@@ -1628,7 +1673,7 @@ Additional properties and methods are in the <a href="#storage-methods">shared-s
 </script>
 
 
-<h3>FirebaseStorage</h3>
+<h3 id="firebasestorage">FirebaseStorage</h3>
 
 <p>I have also implemented a basic <code>FirebaseStorage</code> component that can attach to the
 shared-storage web component and use the Cloud Firestore behind the scenes.
@@ -1695,7 +1740,7 @@ using firebase-storage for actual data storage and notifications.</p>
 
 <button class="tryit"path="32-firebase-storage.html"width="800"height="500"></button>
 
-<h3>firebase-storage</h3>
+<h3 id="firebase-storage">firebase-storage</h3>
 
 <p>The <code>firebase-storage</code> web component extends the <code>shared-storage</code>
 element, to force use FirebaseStorage internally, and has a convenient <code>config</code>
@@ -1724,7 +1769,7 @@ Additional properties and methods are in the <a href="#storage-methods">shared-s
     tabulateProperties("firebase-storage");
 </script>
 
-<h3>redundant-storage</h3>
+<h3 id="redundant-storage">redundant-storage</h3>
 
 <p>The <code>redundant-storage</code> web component, and the corresponding <code>RedundantStorage</code>
 implementation enable storage redundancy for reliability. Notethat the RedundantStorage object
@@ -1769,7 +1814,7 @@ to avoid sending such change notifications.</p>
 
 
 
-<h3>partition-storage</h3>
+<h3 id="partition-storage">partition-storage</h3>
 
 <p>The <code>partition-storage</code> web component can be implemented for scalability, 
 e.g., by sharding based on the resource path of the collection (list), and requiring that
@@ -1989,7 +2034,7 @@ Additional properties and methods are in the <a href="#storage-methods">shared-s
 
 
 
-<h2 category="Advanced - Multiparty"cat="N-party"position="4,30"short="one-to-many">How to do one-to-many video broadcast?</h2>
+<h2 category="Advanced - Multiparty"cat="N-party"position="4,40"short="one-to-many">How to do one-to-many video broadcast?</h2>
 
 <p>The techniques described in <a href="#topic-connect">How to connect publisher and subscriber?</a>
 is sufficient to establish one-to-many broadcast. The various <code>video-io</code> instances publish
@@ -2930,7 +2975,7 @@ However, since the peer connection is often handled by the service specific
 named stream implementation, some properties and attributes of video-io that are
 dependent on the connection, are not available with these named stream implementations.</p>
 
-<h3 short="Jitsi">Using Jitsi-as-a-Service</h3>
+<h3 id="jitsi-stream"short="Jitsi">Using Jitsi-as-a-Service</h3>
 
 <p>Jitsi is an open source video conferencing server, which also has a hosted jitsi-as-a-service offering.
 Our jitsi-stream web component takes a room identifier representing the stream name, 
@@ -2964,7 +3009,7 @@ Additional methods are in the <a href="#stream-methods">named-stream</a> base cl
 </script>
 
 <br>
-<h3 short="Agora">Using Agora service</h3>
+<h3 id="agora-stream"short="Agora">Using Agora service</h3>
 
 <p>Agora is another developer friendly video conferencing service.
 Our agora-stream component takes a channel name representing a named stream, 
@@ -2998,7 +3043,7 @@ Additional methods are in the <a href="#stream-methods">named-stream</a> base cl
 
 
 <br>
-<h3 short="LiveKit">Using LiveKit service</h3>
+<h3 id="livekit-stream"short="LiveKit">Using LiveKit service</h3>
 
 <p>LiveKit is another open source developer platform for video conferencing.
 Our livekit-stream component takes a room name representing a named stream, and a sandbox test server to connect to. 
@@ -3032,7 +3077,7 @@ Additional methods are in the <a href="#stream-methods">named-stream</a> base cl
 
 
 <br>
-<h3 short="VideoSDK.live">Using VideoSDK.live service</h3>
+<h3 id="videosdklive-stream"short="VideoSDK.live">Using VideoSDK.live service</h3>
 
 <p>VideoSDK.live is also a developer platform and service for video conferencing.
 Our videosdklive-stream component takes a room name for a named stream, and an authentication token
@@ -3074,7 +3119,7 @@ third-party hosted service.
 
 <p>Here, additional topics related to named streams are covered.</p>
 
-<h3 short="external-stream">Using external-stream</h3>
+<h3 id="external-stream"short="external-stream">Using external-stream</h3>
 
 <p>The generic external-stream web component is useful in connecting to any external
 media server or conference service. It takes a URL of an external web app, 
@@ -3119,7 +3164,7 @@ Additional methods are in the <a href="#stream-methods">named-stream</a> base cl
 
 
 <br>
-<h3 short="split-stream">Using split-stream</h3>
+<h3 id="split-stream"short="split-stream">Using split-stream</h3>
 
 <p>The named stream abstraction allows at most one publisher and zero or more subscribers
 attached to a single stream. It also requires a video-io component instance to be attached
@@ -5215,7 +5260,7 @@ related to each other, and how they interact with each other.</p>
 
 <p>The components and classes are summarized below.</p>
 
-<table class="properties nowrap">
+<table class="properties nowrap summary">
     <tr><th>Component</th><th>Description</th></tr>
     <tr><td><a href="#topic-api">video-io</a></td><td>Include video-io.js</td></tr>
     <tr><td></td><td>
@@ -5264,7 +5309,35 @@ related to each other, and how they interact with each other.</p>
             </td></tr>
             <tr><td><a href="#firebase-stream">firebase-stream</a></td><td>Include firebase-stream.js</td></tr>
             <tr><td></td><td>
-                Uses the popular Firebase Firestore project.
+                Uses the popular Cloud Firestore project.
+            </td></tr>
+            <tr><td><a href="#dbgun-stream">dbgun-stream</a></td><td>Include dbgun-stream.js</td></tr>
+            <tr><td></td><td>
+                Uses the Graph Universe Node distributed database project.
+            </td></tr>
+            <tr><td><a href="#jitsi-stream">jitsi-stream</a></td><td>Include jitsi-stream.js</td></tr>
+            <tr><td></td><td>
+                Uses Jitsi-as-a-Service for conferencing service.
+            </td></tr>
+            <tr><td><a href="#agora-stream">agora-stream</a></td><td>Include agora-stream.js</td></tr>
+            <tr><td></td><td>
+                Uses Agora video conference service.
+            </td></tr>
+            <tr><td><a href="#livekit-stream">livekit-stream</a></td><td>Include livekit-stream.js</td></tr>
+            <tr><td></td><td>
+                Uses LiveKit video conference service.
+            </td></tr>
+            <tr><td><a href="#videosdklive-stream">videosdklive-stream</a></td><td>Include videosdklive-stream.js</td></tr>
+            <tr><td></td><td>
+                Uses VideoSDK.live conference service.
+            </td></tr>
+            <tr><td><a href="#external-stream">external-stream</a></td><td>Include external-stream.js</td></tr>
+            <tr><td></td><td>
+                Allows using external web app.
+            </td></tr>
+            <tr><td><a href="#split-stream">split-stream</a></td><td>Include split-stream.js</td></tr>
+            <tr><td></td><td>
+                Allows splitting a publish stream into multiple.
             </td></tr>
             <tr><td><a href="#storage-stream">storage-stream</a></td><td>Include storage-stream.js, shared-storage.js</td></tr>
             <tr><td></td><td>
@@ -5280,23 +5353,44 @@ related to each other, and how they interact with each other.</p>
         use a derived class such as RestserverStorage or PeerStorageImpl, or
         specify the implementation via the <code>src</code> attribute of shared-storage.
         <table class="properties nowrap">
-            <tr><th>Class</th><th>Description</th></tr>
-            <tr><td>SharedStorage</td><td>Include shared-storage.js</td></tr>
+            <tr><th>Class or Component</th><th>Description</th></tr>
+            <tr><td><a href="#shared-storage">SharedStorage</a></td><td>Include shared-storage.js</td></tr>
             <tr><td></td><td>
                 Base class using local storage for demonstration only.
             </td></tr>
-            <tr><td>RestserverStorage</td><td>Include restserver-storage.js</td></tr>
+            <tr><td><a href="#restserverstorage">RestserverStorage</a></td><td>Include restserver-storage.js</td></tr>
             <tr><td></td><td>
                 Uses my <code>restserver</code> project for storage and notifications over websocket.
             </td></tr>
-            <tr><td>PeerStorageImpl</td><td>Include peer-storage.js</td></tr>
+            <tr><td><a href="#restserver-storage">restserver-storage</a></td><td>Include restserver-storage.js</td></tr>
+            <tr><td></td><td>
+                Uses my <code>restserver</code> project for storage and notifications over websocket.
+            </td></tr>
+            <tr><td><a href="#peerstorage">PeerStorageImpl</a></td><td>Include peer-storage.js</td></tr>
             <tr><td></td><td>
                 Uses peer-to-peer network for storage and notifications using data channel and
                 external signaling to create the peer-to-peer network.
             </td></tr>
-            <tr><td>FirebaseStorage</td><td>Include firebase-storage.js</td></tr>
+            <tr><td><a href="#peerstorage">peer-storage</a></td><td>Include peer-storage.js</td></tr>
+            <tr><td></td><td>
+                Uses peer-to-peer network for storage and notifications using data channel and
+                external signaling to create the peer-to-peer network.
+            </td></tr>
+            <tr><td><a href="#firebasestorage">FirebaseStorage</a></td><td>Include firebase-storage.js</td></tr>
             <tr><td></td><td>
                 Uses the popular Cloud Firestore real-time database service.
+            </td></tr>
+            <tr><td><a href="#firebase-storage">firebase-storage</a></td><td>Include firebase-storage.js</td></tr>
+            <tr><td></td><td>
+                Uses the popular Cloud Firestore real-time database service.
+            </td></tr>
+            <tr><td><a href="#redundant-storage">redundant-storage</a></td><td>Include redundant-storage.js</td></tr>
+            <tr><td></td><td>
+                Allows redundant storage for reliability.
+            </td></tr>
+            <tr><td><a href="#partition-storage">partition-storage</a></td><td>Include partition-storage.js</td></tr>
+            <tr><td></td><td>
+                Allows partitioned storage for scalability.
             </td></tr>
         </table>
     </td></tr>
@@ -5348,6 +5442,7 @@ related to each other, and how they interact with each other.</p>
             <tr><td></td><td>
                 Web assets for border image of chat bubbles.
             </td></tr>
+            
             <tr><td><a href="#user-roster">user-roster</a></td><td>Include user-roster.js</td></tr>
             <tr><td></td><td>
                 Displays a list of users and their attributes from a data model
@@ -5445,7 +5540,6 @@ related to each other, and how they interact with each other.</p>
             <tr><td></td><td>
                 State machine for conference join and leave, and membership,
                 using the shared storage.
-            </td><td>
             </td></tr>
             <tr><td><a href="#videos-control">videos-control</a></td><td>Include phone-call.js</td></tr>
             <tr><td></td><td>
@@ -5461,6 +5555,7 @@ related to each other, and how they interact with each other.</p>
             </td></tr>
         </table>
     </td></tr>
+    
 </table>
 
 
