@@ -1,0 +1,736 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.8.162/pdf.min.js" integrity="sha512-9Wd08apcJEwm8g3lBTg1UW/njdN0iuuOVWKpyinK3uA7ISAE5PmEZ4y8bZYTXVOE3tlt7aFlCBBLmLt5cUxe2Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript">
+        // see https://mozilla.github.io/pdf.js/examples/index.html#interactive-examples
+        var pdfjsLib = window['pdfjs-dist/build/pdf'];
+        //pdfjsLib.disableWorker = true;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.8.162/pdf.worker.min.js';
+    </script>
+
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="shared-storage.js"></script>
+    <script type="text/javascript" src="text-chat.js"></script>
+    <script type="text/javascript" src="text-chat-bubbles.js"></script>
+    <script type="text/javascript" src="user-roster.js"></script>
+    <script type="text/javascript" src="media-chat.js"></script>
+    <script type="text/javascript" src="flex-box.js"></script>
+    <script type="text/javascript" src="web-assets.js"></script>
+    <script type="text/javascript" src="slide-show.js"></script>
+    <script type="text/javascript" src="white-board.js"></script>
+    <script type="text/javascript" src="chess-board.js"></script>
+    <script type="text/javascript" src="device-selector.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        body {
+            display: flex; flex-flow: row wrap;
+            justify-content: flex-start;
+            font: 0.8em/1em sans-serif;
+        }
+        body > * {
+            position: relative;
+            flex: 0 0 auto;
+        }
+        media-chat {
+            width: 200px; height: 400px;
+            display: inline-block;
+            border: solid 1px lightgrey;
+            margin: 10px;
+            resize: both;
+        }
+        media-chat[display="hangout"] {
+            width: 600px; height: 400px;
+        }
+        media-chat[display="videocity"] {
+            width: 480px; height: 300px;
+        }
+        video-io > span {
+            color: rgba(255,255,255,0.8); 
+            font-size: 10px; font-family: sans-serif;
+            text-shadow: 0 0 1px rgba(0,0,0,0.8);
+        }
+        text-feed {
+            font-size: 12px; line-height: 16px;
+        }
+
+        media-chat:nth-of-type(3) overlay-menu {
+            background-color: black;
+            color: white;
+        }
+        media-chat:nth-of-type(3) overlay-menu > span:hover {
+            background-color: #666;
+        }
+        /* media-chat:nth-of-type(3)::part(button-audio) {
+            background-image: url(53-cellphone.png);
+        }
+        media-chat:nth-of-type(3)::part(button-video) {
+            background-image: url(53-video-icon.png);
+        } */
+
+
+        button svg {
+            fill: #666;
+        }
+        button[selected] svg {
+            fill: black;
+        }
+    </style>
+</head>
+<body>
+    <template id="survey">
+        <div class="survey" style="font: inherit; max-width: 120px; box-sizing: border-box; background: lightgray; border: solid 1px gray; padding: 1ch;">
+            <div class="title"></div>
+            <div class="input" style="margin-top: 1ch; display: flex; flex-flow: row wrap; justify-content: space-evenly;">
+                <button value="yes" style="outline: none; margin: 2px; cursor: pointer;">Yes</button>
+                <button value="no" style="outline: none; margin: 2px; cursor: pointer;">No</button>
+            </div>
+        </div>
+    </template>
+
+    <alert-sounds id="sounds"></alert-sounds>
+    <yahoo-smileys id="smileys"></yahoo-smileys>
+    <shared-storage id="storage1" src="local"></shared-storage>
+    <shared-storage id="storage2" src="local"></shared-storage>
+    <shared-storage id="storage3" src="local"></shared-storage>
+    <shared-storage id="storage4" src="local"></shared-storage>
+
+    <media-chat-data id="data1" for-storage="storage1" self="alice" displayname="Alice" path="sessions/conf123"></media-chat-data>
+    <media-chat for-data="data1" display="hangout" allowaction="true">
+        <toolbar-buttons slot="buttons">
+            <span>Weekly status sync</span>
+            <button name="audio" toggle title="start/stop an audio call" show-if="calltype!='video'"></button>
+            <button name="video" toggle title="start/stop a video call" show-if="calltype!='audio'"></button>
+            <button name="upload" title="upload and send media file">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3,3v18h18V3H3z M13,12v4v1h-2v-1v-4H7l5-5l5,5H13z"/></svg>
+            </button>
+            <button name="menu" title="more actions"></button>
+        </toolbar-buttons>
+        <overlay-menu slot="menu">
+            <span name="microphone" toggle="true" checked="true">Microphone</span>
+            <span name="camera" toggle="true" checked="true">Webcam</span>
+            <span name="video" toggle show-if="calltype!='audio'">Start a video call</span>
+            <span name="screenshare" toggle show-if="calltype!='none'">Share screen</span>
+            <span name="shareapp">Share another app</span>
+            <span name="sharewebcam">Share webcam</span>
+            <span name="upload">Send media file</span>
+            <span name="share">Media slide show</span>
+            <span name="clear">Clear text chat</span>
+            <span name="layoutsync" toggle show-if="calltype!='none'">Sync video layout</span>
+            <span name="settings">Device selection</span>
+            <span name="popout" show-if="!popout && (calltype!='none' || hasshare)">Popout videos</span>
+            <span name="fullscreen" toggle>Full screen</span>
+            <span name="survey">Participants survey</span>
+            <span name="whiteboard">Shared white-board</span>
+            <span name="chess">Start chess</span>
+        </overlay-menu>
+        <user-roster slot="roster"></user-roster>
+        <text-chat slot="chat">
+            <text-feed for-smileys="smileys" for-sounds="sounds"></text-feed>
+        </text-chat>
+        <flex-box slot="videos" disallow="dragmove" restore-display></flex-box>
+    </media-chat>
+    <media-chat-data id="data2" for-storage="storage2" self="bob" displayname="Bob" path="sessions/conf123"></media-chat-data>
+    <media-chat for-data="data2" videos-ratio="1.333" display="filmstrip">
+        <toolbar-buttons slot="buttons">
+            <span name="topic">Weekly status sync</span>
+            <button name="video" toggle title="start/stop a video call"></button>
+            <!--
+            <button name="upload" title="upload and send media file">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3,3v18h18V3H3z M13,12v4v1h-2v-1v-4H7l5-5l5,5H13z"/></svg>
+            </button>
+            -->
+            <button name="flip" title="flip to show videos"></button>
+            <button name="menu" title="more actions"></button>
+        </toolbar-buttons>
+        <overlay-menu slot="menu">
+            <span name="microphone" toggle="true" checked="true">Microphone</span>
+            <span name="camera" toggle="true" checked="true">Webcam</span>
+            <span name="screenshare" toggle show-if="calltype!='none'">Share screen</span>
+            <span name="upload">Send media file</span>
+            <span name="share">Media slide show</span>
+            <span name="clear">Clear text chat</span>
+            <span name="settings">Device selection</span>
+        </overlay-menu>
+        <flex-box slot="videos" disallow="dragmove,dblclick" restore-display></flex-box>
+        <user-roster slot="roster"></user-roster>
+        <text-chat slot="chat" showtyping="true">
+            <text-feed for-smileys="smileys" for-sounds="sounds"></text-feed>
+        </text-chat>
+    </media-chat>
+    <media-chat-data id="data3" for-storage="storage3" self="carol" displayname="Carol" path="sessions/conf123"></media-chat-data>
+    <media-chat for-data="data3" display="messenger" allowaction="true">
+        <toolbar-buttons slot="buttons">
+            <span>Weekly status sync</span>
+            <button name="audio" toggle title="start/stop an audio call" show-if="calltype!='video'"></button>
+            <button name="video" toggle title="start/stop a video call" show-if="calltype!='audio'"></button>
+            <!--
+            <button name="upload" title="upload and send media file">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3,3v18h18V3H3z M13,12v4v1h-2v-1v-4H7l5-5l5,5H13z"/></svg>
+            </button>
+            -->
+            <button name="menu" title="more actions"></button>
+        </toolbar-buttons>
+        <overlay-menu slot="menu">
+            <span name="microphone" toggle="true" checked="true">Microphone</span>
+            <span name="camera" toggle="true" checked="true">Webcam</span>
+            <span name="screenshare" toggle show-if="calltype=='video'">Share screen</span>
+            <span name="upload">Send media file</span>
+            <span name="share">Media slide show</span>
+            <span name="clear">Clear text chat</span>
+            <span name="settings">Device selection</span>
+            <span name="popout" show-if="!popout && (calltype=='video' || hasshare)">Popout videos</span>
+        </overlay-menu>
+        <flex-box slot="videos" disallow="dragmove" restore-display></flex-box>
+        <user-roster slot="roster"></user-roster>
+        <text-chat slot="chat" input="false">
+            <text-feed-bubbles input="true" showtyping="true"></text-feed-bubbles>
+        </text-chat>
+    </media-chat>
+    <media-chat-data id="data4" for-storage="storage4" self="dave" displayname="Dave" path="sessions/conf123"></media-chat-data>
+    <media-chat for-data="data4" display="videocity" showbuttons="bottom" speakerlevel="true">
+        <toolbar-buttons slot="buttons">
+            <button name="roster" toggle title="show/hide user roster"></button>
+            <button name="chat" toggle title="show/hide text chat"></button>
+            <button name="video" toggle title="start/stop a video call"></button>
+            <button name="camera" toggle selected title="toggle webcam"></button>
+            <button name="microphone" toggle selected title="toggle microphone"></button>
+            <volume-level name="miclevel" title="adjust microphone volume" show-if="selfvideo==true"></volume-level>
+            <button name="screenshare" toggle title="share screen or window"></button>
+            <!--
+            <button name="upload" title="upload and send media file">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3,3v18h18V3H3z M13,12v4v1h-2v-1v-4H7l5-5l5,5H13z"/></svg>
+            </button>
+        -->
+            <button name="share" title="share media and slide show">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3,2v18l13-9L3,2z"/></svg>
+            </button>
+            <span name="topic">Weekly status sync</span>
+            <volume-level name="soundlevel" title="adjust speaker volume" show-if="othervideos==true"></volume-level>
+            <button name="sound" toggle selected title="toggle speaker sound"></button>
+            <button name="survey" title="start participants survey">
+                <svg xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 16 16" width="24px" height="24px"><path d="M 6.1054688 0.06640625 L 3 3.171875 L 1.6191406 1.7910156 L 0.20507812 3.2050781 L 3 6 L 7.5195312 1.4804688 L 6.1054688 0.06640625 z M 9 3 L 9 5 L 16 5 L 16 3 L 9 3 z M 2.2324219 8.8183594 L 0.81835938 10.232422 L 2.5859375 12 L 0.81835938 13.767578 L 2.2324219 15.181641 L 4 13.414062 L 5.7675781 15.181641 L 7.1816406 13.767578 L 5.4140625 12 L 7.1816406 10.232422 L 5.7675781 8.8183594 L 4 10.585938 L 2.2324219 8.8183594 z M 9 11 L 9 13 L 16 13 L 16 11 L 9 11 z"/></svg>
+            </button>
+            <button name="layoutsync" toggle title="sync layout" show-if="calltype!='none'"></button>
+            <button name="settings" title="device selection">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M 10.490234 2 C 10.011234 2 9.6017656 2.3385938 9.5097656 2.8085938 L 9.1757812 4.5234375 C 8.3550224 4.8338012 7.5961042 5.2674041 6.9296875 5.8144531 L 5.2851562 5.2480469 C 4.8321563 5.0920469 4.33375 5.2793594 4.09375 5.6933594 L 2.5859375 8.3066406 C 2.3469375 8.7216406 2.4339219 9.2485 2.7949219 9.5625 L 4.1132812 10.708984 C 4.0447181 11.130337 4 11.559284 4 12 C 4 12.440716 4.0447181 12.869663 4.1132812 13.291016 L 2.7949219 14.4375 C 2.4339219 14.7515 2.3469375 15.278359 2.5859375 15.693359 L 4.09375 18.306641 C 4.33275 18.721641 4.8321562 18.908906 5.2851562 18.753906 L 6.9296875 18.1875 C 7.5958842 18.734206 8.3553934 19.166339 9.1757812 19.476562 L 9.5097656 21.191406 C 9.6017656 21.661406 10.011234 22 10.490234 22 L 13.509766 22 C 13.988766 22 14.398234 21.661406 14.490234 21.191406 L 14.824219 19.476562 C 15.644978 19.166199 16.403896 18.732596 17.070312 18.185547 L 18.714844 18.751953 C 19.167844 18.907953 19.66625 18.721641 19.90625 18.306641 L 21.414062 15.691406 C 21.653063 15.276406 21.566078 14.7515 21.205078 14.4375 L 19.886719 13.291016 C 19.955282 12.869663 20 12.440716 20 12 C 20 11.559284 19.955282 11.130337 19.886719 10.708984 L 21.205078 9.5625 C 21.566078 9.2485 21.653063 8.7216406 21.414062 8.3066406 L 19.90625 5.6933594 C 19.66725 5.2783594 19.167844 5.0910937 18.714844 5.2460938 L 17.070312 5.8125 C 16.404116 5.2657937 15.644607 4.8336609 14.824219 4.5234375 L 14.490234 2.8085938 C 14.398234 2.3385937 13.988766 2 13.509766 2 L 10.490234 2 z M 12 8 C 14.209 8 16 9.791 16 12 C 16 14.209 14.209 16 12 16 C 9.791 16 8 14.209 8 12 C 8 9.791 9.791 8 12 8 z"/></svg>
+            </button>
+            <button name="layout" title="change layout"></button>
+            <button name="fullscreen" toggle title="toggle fullscreen"></button>
+        </toolbar-buttons>
+        <flex-box slot="videos" disallow="dragmove" restore-display></flex-box>
+        <text-chat slot="chat" input="false" minsize="100x200">
+            <text-feed-bubbles input="true" showtyping="true"></text-feed-bubbles>
+        </text-chat>
+        <user-roster slot="roster"></user-roster>
+    </media-chat>
+
+    <script type="text/javascript">
+        const streams = {};
+
+        [].slice.call(document.querySelectorAll("media-chat")).forEach(media => {
+            // media._testing = true;
+            media.setAttribute("allowsync", "display");
+
+            media.addEventListener("addvideo", event => {
+                const {video, id} = event;
+                // video.controls = true;
+                let stream = streams[id];
+                if (!stream) {
+                    console.log("creating stream for " + id);
+                    stream = streams[id] = document.createElement("named-stream");
+                    stream._refcount = 1;
+                } else {
+                    stream._refcount += 1;
+                }
+                video.srcObject = stream;
+            });
+
+            media.addEventListener("removevideo", event => {
+                const {video, id} = event;
+                let stream = streams[id];
+                if (stream) {
+                    stream._refcount -= 1;
+                    if (!stream._refcount) {
+                        console.log("deleting stream for " + id);
+                        delete streams[id];
+                    }
+                }
+            });
+
+            media.addEventListener("action", event => {
+                console.log("event action", event.value);
+                try {
+                    const action = event.value;
+                    if (action.startsWith("survey ")) {
+                        const text = action.substring("survey ".length);
+                        const match = text.match(/([\s\S]+?)((\[[\w\s]+\])+)$/);
+                        if (match) {
+                            const topic = match[1].trim();
+                            const buttons = match[2].match(/\[[\w\s]+?\]/g).map(text => {
+                                return text.substring(1, text.length-1);
+                            });
+                            console.log("topic", topic, "buttons", buttons);
+                            media.startshare({type: "survey", topic, buttons});
+                        } else {
+                            console.log("match=", match);
+                            throw new Error("failed to interpret action: " + JSON.stringify(text));
+                        }
+                    } else if (action.startsWith("start ")) {
+                        const text = action.substring("start ".length).trim();
+                        let button;
+                        if (["audio", "video", "upload", "screenshare", "share", "settings", "whiteboard", "chess"].indexOf(text) >= 0) {
+                            const button = media.querySelector(`[name="${text}"]`);
+                            if (button) {
+                                button.click();
+                            } else {
+                                throw new Error("not available for start: " + text);
+                            }
+                        } else {
+                            throw new Error("unsupported for start: " + text);
+                        }
+                    } else {
+                        throw new Error("unsupported action: " + event.value);
+                    }
+                } catch (e) {
+                    const chat = media.querySelector("text-chat");
+                    const data = {disposition: "info", text: e.message};
+                    chat.feed.add("", data);
+                }
+            });
+
+
+            [].slice.call(media.querySelectorAll('[name="upload"], [name="share"]')).forEach(item => {
+                item.onclick = async event => {
+                    const name = event.currentTarget.getAttribute("name");
+                    console.log("clicked on " + name);
+                    const files = await upload_files({accept: ".png,.jpg,.jpeg,.mpeg,.mp4,.pdf,image/*,video/mpeg,video/mp4,application/pdf", multiple: ""});
+                    const lock = name == "share";
+                    const value = files.map(file => {
+                        return {name: file.name, type: file.type, size: file.size, url: file.url};
+                    });
+                    media.startshare({type: "files", lock, value});
+                };
+            });
+
+            [].slice.call(media.querySelectorAll('[name="shareapp"]')).forEach(item => {
+                item.onclick = async event => {
+                    console.log("clicked on shareapp");
+                    const name = media.self + "-" + ("" + Math.random()).substring(2, 6);
+                    value = {name};
+                    media.startshare({type: "shareapp", value});
+                };
+            });
+
+            [].slice.call(media.querySelectorAll('[name="sharewebcam"]')).forEach(item => {
+                item.onclick = async event => {
+                    console.log("clicked on sharewebcam");
+
+                    const div = document.createElement("device-selector");
+                    div.style.backgroundColor = "white";
+                    div.style.overflow = "visible"; // TODO: auto does not work.
+                    div.mirrored = true;
+                    div.microphone = div.sound = false;
+                    div.showsave = true;
+                    div.autosize = true;
+                    media.addshare("device-selector", {}, div, "dialog");
+
+                    setTimeout(() => {
+                        div.parentNode.popout = "none";
+                    });
+
+                    div.addEventListener("save", event => {
+                        //console.log("closed device selector");
+                        const {videoinput} = div;
+                        console.log("selecting", videoinput?.deviceId);
+                        const device = videoinput?.deviceId;
+                        media.removeshare("device-selector");
+
+                        const name = media.self + "-" + ("" + Math.random()).substring(2, 6);
+                        value = {name, device};
+                        media.startshare({type: "sharewebcam", value});
+                    });
+
+                };
+            });
+
+            [].slice.call(media.querySelectorAll('[name="whiteboard"]')).forEach(item => {
+                item.onclick = event => {
+                    console.log("clicked on whiteboard");
+                    media.startshare({type: "whiteboard"});
+                };
+            });
+
+            [].slice.call(media.querySelectorAll('[name="chess"]')).forEach(item => {
+                item.onclick = event => {
+                    console.log("clicked on chess");
+                    media.startshare({type: "chess"});
+                };
+            });
+
+            [].slice.call(media.querySelectorAll('[name="settings"]')).forEach(item => {
+                item.onclick = event => {
+                    console.log("clicked on settings");
+                    const div = document.createElement("device-selector");
+                    div.style.backgroundColor = "white";
+                    div.style.overflow = "visible"; // TODO: auto does not work.
+                    div.mirrored = true;
+                    //div.sound = false;
+                    div.showsave = true;
+                    div.autosize = true;
+                    media.addshare("device-selector", {}, div, "dialog");
+
+                    setTimeout(() => {
+                        div.parentNode.popout = "none";
+                    });
+
+                    div.addEventListener("save", event => {
+                        //console.log("closed device selector");
+                        const {audioinput, audiooutput, videoinput} = div;
+                        console.log("selecting", audioinput?.deviceId, audiooutput?.deviceId, videoinput?.deviceId);
+                        media.devices = {audioinput, audiooutput, videoinput};
+                        media.removeshare("device-selector");
+                    });
+
+                };
+            });
+
+            media.addEventListener("openurl", event => {
+                const url = event.url;
+                const {download, type} = event.data || {};
+                if ((media.display == "hangout" || media.display == "filmstrip") && type && (type.startsWith("image/") || type.startsWith("video/"))) {
+                    event.url = "";
+
+                    const id = "openurl-" + ("" + Math.random()).substring(2, 6);
+                    console.log("openurl", event.url, event.data);
+
+                    const div = document.createElement("slide-show");
+
+                    const container = media.display == "messenger" || media.display == "filmstrip" ? "feed" : "videos";
+                    div.container = container;
+                    div.data = [{name: download, type, url}];
+                    console.log(div.data);
+
+                    media.addshare(id, {}, div, container);
+                }
+            });
+
+
+            [].slice.call(media.querySelectorAll('[name="survey"]')).forEach(item => {
+                item.onclick = event => {
+                    console.log("clicked on survey");
+
+                    const template1 = document.querySelector("template#survey");
+                    const div = template1.content.cloneNode(true).querySelector("div");
+                    div.style.borderColor = "red";
+                    div.setAttribute("owner", "true");
+                    console.log("adding to box", div);
+
+                    const title = div.querySelector("div.title");
+                    title.innerText = "Edit topic and press enter\n[Yes][No]";
+                    title.contentEditable = true;
+                    title.focus();
+
+                    const input = div.querySelector("div.input");
+                    input.style.pointerEvents = input.style.userSelect = "none";
+
+                    const button = input.querySelector("button").cloneNode(true);
+
+                    const id = "my-survey-" + ("" + Math.random()).substring(2, 6);
+                    title.onkeydown = event => {
+                        if (!event.shiftKey && event.key.toLowerCase() == "enter") {
+                            event.preventDefault();
+                            event.stopImmediatePropagation();
+                            title.contentEditable = false;
+
+                            const lines = title.innerText.split("\n");
+                            if (lines.length == 1) {
+                                const index = lines[0].indexOf("[");
+                                if (index >= 0) {
+                                    const first = lines[0].substring(0, index).trim(), second = lines[0].substring(index).trim();
+                                    lines.splice(0, 1, first, second);
+                                }
+                            }
+                            while (!lines.pop()) { // last lines could be empty
+                                lines.pop();
+                            }
+                            const topic = lines.join("\n");
+                            const buttons = [].slice.call(input.querySelectorAll("button")).map(button => button.innerText);
+
+                            media.removeshare(id);
+                            media.startshare({type: "survey", topic, buttons});
+                        } else {
+                            setTimeout(() => {
+                                const text = title.innerText;
+                                const buttons = (text.split("\n").pop().match(/\[(\w+)(\s+\w+)*\]/g) || []).map(text => text.substring(1, text.length-1));
+                                const existing = [].slice.call(input.querySelectorAll("button")).map(button => button.innerText);
+                                //console.log("existing", existing.join(","), "buttons", buttons.join(","));
+                                if (JSON.stringify(buttons) != JSON.stringify(existing)) {
+                                    input.innerHTML = "";
+                                    buttons.forEach(text => {
+                                        const button1 = button.cloneNode(true);
+                                        button1.innerText = text;
+                                        input.appendChild(button1);
+                                    });
+                                }
+                            });
+                        }
+                    };
+
+                    media.addshare(id, {}, div, media.display == "videocity" ? "videos" : "feed");
+                    setTimeout(() => {
+                        div.parentNode.setAttribute("display", "center");
+                        div.parentNode.setAttribute("popout", "none");
+                    //     div.parentNode.style.maxWidth = "120px";
+                    //     div.parentNode.style.width = "fit-content";
+                    //     div.parentNode.style.height = "fit-content";
+                    });
+                    // hacky way to disable this.
+                    div.ondblclick = event => {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                    };
+
+                };
+            });
+
+            media.addEventListener("addshare", event => {
+                const {id, data, container, port} = event;
+                console.log(media.self, "addshare", id, data, container);
+
+                //console.log("here <script>/<scr\ipt>");
+                if (data.type == "files") {
+                    const div = event.view = document.createElement("slide-show");
+                    //div.minsize = "200x200";
+                    if (data.lock)
+                        div.owner = data.fromid == event.currentTarget.self;
+                    div.addEventListener("loading", event => { media.loading = event.value; });
+                    div.addEventListener("beforepopout", event => {
+                        // event.params = ""; // update params if needed.
+                        event.html = event.html.replace(/<\/head>/, `
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.8.162/pdf.min.js" integrity="sha512-9Wd08apcJEwm8g3lBTg1UW/njdN0iuuOVWKpyinK3uA7ISAE5PmEZ4y8bZYTXVOE3tlt7aFlCBBLmLt5cUxe2Q==" crossorigin="anonymous" referrerpolicy="no-referrer">\</scr\ipt>
+<script type="text/javascript">
+    var pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.8.162/pdf.worker.min.js';
+</scr\ipt>
+</head>`);
+                    });
+                    //data.container = "dialog";
+                    //div.self = event.currentTarget.self; // TODO: remove this.
+                    div.container = event.container = data.container || container;
+                    div.port = port;
+                    div.data = data.value; // must be after append
+                } else if (data.type == "shareapp") {
+                    const div = event.view = document.createElement("video-io");
+                    const {name} = data.value;
+                    div.setAttribute("name", id);
+                    div.data = data;
+
+                    let stream = streams[name];
+                    if (!stream) {
+                        stream = streams[name] = document.createElement("named-stream");
+                        stream._refcount = 1;
+                    } else {
+                        stream._refcount += 1;
+                    }
+                    div.srcObject = stream;
+                    if (data.fromid == media.self) {
+                        div.screen = true;
+                        div.publish = true;
+                    } else {
+                        div.subscribe = true;
+                    }
+                    event.container = "videos";
+                    setTimeout(() => {
+                        div.parentNode.display = "zoom";
+                        div.parentNode.popout = "none";
+                    });
+                } else if (data.type == "sharewebcam") {
+                    const div = event.view = document.createElement("video-io");
+                    const {name, device} = data.value;
+                    div.setAttribute("name", id);
+                    div.data = data;
+
+                    let stream = streams[name];
+                    if (!stream) {
+                        stream = streams[name] = document.createElement("named-stream");
+                        stream._refcount = 1;
+                    } else {
+                        stream._refcount += 1;
+                    }
+                    div.camname = device;
+                    div.srcObject = stream;
+                    div.microphone = div.sound = false;
+                    if (data.fromid == media.self) {
+                        div.publish = true;
+                    } else {
+                        div.subscribe = true;
+                    }
+                    event.container = "videos";
+                    setTimeout(() => {
+                        div.parentNode.display = "zoom";
+                        div.parentNode.popout = "none";
+                    });
+                } else if (data.type == "whiteboard") {
+                    const wb_data = document.createElement("white-board-data");
+                    wb_data.storage = media.data.storage;
+                    wb_data.path = media.data.path + "/wb123";
+                    document.body.appendChild(wb_data);
+                    const wb = event.view = document.createElement("white-board");
+                    wb.setAttribute("style", "position: relative; width: 100%; height: 100%; background: white; overflow: auto;");
+                    wb.position = "top-left";
+                    wb.label = media.displayname;
+                    wb.data = wb_data;
+                    // // using zoom causes issues with position of mouse pointer.
+                    // setTimeout(() => {
+                    //     wb.parentNode.setAttribute("display", "zoom");
+                    // });
+
+                } else if (data.type == "chess") {
+                    const cb_data = document.createElement("chess-board-data");
+                    cb_data.storage = media.data.storage;
+                    cb_data.path = media.data.path + "/cb123";
+                    document.body.appendChild(cb_data);
+                    const cb = event.view = document.createElement("chess-board");
+                    cb.setAttribute("style", "position: relative; width: 100%; height: 100%; background: white; overflow: auto;");
+                    cb.data = cb_data;
+                    setTimeout(() => {
+                        cb.parentNode.setAttribute("display", "zoom");
+                    });
+                } else if (data.type == "survey") {
+                    const template1 = document.querySelector("template#survey");
+                    const div = event.view = template1.content.cloneNode(true).querySelector("div");
+                    setTimeout(() => {
+                        div.parentNode.setAttribute("display", "center");
+                        div.parentNode.setAttribute("popout", "none");
+
+                    //     div.parentNode.style.maxWidth = "120px";
+                    //     div.parentNode.style.width = "fit-content";
+                    //     div.parentNode.style.height = "fit-content";
+                    });
+                    //console.log("adding to box", div);
+                    event.container = media.display == "videocity" ? "videos" : "feed";
+                    const topic = div.querySelector("div.title");
+                    topic.innerText = data.topic;
+                    const owner = data.fromid == event.currentTarget.self;
+                    const input = div.querySelector("div.input");
+                    const button = input.querySelector("button").cloneNode(true);
+                    if (JSON.stringify(data.buttons) != '["Yes","No"]') {
+                        input.innerHTML = "";
+                        data.buttons.forEach(text => {
+                            const button1 = button.cloneNode(true);
+                            button1.innerText = text;
+                            input.appendChild(button1);
+                        })
+                    }
+                    const buttons = Array.from(div.querySelectorAll("button"));
+                    buttons.forEach(button => {
+                        button.value = button.innerText;
+                    });
+
+                    if (owner) {
+                        port.onmessage = (event) => {
+                            //console.log("port2.onmessage", event.data);
+                            const {fromid, data} = event.data;
+                            const {type, value} = data;
+                            if (type != "close") {
+                                const button = buttons.find(button => button.value == value);
+                                if (button) {
+                                    button.count = (button.count || 0) + 1;
+                                    button.innerText = value + " " + button.count;
+                                }
+                            }
+                        };
+                        // allow input by owner too.
+                        buttons.forEach(button => {
+                            button.onclick = event => {
+                                buttons.forEach(button => {
+                                    button.disabled = true;
+                                });
+                                const value = event.currentTarget.value;
+                                port.onmessage({data: {data: {value}}});
+                            };
+                        });
+                    } else {
+                        buttons.forEach(button => {
+                            button.onclick = event => {
+                                buttons.forEach(button => {
+                                    button.disabled = true;
+                                });
+                                const value = event.currentTarget.value;
+                                //console.log("postMessage", {value});
+                                port.postMessage({value});
+                            };
+                        });
+
+                        port.onmessage = (event) => {
+                            const {fromid, data} = event.data;
+                            const {type, value} = data;
+                            //console.log("received close", data);
+                            if (type == "close") {
+                                buttons.forEach(button => {
+                                    const name = button.value;
+                                    const count = value[name] || 0;
+                                    button.innerText = name + " " + count;
+                                    button.disabled = true;
+                                });
+                            }
+                        }
+                    }
+                }
+            });
+
+            media.addEventListener("removeshare", event => {
+                const {id, data, view, port} = event;
+                //console.log("removeshare", id);
+                if (data.type == "files") {
+                    if (data.lock && view.owner) {
+                        media.stopshare(id);
+                    }
+                } else if (data.type == "shareapp" || data.type == "sharewebcam") {
+                    const {name} = data.value;
+                    if (view.publish)
+                        view.publish = false;
+                    if (view.subscribe)
+                        view.subscribe = false;
+                    let stream = streams[name];
+                    if (stream) {
+                        stream._refcount -= 1;
+                        if (!stream._refcount) {
+                            delete streams[name];
+                        }
+                    }
+                    if (data.fromid == event.currentTarget.self) {
+                        media.stopshare(id);
+                    }
+                } else if (data.type == "whiteboard" || data.type == "chess") {
+                    if (view.data && view.data.parentNode == document.body) {
+                        view.data.storage = null;
+                        document.body.removeChild(view.data);
+                    }
+                    if (data.fromid == event.currentTarget.self) {
+                        media.stopshare(id);
+                    }
+                // } else if (id == "device-selector") {
+                //     console.log("closed device selector");
+                //     const {audioinput, audiooutput, videoinput} = view;
+                //     console.log("selecting", audioinput, audiooutput, videoinput);
+                //     media.devices = {audioinput, audiooutput, videoinput};
+                } else if (data.type == "survey") {
+                    if (data.fromid == event.currentTarget.self) {
+                        const buttons = Array.from(view.querySelectorAll("button"));
+                        const value = Object.fromEntries(buttons.map(button => [button.value, button.count]));
+                        //console.log("sending close", value);
+                        port.postMessage({type: "close", value});
+                    }
+                }
+            });
+
+        });
+
+    </script>
+</body>
+</html>

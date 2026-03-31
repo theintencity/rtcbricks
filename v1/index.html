@@ -24,7 +24,7 @@
     <script type="text/javascript"src="shared-editor.js"></script>
     <script type="text/javascript"src="chess-board.js"></script>
     <script type="text/javascript"src="ludo-board.js"></script>
-    
+    <script type="text/javascript"src="slide-show.js"></script>
     <script type="text/javascript"src="phone-call.js"></script>
     <script type="text/javascript"src="click-to-call.js"></script>
     <script type="text/javascript"src="device-selector.js"></script>
@@ -3465,7 +3465,7 @@ frame is not required either.</p>
 
 
 
-<h2 category="Advanced - Collaboration"cat="Collab"position="-45,-42"spread="10"short="create components">How to create components using shared storage?</h2>
+<h2 category="Advanced - Collaboration"cat="Collab"position="-45,-42"spread="12"short="create components">How to create components using shared storage?</h2>
 
 <p>We have created several web components to support multimedia collaboration
 use cases such as text chat, user roster, white board, notepad,
@@ -4206,7 +4206,7 @@ how the component groups the users by their presence status.</p>
 
 
 
-<h2 short="multimedia chat">How to do multimedia chat?</h2>
+<h2 short="multimedia chat"radius="220">How to do multimedia chat?</h2>
 
 <p>The <code>media-chat</code> component enables a full fledged multimedia chat, and includes
 other components to perform text chat, display attendee list, and optional video-io elements.
@@ -4644,10 +4644,11 @@ in flex-box are shared.</p>
 
 <p>The <code>media-chat</code> component described here is versatile
 and customizable using its various properties such as display, speakervideo, allowsync,
-allowaction, and others.</p>
+allowaction, and others. Later, we will further explore how to share
+custom apps with other participants in a chat.</p>
 
 
-<h2 short="share tools"angle="5">How to use a shared whiteboard or notepad?</h2>
+<h2 short="shared tools"radius="100">How to use a shared whiteboard or notepad?</h2>
 
 <p>Shared white board and notepad are important collaboration tool. The <code>white-board</code>
 component implements a simple white board which can be attached to a <code>white-board-data</code> data model
@@ -5005,6 +5006,399 @@ dice roll and piece movements.</p>
 </script>
 
 
+<h2 short="custom app">How to share custom app in a chat?</h2>
+
+<p>The <code>media-chat</code> component allows sharing text, audio, video, screen or an app window
+with other participants. It also has methods such as <code>startshare</code>,
+<code>stopshare</code>, <code>addshare</code> and <code>removeshare</code>, which are
+used to share custom apps such as those described previously, with other participants.</p>
+
+<h3 short="Survey">Participants survey</h3>
+
+<p>Our first example is about a survey app - one participant sends a survey question
+in the chat, gathers responses from everyone, and closes the survey to
+display the results to everyone. First, we add a new button in the toolbar and
+a new item in the menu, to launch this feature.</p>
+
+<pre><code class="lang-html">&lt;media-chat ...&gt;
+  &lt;toolbar-buttons ...&gt;
+    &lt;button name="survey" title="start participants survey"&gt;
+      &lt;img src="... path to an icon ..."/&gt;
+    &lt;/button&gt;
+  &lt;/toolbar-buttons&gt;
+  &lt;overlay-menu ...&gt;
+    &lt;span name="survey"&gt;Participants survey&lt;/span&gt;
+  &lt;/overlay-menu&gt;
+  ...
+&lt;/media-chat&gt;
+</code></pre>
+
+<p>Next, when the button or menu item is clicked, we display a box
+to enter and edit survey question. The <code>addshare</code> method is used to
+add the view element to either the videos <code>flex-box</code> or the chat 
+<code>text-feed</code> or <code>text-feed-bubbles</code> component.</p>
+
+<pre><code class="lang-js">button.onclick = span.onclick = event => {
+  const div = ... // create the view element
+  ...
+  media.addshare("survey", {}, div, "feed");
+  ...
+};
+</code></pre>
+
+<p>When an app view is added to the component, a wrapper <code>media-share</code>
+component instance is used to wrap the supplied view element. This wrapper has 
+certain attributes and properties to control its behavior, e.g., to center
+the display or to disable the popout feature. If changes are desired, then
+those can be applied to the parent element as follows.</p>
+
+<pre><code class="lang-js">setTimeout(() => {
+    div.parentNode.setAttribute("display", "center");
+    div.parentNode.setAttribute("popout", "none");
+});
+</code></pre>
+
+<p>Within the view element, there could be a button, which when clicked
+actually shares the app data with other participants using the <code>startshare</code>
+method. But first, the previous view should be removed using the <code>removeshare</code>
+method, and the same identifier as before.</p>
+
+<pre><code class="lang-js">share.onclick = event => {
+  media.removeshare("survey");
+  media.startshare({type: "survey", topic: "Do you like this?", buttons: ["Yes", "No"]});
+};
+</code></pre>
+
+<p>Note that <code>from</code> and <code>fromid</code> are automatically
+added to the app data supplied in <code>startshare</code> internally. 
+The app data is then received by all the connected clients, including the 
+sender client, and delivered to the application using the <code>addshare</code> event.
+The <code>media-chat</code> component creates a bi-directional communication 
+channel to exchange messages about this shared app between the application and
+the app instances running on various connected clients.</p>
+
+<p>The <code>data</code> property of the event contains the
+app data supplied in <code>startshare</code>. The <code>id</code> property is
+a system generated unique identifier for this app instance. The <code>container</code>
+property is the desired container of videos, feed or a new dialog box, if any. The application
+can set this value to force a specific container for this app view.
+Finally, the <code>port</code> property is a port of the underlying
+<code>MessageChannel</code> instance.</p>
+
+<pre><code class="lang-js">media.addEventListener("addshare", event => {
+  const {id, data, container, port} = event;
+  if (data.type == "survey") {
+    const div = ... // create view element
+    setTimeout(() => { /* set display and popout */ ... });
+    event.container = "feed";
+    // whether this client initiated the app
+    const owner = data.fromid == media.self;
+    port.onmessage = ev => {
+        const {fromid, data} = ev.data;
+        // ... process message from other client
+    };
+    ...
+    buttons.forEach(button => {
+      button.onclick = event => {
+        const data = ... // data to send
+        port.postMessage(data);
+      };
+    });
+  }
+});
+</code></pre>
+
+<p>By carefully crafting the view element and the data exchange among the app
+instances, the survey question and answers are conveyed and displayed among
+different connected clients. Using owner detection, different views are
+shown to different participants, i.e., the survey sender versus the responders.</p>
+
+<p>When the user clicks on the close button of the shared app to remove it,
+the <code>removeshare</code> event is automatically dispatched to the 
+application. In this example, the client can close the survey app if the 
+owner closes its app.</p>
+
+<pre><code class="lang-js">media.addEventListener("removeshare", event => {
+  const {id, data, view, port} = event;
+  if (data.type == "survey") {
+    const owner = data.fromid == media.self;
+    if (owner) {
+        port.postMessage({type: "close", ...});
+    }
+  }
+});
+...
+media.addEventListener("addshare", event => {
+  ...
+  port.onmessage = ev => {
+    const {fromid, data} = ev.data;
+    if (data.type == "close") {
+      ... // close the survey view
+    }
+  };
+  ...
+});
+</code></pre>
+
+<p>Try the following example that includes the survey app in the menu of the first
+client, and the toolbar of the last client. It also includes several other apps,
+that are described later in this section. The complete application code is included
+in the example.</p>
+
+<button class="tryit"path="53-media-chat-upload.html"preview zoom="0.8"width="580"height="560"></button>
+
+<p>When the first client launches the survey app, it gets the editable view of the
+app (see the first image below). The editor allows entering a question, and a bunch of
+answer buttons. On enter, the editable app is closed, and the question and buttons data is used
+to launch the app on all the clients. When an answer button is clicked, the app becomes
+disabled to prevent more clicks (second image). The selection on a non-sender client is delivered to
+the sender client, so that the sender can see all the results in real-time (third image), and can decide
+when to close the survey. When the sender closes the survey app, the current results are
+delivered to all the other clients, which then display the results (fourth image). If the non-sender
+client did not yet select an answer, it gets disabled anyways. Any non-sender client
+can close the app at any time, without affecting the app on the other clients.
+</p>
+
+<p>
+    <img class="image"src="53-media-chat-upload-1.png"style="width: 100px;">
+    <img class="image"src="53-media-chat-upload-3.png"style="width: 100px;">
+    <img class="image"src="53-media-chat-upload-2.png"style="width: 100px;">
+    <img class="image"src="53-media-chat-upload-4.png"style="width: 100px;">
+</p>
+
+<p>Another way to launch the survey app is using the action command on the text chat.
+If the user enters a text such as "/survey Do you like this? [Yes][No]", then that is
+intercepted in the above examples to launch the survey app with the provided question and
+answers.</p>
+
+<pre><code class="lang-js">media.addEventListener("action", event => {
+  const action = event.value;
+  if (action.startsWith("survey ")) {
+    let question, answers = [];
+    ... // extract question and answers using regexp
+    media.startshare({type: "survey", question, answers});
+  }
+});
+</code></pre>
+
+<p>Next, we describe other shared apps included in the previous example.</p>
+
+<h3 name="slide-show"short="Slide show">File viewer and slide show</h3>
+
+<p>The <code>slide-show</code> component can display one or more files with
+page navigation. Unlike other storage based components, this one does not depend
+on storage. It uses <code>MessageChannel</code>'s port to communicate with the
+application, such as to send or receive commands for page navigation, video seek,
+or PDF navigation.</p>
+
+<p>The previously shown example app includes two menu items that use this 
+component. The "Send media file" item is used to upload and send one or more
+files to all the participant clients, so that the clients can display them. In
+that mode, the sender does not control the navigation, and each client can 
+independently navigate, control or close the shared app. The "Media slide show"
+item is used to provide a synchronized slide show experience, where the 
+sharer controls and navigates the app on all the receiver clients. In
+this mode, typically, the navigation controls are disabled or not shown
+on the receiving client or non-owner app instance.</p>
+
+<p>First, the <code>upload_files</code> function is used to gather a list of 
+files using the file selection dialog box. This list is then sent to all the 
+clients using <code>startshare</code>. Additional flag can indicate whether
+synchronized control is desired or not.</p>
+
+<pre><code class="lang-js">menuitem.onclick = async event => {
+  const files = await upload_files({
+    accept: "image/*,video/*,application/pdf", multiple: ""
+  });
+  const value = files.map(file => {
+    const {name, type, size, url} = file;
+    return {name, type, size, url};
+  });
+  media.startshare({type: "files", value});
+};
+</code></pre>
+
+<p>On receiving the <code>addshare</code> event, the application creates a
+<code>slide-show</code> app. Its owner property, if set, makes it behave
+in a synchronized control mode.</p>
+
+<pre><code class="lang-js">media.addEventListener("addshare", event => {
+  ...
+  if (data.type == "files") {
+    const div = event.view = ... // new slide-show element
+    div.owner = data.fromid == media.self;
+    div.port = port; // for communication
+    div.data = data.value; // list of files received
+  }
+});
+</code></pre>
+
+<p>If PDF file is included in the list of files, then the component
+uses another <code>pdf-viewer</code> component internally to display the 
+file. It has external dependency on the pdfjs project, and requires certain
+initialization to be done in the application. Please see the source code
+of the previous example application to learn more about this.</p>
+
+<p>The <code>slide-show</code> component is capable of handling
+image, video and PDF files. The page navigation control appear on the 
+left and right, and allow navigating among files. In synchronized 
+control mode, the navigation from the owner app is sent to all the other
+connected apps, using the port. Additionally, for video
+display, changes in the player control of the owner such as play or
+pause, or seek, are sent to the connected app, so that all the other 
+clients can emulate the same player control. For PDF file viewer, the
+page navigation within that file is sent to all the connected apps.</p>
+
+<p>When a file is shared via the text chat or drag-and-drop
+in the text input area, the chat history data contains the full content of
+the file. When such a file share link is clicked from the text chat component,
+it dispatches the <code>openurl</code> event, which bubbles up to 
+the application. The application can listen to this, and decide to
+use the <code>slide-show</code> component to show the file inline,
+instead of doing download, for certain file types.</p>
+
+<pre><code class="lang-js">media.addEventListener("openurl", event => {
+  const {url, data} = event;
+  if (data.type.startsWith("image/") || data.type.startsWith("video/")) {
+    event.url = "";
+    const div = ... // new slide-show element
+    div.data = [{name: data.download, type: data.type, url}];
+    media.addshare("openurl", {}, div, "dialog");
+    ...
+  }
+});
+</code></pre>
+
+<p>Note that resetting the <code>url</code> property of the event causes the
+underlying text chat component to not process the event further. Otherwise, it
+would attempt to download the file as its default processing.</p>
+
+<h3 short="Multi-share">Share multiple webcam, screen or window</h3>
+
+<p>The <code>media-chat</code> component already includes support for sharing
+webcam, screen (or window) as demonstrated earlier, by joining the call with 
+video, and/or starting screen share from menu or toolbar button. The component
+maintains a single state for such sharing.</p>
+
+<p>To enable sharing of multiple
+webcams or screens from the same client, the application can wrap the
+corresponding <code>video-io</code> component as a shared app.
+The previous example includes menu items to share another app or to share 
+webcam. When sharing another app, the sharing client sets the <code>publish</code>
+and <code>screen</code> properties of the <code>video-io</code> component, and the other
+clients set the <code>subscribe</code> property. The display property of the
+parent <code>media-share</code> component is set to <code>zoom</code>, and
+the container is set to <code>videos</code>. Additionally, the
+<code>named-stream</code> information is also provided by the sharer to
+other clients, so that all the clients can connect to the same named stream.
+Such tricks to quickly enable new sharing apps is possible due to 
+loose coupling among the client apps, and the flexible and versatile
+video-io and named-stream components.</p>
+
+<pre><code class="lang-js">media.addEventListener("addshare", event => {
+  const {id, data, container, port} = event;
+  if (data.type == "shareapp") {
+    const div = event.view = ... // new video-io element
+    ...
+    div.srcObject = ... // stream for this app
+    if (data.fromid == media.self) {
+      div.screen = true;
+      div.publish = true;
+    } else {
+      div.subscribe = true;
+    }
+    event.container = "videos";
+    setTimeout(() => {
+        div.parentNode.display = "zoom";
+        div.parentNode.popout = "none";
+    });
+  }
+});
+</code></pre>
+
+<p>When sharing a webcam, similar process is done, except that the 
+<code>device-selector</code> component is launched first on the sharer client,
+to select the webcam to share. The device identifier of the selected webcam is
+then used by the sharer's publishing <code>video-io</code>.</p>
+
+<pre><code class="lang-js">menuitem.onclick = event => {
+  const div = ... // new device-selector element
+  div.mirrored = div.showsave = div.autosize = true;
+  div.microphone = div.sound = false;
+  ...
+  media.addshare("device-selector", {}, div, "dialog");
+  ...
+  div.addEventListener("save", ev => {
+    const device = div.videoinput?.deviceId;
+    media.removeshare("device-selector");
+    ...
+    media.startshare({type: "sharewebcam", {device, ...}});
+  });
+};
+media.addEventListener("addshare", event => {
+  ...
+  if (data.type == "sharewebcam") {
+    ...
+    div.camname = data.value.device;
+    div.microphone = div.sound = false;
+    ...
+  }
+});
+</code></pre>
+
+<p>When <code>removeshare</code> is dispatched, the application should
+cleanup the named stream and the <code>video-io</code> component
+associated with the shared app.</p>
+
+<h3 short="Share games">Share whiteboard or chess game</h3>
+
+<p>We have already seen the collaboration applications such as whiteboard,
+shared editor, notepad and games such as chess and ludo. Such external
+component implementations can be easily wrapped as a shared app in
+<code>media-chat</code>. Just like before, a menu item or toolbar button
+is added, which when clicked, invokes the <code>startshare</code> method.
+If multiple instances are desired then separate storage paths are picked 
+by the sharer, and sent to other participants, otherwise a fixed path based on the
+parent component's path can be used.</p>
+
+<pre><code class="lang-js">menuitem.onclick = event => {
+  media.startshare({type: "whiteboard"});
+};
+media.addEventListener("addshare", event => {
+  ...
+  if (data.type == "whiteboard") {
+    const wb_data = ... // new white-board-data element
+    wb_data.storage = media.data.storage;
+    wb_data.path = media.data.path + "/wb123";
+    ...
+    const wb = ... // new white-board element
+    wb.position = "top-left";
+    wb.label = media.displayname;
+    wb.data = wb_data;
+    ...
+  }
+});
+</code></pre>
+
+<p>The parent <code>media-share</code> component's display property 
+should be used prudently depending on the wrapped app view. Furthermore,
+the style attribute of the app can be set as needed.</p>
+
+<p>When the app is removed, the app view and corresponding data elements
+can be removed from the document, to cleanup.</p>
+
+<p>The text chat action is installed in the previous 
+example to start these apps from the text chat
+input area too. For example, typing "/start whiteboard" or "/start chess"
+are interpreted to launch those apps.</p>
+
+<h3 name="media-share"short="media-share">media-share, slide-show, pdf-viewer</h3>
+
+<script type="text/javascript">
+    tabulateComponent("media-share");
+    tabulateComponent("slide-show");
+    tabulateComponent("pdf-viewer");
+</script>
 
 
 <h2 category="Advanced - Telephony"cat="Telephony"position="-25,3"spread="12"short="phone state">What is a phone state?</h2>
@@ -5522,7 +5916,20 @@ related to each other, and how they interact with each other.</p>
             <tr><td></td><td>
                 Data model for ludo-board, using shared storage.
             </td></tr>
-            
+            <tr><td><a href="#media-share">media-share</a></td><td>Include media-chat.js</td></tr>
+            <tr><td></td><td>
+                Internally used to wrap shared app within media-chat.
+            </td></tr>
+            <tr><td><a href="#slide-show">slide-show</a></td><td>Include slide-show.js</td></tr>
+            <tr><td></td><td>
+                Displays one or more image, video or PDF document files, with navigation controls. 
+                Can be used as shared app in media-chat.
+            </td></tr>
+            <tr><td><a href="#pdf-viewer">pdf-viewer</a></td><td>Include slide-show.js</td></tr>
+            <tr><td></td><td>
+                Display PDF document using external library. 
+                Can be used by slide-show component.
+            </td></tr>
         </table>
     </td></tr>
     <tr><td>telephony</td><td></td></tr>
