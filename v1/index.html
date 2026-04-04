@@ -28,7 +28,7 @@
     <script type="text/javascript"src="phone-call.js"></script>
     <script type="text/javascript"src="click-to-call.js"></script>
     <script type="text/javascript"src="device-selector.js"></script>
-    
+    <script type="text/javascript"src="native-electron.js"></script>
 
     <script type="text/javascript"src="rtclite-stream.js"></script>
     <script type="text/javascript"src="firebase-stream.js"></script>
@@ -162,7 +162,7 @@ the generic shared storage interface.</dd></dl>
 
 
 
-<h2 id="abstract"category="Basic"cat="Intro"position="8,-35"spread="10"short="what's video-io?">What is video-io?</h2>
+<h2 id="abstract"category="Basic"cat="Intro"position="6,-35"spread="10"short="what's video-io?">What is video-io?</h2>
 
 <p>Video-io is a web component demonstrating several generic WebRTC related use cases, e.g., 
 live camera view, recording of multimedia messages, live video call or conferencing, in 
@@ -1045,7 +1045,7 @@ These attributes and properties are summarized below.</p>
 
 
 
-<h2 id="topic-api"category="Advanced - API"cat="API"position="50,-20"spread="12"short="video-io">How to use the video-io API? (complete reference)</h2>
+<h2 id="topic-api"category="Advanced - API"cat="API"position="50,-24"spread="12"short="video-io">How to use the video-io API? (complete reference)</h2>
 
 <p>Previously, we have shown several examples of attributes and properties. Here we formally define those
 and enumerate and describe all the available values.</p>
@@ -1282,11 +1282,392 @@ to display, capture, publish and subscribe various media streams using the proto
 handler. The extensive video-io component API can be used to further customize
 its behavior using the URL parameters.</p>
 
+<h3 short="Electron">Electron app</h3>
+
+<p>We have also built a native Electron app, which uses the same code as the PWA,
+but wraps it in the Electron packager. The protocol handlers are ezpub, ezsub,
+and ezcfg without the "web+" prefix. It supports the same set of configurations
+as the PWA.</p>
+
+<p>The sample app can built, tested and packaged as follows:</p>
+
+<pre><code class="lang-html">cd 11-electron-app
+npm install
+npm start ezpub:one ezsub:one
+npm run make
+</code></pre>
+
+<p>The main app logic is in 
+<a href="11-electron-app/main.js"target="_blank"onclick="showCode(event);">main.js</a>, 
+which parses the command line or launch parameters, and opens the external 
+video-io.html web app. To enable screen sharing or desktop capture from
+the electron app, it uses 
+<a href="11-electron-app/preload.js"target="_blank"onclick="showCode(event);">preload.js</a>
+and <a href="11-electron-app/renderer.js"target="_blank"onclick="showCode(event);">renderer.js</a>
+to replace getDisplayMedia with custom desktop capturer. There is also an example 
+package.json file for building the app. These are only for trial purpose, and a
+real world app will need to edit and customize these.</p>
 
 
+<h2 id="nativeelectron"short="native electron">How to use the native Electron features?</h2>
 
+<p>The Electron app and the progressive web app described in the 
+previous chapter behave almost the same. In general, a progressive web app is
+preferred to an Electron app, for similar functionality. However, the
+native Electron can provide many additional features that are not available 
+in a web app. In this chapter, we describe a separate native Electron app
+that enables a wide range of features and constructs that are not available in 
+a web app.</p>
 
+<h3>Overview</h3>
 
+<p>The architecture is shown below, where the native Electron app
+acts as a plugin to enable and expose several Electron APIs such as for
+opening a native window, getting system information, DNS resolver, and 
+TCP and UDP sockets. The basic idea is inspired by my earlier project,
+<a target="_blank"href="https://github.com/theintencity/flash-network/">flash-network</a>
+(see more <a target="_blank"href="https://theintencity.kundansingh.com/flash-network/">here</a>),
+that used a native AIR (Adobe Integrated Runtime) app to expose certain
+network APIs to web apps, including for my
+<a target="_blank"href="https://github.com/theintencity/sip-js">SIP-in-JavaScript</a>
+project.</p>
+
+<p>
+    <img class="image"src="12-native-electron-arch.png"style="width: 700px; height: 428px;">
+</p>
+
+<p>These Electron features are exposed using a web component, <code>native-electron</code>,
+from a web app. This allows the web app to use, say, UDP or TCP socket,
+for implementing advanced networking applications such as peer-to-peer or
+application level multicast, or for implementing custom window behavior,
+such as to open a transparent or frameless browser window
+for a more immersive video conferencing display, or for drawing on the screen
+or showing the mouse pointer of the other participants during a screen share enabled
+video collaboration.</p>
+
+<p>To use these feature, first build the native app as follows, and run it on
+the local machine.</p>
+
+<pre><code class="lang-html">cd 12-native-electron-app
+npm install
+npm start
+npm run make
+</code></pre>
+
+<p> You may enable it to bind to all the interfaces,
+instead of only the local interface by default, 
+using the -h option shown below. If no port, using -p, is specified,
+then it uses the default port of 9090. You may also want to edit
+the package.json or other source files to customize your native app.</p>
+
+<pre><code class="lang-html">cd 12-native-electron-app
+npm start -- -h 0.0.0.0 -p 9090
+</code></pre>
+
+<p>Once the native electron app is running locally, use a <code>native-electron</code> web
+component in the web app to connect to the native app as shown below.</p>
+
+<pre><code class="lang-html">&lt;script type="text/javascript" src="https://rtcbricks.kundansingh.com/v1/native-electron.js"&gt;&lt;/script&gt;
+...
+&lt;native-electron src="ws://localhost:9090/native-electron"&gt;&lt;/native-electron&gt;
+</code></pre>
+
+<p>When the <code>src</code> property is set, it attempts to connect to that
+service, using websocket, assuming it as a locally running Native Electron app.
+This websocket connection is then used as a channel for various RPC (remote procedure call) 
+interactions between the client (web app's native-electron component instance) 
+and the server (locally running Native Electron app).</p>
+
+<quote>Although the native app is expected to run on the local machine,
+it is not a requirement. The web component can connect to a remotely running
+native app as long as such connections are allowed. The native app itself
+may restrict incoming connection to be from only a localhost, by binding to
+the local IP interface (default) instead of all.</quote>
+
+<p>The local native app assigns an identifier to each channel, so that it can
+corelate the various APIs and proxy objects related to that channel. The web app
+can supply this identifier, using the id parameter, or let it be generated by the
+client side web component, as follows. The component internally replaces "{id}"
+in the URL with its own randomly generated identiier.</p>
+
+<pre><code class="lang-html">&lt;native-electron src="ws://localhost:9090/native-electron?id={id}"&gt;&lt;/native-electron&gt;
+</code></pre>
+
+<p>The native features exposed by this component are grouped into five modules. 
+These are os, dns, net, dgram and main, corresponding to the similarly named 
+modules in NodeJS, except that main is used for the browser window related APIs.
+The client side component just exposes these as proxy objects, so that the 
+web app can invoke any method on those.</p>
+
+<p>For example, if the web app calls a method, say, dns.lookup("www.google.com"), as
+shown below, then the web component serializes the method request and all the
+parameters, and sends it to the native app. </p>
+
+<pre><code class="lang-js">const {dns, os, dgram} = document.querySelector("native-electron");
+const platform = await os.platform(); // "darwin", "win32", or "linux"
+const result = await dns.lookup("www.google.com"); // e.g., {"address": "142.250.189.154","family":4}
+</code></pre>
+
+<p>When the native app receives this, it deserializes the request, runs the command using the NodeJS
+module, and returns the response or error, again after serialization. The web 
+component then returns that response, after deserialization, as the resolved
+value of the promise returned by that method, dns.lookup.</p>
+
+<p>Some NodeJS APIs such as dgram.createSocket return an object that are only
+valid in the native app, not in the web app. For such cases, the serialization
+and deserialization step ensures that a proxy object is exposed in the 
+web app, with a unique identifier, so that further method calls or usage
+of that proxy object in the web app, results in the corresponding action on
+the real object in the native app. Such implementations are
+well known and thoroughly researched in RPC literature.</p>
+
+<p>In the following example, the socket variable is actually a proxy object.
+Further method such as send on that object ensures that the native app uses
+the right underlying socket object. Setting the event handler, allows the web
+app to receive that event.</p>
+
+<pre><code class="lang-js">const socket = await dgram.createSocket({type: "udp4", ...});
+socket.onmessage = (msg, rinfo) => { ... };
+await socket.send("testing", 8123, "192.168.1.2");
+</code></pre>
+
+<p>Try the following example to test some APIs including opening a window, doing
+DNS lookups, create TCP and UDP server and client sockets, and sending 
+messages. The test takes several seconds to complete successfully.
+Use the JS console of the browser to see any errors ourside
+the component.</p>
+
+<button class="tryit"shift path="12-native-electron-test.html"width="1000"height="600"></button>
+
+<p>When the channel that created the proxy object is closed, the proxy object
+is automatically deleted and cleaned up by the native app. This avoids
+leaking memory, and automatically closes any windows or sockets
+when the connected web page closes.</p>
+
+<p>The native-electron component is agnostic to the full set of APIs supported
+in these modules, and  those are actually determined by the connected
+native app. If an API is not supported, e.g., due to mismatch in platform or
+version of the NodeJS used in the native app, it responds with an appropriate
+error.</p>
+
+<p>Because of the nature of such RPC-based APIs, all the methods on the various modules
+or various proxy objects must be asynchronous, using promise based syntax
+in the web app, as illustrated above. Note that all the proxy objects in the
+web component receive all the relevant events from the native app, and
+depending on which event has a handler installed, only those are triggered
+or dispatched by the component. This may change in the future to optimize,
+e.g., to receive only the events with installed handlers from the
+native app, instead of all the events.</p>
+
+<p>Property access in JavaScript is synchronous, whereas our RPC-based API 
+requires asynchronous interaction to get or set a property. Hence, our
+proxied objects or modules do not provide any direct property access.
+However, if the property access is via a method call, such as address() on
+net.Socket, then those are supported. This may change in the future, to
+proactively get the property values and keep them updated in the proxied
+object in the web component.</p>
+    
+
+<br>
+<h3 id="native-electron">native-electron</h3>
+
+<p>The following table describes all the properties of the component.</p>
+
+<script type="text/javascript">
+    tabulateProperties("native-electron");
+</script>
+
+<p>The following table shows all the events dispatched by the component instance.</p>
+
+<script type="text/javascript">
+    tabulateEvents("native-electron");
+</script>
+
+<p>As mentioned earlier, the native app defines what APIs are supported
+in the various modules,
+<a target="_blank"href="https://nodejs.org/api/os.html">os</a>, 
+<a target="_blank"href="https://nodejs.org/api/dns.html">dns</a>, 
+<a target="_blank"href="https://nodejs.org/api/dgram.html">dgram</a>,
+<a target="_blank"href="https://nodejs.org/api/net.html">net</a> and main, as well as on
+various proxied objects such as net.Socket, net.Server, dgram.Socket or
+<a target="_blank"href="https://www.electronjs.org/docs/latest/api/browser-window">BrowserWindow</a>.
+These APIs are well documented in NodeJS and/or ElectronJS as referenced above.</p>
+
+<p>Our native electron app also has a subset list of supported APIs as described here.
+In particular, these global methods on the modules are supported. These are 
+documented in the NodeJS and/or ElectronJS references.</p>
+
+<table class="properties nowrap">
+    <tr><th>Module</th><th>Methods</th></tr>
+    <tr><td>dns</td><td>
+        getServers, lookup, resolve, resolve4, resolve6, resolveAny, resolveCaa, resolveCname, resolveMx, resolveNaptr, resolveNs, resolvePtr, resolveSoa, resolveSrv, resolveTlsa, resolveTxt, reverse
+    </td></tr>
+    <tr><td>os</td><td>
+        arch, cpus, endianness, freemem, hostname, loadavg, machine, networkInterfaces, platform, release, totalmem, type, uptime, version
+    </td></tr>
+    <tr><td>net</td><td>
+        connect, createConnection, createServer, isIP, isIPv4, isIPv6
+    </td></tr>
+    <tr><td>dgram</td><td>
+        createSocket
+    </td></tr>
+    <tr><td>main</td><td>
+        createWindow, getAllWindows, getFocusedWindow, fromId
+    </td></tr>
+</table>
+
+<p>The following methods on the proxied objects are supported. These objects are either created
+by the modules methods, or received in an event or method of another proxied object. These
+are documented in the NodeJS and/or ElectronJS references mentioned above.</p>
+
+<table class="properties nowrap">
+    <tr><th>Object</th><th>Methods</th></tr>
+    <tr><td>net.Server</td><td>
+        address, close, getConnections, listen
+    </td></tr>
+    <tr><td>net.Socket</td><td>
+        address, connect, destroy, end, pause, pipe, resetAndDestroy, resume, setEncoding, setKeepAlive, setNoDelay, setTimeout, getTypeOfService, setTypeOfService, write
+    </td></tr>
+    <tr><td>dgram.Socket</td><td>
+        addMembership, addSourceSpecificMembership, address, bind, close, connect, disconnect, dropMembership, dropSourceSpecificMembership, getRecvBufferSize, getSendBufferSize, getSendQueueSize, getSendQueueCount, remoteAddress, send, setBroadcast, setMulticastInterface, setMulticastLoopback, setMulticastTTL, setRecvBufferSize, setSendBufferSize, setTTL
+    </td></tr>
+    <tr><td>BrowserWindow</td><td>
+        destroy, close, focus, blur, isFocused, show, showInactive, hide, isVisible, isModal, maximize, unmaximize, isMaximized, minimize, restore, isMinimized, setFullScreen, isFullScreen, setSimpleFullScreen, isSimpleFullScreen, isNormal, setAspectRatio, setBackgroundColor, setBounds, getBounds, getBackgroundColor, setContentBounds, getContentBounds, getNormalBounds, setEnabled, isEnabled, setSize, getSize, setContentSize, getContentSize, getMinimumSize, setMinimumSize, getMaximumSize, setMaximumSize, setResizable, isResizable, setMovable, isMovable, setMinimizable, isMinimizable, setMaximizable, isMaximizable, setFullScreenable, isFullScreenable, setClosable, isClosable, setAlwaysOnTop, isAlwaysOnTop, moveAbove, moveTop, center, setPosition, getPosition, setTitle, getTitle, flashFrame, setSkipTaskbar, setKiosk, isKiosk, isTabletMode, getMediaSourceId, loadURL, reload, setOpacity, getOpacity, setIgnoreMouseEvents, setContentProtection, isContentProtected, setFocusable, isFocusable
+    </td></tr>
+</table>
+
+<p>Note that some method results are redacted, e.g., the MAC address
+field is redacted in the result of os.networkInterfaces.
+Some methods have restrictions, e.g., net.Socket's listen or dgram.Socket's bind does not
+allow Unix path, and must use a port, and it does not allow listening or binding to 
+port number less than or equal to 1024 for some protection.</p>
+
+<p>Try the following example to view most of the APIs, and try them in real time.</p>
+
+<button class="tryit"shift path="12-native-electron-api.html"width="1000"height="600"></button>
+
+<p>The test example above allows you to edit the parameters of various methods, and
+invoke them in any order. It also shows when an event handler is called. It has extensive
+test setup for TCP and UDP socket, as well as browser window.</p>
+
+<h3>Custom window</h3>
+
+<p>A major benefit of using the native electron app is that the web app
+can implement browser window features that are not available to the web app.
+The BrowserWindow object in ElectronJS is versatile and flexible to
+accomplish a number of use cases, such as transparent background, frameless
+window, semi-transparent overlay, and so on. We demonstrate two such
+use cases below.</p>
+
+<p>The first example uses the rtclite stream to connect a publisher and subscriber
+to the same locally running service, but displays each video-io component
+in its own transparent window, with rounded shape to display the videos in
+circle. Those windows have no visible controls, and are displayed with
+always-on-top flag enabled. They can be dragged around on the screen to
+move, or dragged to resize near the corner.</p>
+
+<p>Make sure that the rtclite streams service and the Native Electron app
+are running locally. Then try the following example to launch the two
+video-io instances.</p>
+
+<button class="tryit"path="12-native-electron-rtclite.html"width="10"height="10"></button>
+
+<p>The second example allows drawing on the screen. It uses a transparent full size
+window and loads the overlay-draw.html web app in that window. This web app is
+a simple drawing application that uses SVG and user mouse input to draw lines.
+You can first try the web app as follows. Click on the color picker to pick
+a pen color. Then click-and-drag the mouse within the web app area to draw lines.</p>
+
+<button class="tryit"path="overlay-draw.html"width="600"height="400"></button>
+
+<p>Next, to test drawing with the overlay transparent window, 
+make sure that the Native Electron app is running locally on the 
+default port. Then try the following example. 
+Then click the Start button to start drawing, and double click anywhere to stop.
+Click anywhere and drag to draw. The drawing disappears 8s after completing the last
+continuous drawing. Use Shift key when completing a drawing to change the
+disappearance timer to 60s.</p>
+
+<button class="tryit"path="12-native-electron-draw.html"width="80"height="40"></button>
+
+<p>A color picker is shown by default on top-left of the screen when the drawing is enabled.
+Click the picker to change the pen color if needed. You can also long press and drag
+the picker to a different position on the screen.</p>
+
+<p>Internally the above example loads a generic overlaw-draw.html web app
+in a transparent window.</p>
+
+<p>The Native Electron app's menu includes options to launch these windows: 
+a self camera preview in a circle shape, and the drawing overlay described above.</p>
+
+<h3>Access control</h3>
+
+<p>The web APIs exposed by the native-electron component in conjunction with the
+locally running Native Electron app are very powerful. If misused, they can cause
+damage to the local system such as by exploiting vulnerability in Electron, NodeJS
+or their dependencies. Thus, such APIs should be allowed only from trusted web pages
+or apps.</p>
+
+<p>The Native Electron app implements a simple authentication to ensure that the
+web apps cannot connect to the native app for the first time without a user
+interaction and input. This mechanism attempts to keep the end user in control of
+the authentication and authorization phases. Here, we describe how it works.</p>
+
+<p>When the native-electron web component, used in a web app, attempts to
+connect to the local app, on WebSocket, the native app checks the HTTP Origin
+header of the request, and the access code in the connection URL parameter.
+If the access code is missing, or if the native app already has an access code
+for this origin but is different from the access code supplied in the URL
+parameter, then the native app displays the access code prominently on the
+screen, and responds with an error. The access code disappears after a brief
+timeout, of say, 5s. The native-electron web component, on an error, prompts
+the end user to enter the access code. If the user cancels the prompt, the
+connection is no longer re-attempted. If the user manually enters the access
+code in the prompt, and continues, it is reattempted. It causes the native-electron web
+component to retry the WebSocket connection, with the new access code in
+the URL parameter. If the access code is successfully verified by the native app,
+it allows the WebSocket connection to proceed. This authentication process is 
+similar to what was used in my earlier flash-network project mentioned before.
+Subsequent RPC on this connection are further controlled based on API access
+control described later.</p>
+
+<p>The Native Electron app has three user interface windows for access control,
+that can be shown directly using the application menu of the locally running native app.
+The first one is for access code management for various origins, such as to edit
+or delete them. The second one for web API access control, which allows the 
+end user to disable some APIs from certain origins, or from all. And the third
+one is for listing and controlling all the active connections from the web app.
+This interface also shows all the created proxy objects such as TCP or
+UDP sockets and windows, and allows the end user to close an individual object,
+or the whole connection from that web app to the native app.</p>
+
+<p>
+    <img class="image"src="12-native-electron-access.png"style="width: 628px; height: 622px; box-shadow: 0 0 10px 1px rgba(128,128,128,0.5);">
+</p>
+
+<p>The above screenshot shows the native app's web API access control
+window on the left, and the test web page opened in the browser on the right.
+It also shows how the various permissions on the APIs affect the tests, e.g.,
+isIPv6 is blocked for the origin of the web page, but isIPv4 has no
+override permission so it falls back to the default, which is allowed.
+The access control window shows the API methods grouped in high level
+categories, and allows setting the access control for the whole
+category, or the individual method in that category. Access control can be set
+for the web page origin, or if not set, then it falls back to the
+default column as shown above.</p>
+
+<p>
+    <img class="image"src="12-native-electron-clients.png"style="width: 390px; height: 150px;  box-shadow: 0 0 10px 1px rgba(128,128,128,0.5);">
+</p>
+
+<p>The above screenshot shows the native app's active client window,
+with various active connections from web apps, and their created objects.
+The cross button in the row closes the connection from that web app,
+and the cross button next to the object type closes that object.
+Note that our native-electron web component is designed to reconnect
+automatically, so closing the connection usually results in an immediate
+reconnect. To really block the web app, you should also delete or change
+the access code in the first user interface described earlier.</p>
 
 
 <h2 short="select device">How to select devices?</h2>
@@ -1301,7 +1682,7 @@ component automatically adjust on resize.</p>
 has multiple devices such as two webcams or two microphones.</p>
 <button class="tryit"path="19-device-selector.html"preview width="700"height="360"></button>
 
-<h3 id="device-selector"angle="70">device-selector</h3>
+<h3 id="device-selector"angle="88">device-selector</h3>
 
 <p>The following table describes all the properties of the component.</p>
 
@@ -1383,7 +1764,7 @@ shared data, described next.</p>
 
 
 
-<h2 id="storage"short="shared data"radius="260"angle="75">How to use shared data?</h2>
+<h2 id="storage"short="shared data"radius="230"angle="75">How to use shared data?</h2>
 
 <p>The ability to access and modify shared data is crucial in a distributed application such as
 two-party call, multi-party conference or online panel discussion. Furthermore, the clients
@@ -5962,7 +6343,12 @@ related to each other, and how they interact with each other.</p>
             </td></tr>
         </table>
     </td></tr>
-    
+    <tr><td><a href="#native-electron">native-electron</a></td><td>Include native-electron.js</td></tr>
+    <tr><td></td><td>
+        This component works with an external Native Electron app to support
+        native features such as TCP and UDP sockets, raw DNS, system information,
+        and customized or frameless windows.
+    </td></tr>
 </table>
 
 
