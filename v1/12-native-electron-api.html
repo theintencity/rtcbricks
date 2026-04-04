@@ -1,0 +1,374 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="native-electron.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        body {
+            padding: 10px;
+        }
+        p.test, p.event, p.comment {
+            margin-block-start: 0.4em; margin-block-end: 0.4em;
+        }
+        p.comment {
+            color: darkgrey;
+            font-style: italic;
+        }
+        p > span[contenteditable="true"] {
+            outline: none;
+            color: #800;
+        }
+        p > span:first-of-type {
+            font-weight: bold;
+        }
+        p > span:not([contenteditable]) {
+            user-select: none;
+        }
+        p > span:last-of-type {
+            cursor: pointer;
+            font-style: italic;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <native-electron src="ws://localhost:9090/native-electron?id={id}&pw={pw}"></native-electron>
+
+    <script type="text/javascript">
+        const electron = document.querySelector("native-electron");
+        //electron.debug_level = 5; // warn+
+        const {main, dns, net, dgram, os} = electron;
+
+        const script = document.body.querySelector("script");
+        let h2 = document.createElement("h2");
+        h2.textContent = "Using dns, os, net";
+        document.body.insertBefore(h2, script);
+
+        const tests = `
+        dns.getServers()
+        dns.lookup("www.google.com")
+        dns.resolve("columbia.edu","NAPTR")
+        dns.reverse("8.8.8.8")
+        net.isIP("162.159.138.64")
+        net.isIPv4("162.159.138.64")
+        net.isIPv6("::FFFF:142.250.189.228")
+        os.arch()
+        os.cpus()
+        os.endianness()
+        os.freemem()
+        os.hostname()
+        os.loadavg()
+        os.machine()
+        os.networkInterfaces()
+        os.platform()
+        os.release()
+        os.totalmem()
+        os.type()
+        os.uptime()
+        os.version()
+        `.trim().split(/[\r\n\s]+/);
+
+        tests.forEach(test => {
+            const match = test.match(/^([\w\.]+)\((.*)\)$/);
+            if (!match) {
+                console.log("invalid test:", test);
+            } else {
+                const func = match[1], args = JSON.parse("[" + match[2] + "]");
+                const p = document.createElement("p");
+                p.className = "test";
+                p.innerHTML = `await <span>${func}</span>(<span contenteditable="true">${match[2]}</span>) => <span>click to run</span>`;
+
+                document.body.insertBefore(p, script);
+            }
+        });
+
+        h2 = document.createElement("h2");
+        h2.textContent = "Using window";
+        document.body.insertBefore(h2, script);
+
+        const wintests = `
+        var w1 = await main.createWindow({})
+        w1.onclose = e => {...}
+        w1.onclosed = e => {...}
+        w1.onblur = e => {...}
+        w1.onfocus = e => {...}
+        w1.onshow = e => {...}
+        w1.onhide = e => {...}
+        w1.onmaximize = e => {...}
+        w1.onunmaximize = e => {...}
+        w1.onrestore = e => {...}
+        w1.onresize = e => {...}
+        w1.onmove = e => {...}
+        await w1.loadURL("https://www.google.com")
+        await w1.close()
+        await w1.focus()
+        await w1.blur()
+        await w1.isFocused()
+        await w1.show()
+        await w1.showInactive()
+        await w1.hide()
+        await w1.isVisible()
+        await w1.isModal()
+        await w1.maximize()
+        await w1.unmaximize()
+        await w1.isMaximized()
+        await w1.minimize()
+        await w1.restore()
+        await w1.isMinimized()
+        await w1.setFullScreen(true)
+        await w1.isFullScreen()
+        await w1.isNormal()
+        await w1.setAspectRatio(1)
+        await w1.setBackgroundColor("black")
+        await w1.getBackgroundColor()
+        await w1.setEnabled()
+        await w1.isEnabled()
+        await w1.setSize(200,200)
+        await w1.getSize()
+        await w1.setContentSize(200,200)
+        await w1.getContentSize()
+        await w1.setResizable()
+        await w1.isResizable()
+        await w1.setMovable()
+        await w1.isMovable()
+        await w1.setAlwaysOnTop(true)
+        await w1.isAlwaysOnTop()
+        await w1.center()
+        await w1.setPosition(20,20)
+        await w1.getPosition()
+        await w1.setTitle("My Title")
+        await w1.getTitle()
+        await w1.flashFrame()
+        await w1.reload()
+        await w1.setOpacity(0.5)
+        await w1.getOpacity()
+        await w1.setIgnoreMouseEvents(true)
+        `.trim().split(/[\r\n]+/).map(l => l.trim()).filter(l => l);
+
+        const objects = {};
+        const handlers = {};
+
+        wintests.forEach(test => {
+            const match1 = test.match(/^await\s+([\w\.]+)\((.*)\)$/);
+            const match2 = test.match(/^var\s+(\w+)\s*=\s*await\s+([\w\.]+)\((.*)\)$/);
+            const match3 = test.match(/^(\w+)\.(on\w+)\s*=\s*e\s*=>\s*\{(.*)\}/);
+
+            if (!match1 && !match2 && !match3) {
+                console.log("invalid test:", test);
+            } else if (match1) {
+                const func = match1[1], args = JSON.parse("[" + match1[2] + "]");
+                const p = document.createElement("p");
+                p.className = "test";
+                p.innerHTML = `await <span>${func}</span>(<span contenteditable="true">${match1[2]}</span>) => <span>click to run</span>`;
+
+                document.body.insertBefore(p, script);
+            } else if (match2) {
+                const func = match2[2], args = JSON.parse("[" + match2[3] + "]"), varname = match2[1];
+                const p = document.createElement("p");
+                p.className = "test";
+                p.innerHTML = `var ${varname} = await <span>${func}</span>(<span contenteditable="true">${match2[3]}</span>) => <span>click to run</span>`;
+                p._varname = varname; // will be set later
+
+                document.body.insertBefore(p, script);
+
+            } else if (match3) {
+                const varname = match3[1], handler = match3[2], func = match3[3];
+                const p = document.createElement("p");
+                p.className = "event";
+                p.innerHTML = `<span>${varname}.${handler}</span> = <span>e</span> => {<span>...</span>}`;
+
+                if (handlers[varname] === undefined) {
+                    handlers[varname] = {};
+                }
+
+                handlers[varname][handler] = (...args) => {
+                    p.querySelector("span:nth-of-type(2)").textContent = "(...args)";
+                    p.querySelector("span:nth-of-type(3)").textContent = `  called with args ${JSON.stringify(args)} `;
+                };
+
+                document.body.insertBefore(p, script);
+            }
+        });
+
+
+        h2 = document.createElement("h2");
+        h2.textContent = "Using socket (client and server)";
+        document.body.insertBefore(h2, script);
+
+        const nettests = `
+        // s0 is the listening server socket
+        var s0 = await net.createServer()
+        s0.onconnection = e => { s1 = args[0]; }
+        s0.onerror = e => {...}
+        s0.onlistening = e => {...}
+        s0.ondrop = e => {...}
+        await s0.listen(8100)
+        await s0.address()
+        await s0.close()
+
+        // s1 is the server socket created by s0.onconnection
+        s1.ondata = e => {...}
+        s1.onend = e => {...}
+        await s1.write("welcome!")
+        await s1.setEncoding("utf-8")
+        await s1.setNoDelay()
+        await s1.end()
+        await s1.destroy()
+
+        // s2 is the client socket that connects to s0 and creates s1
+        var s2 = await net.createConnection({"port":8100,"host":"localhost"})
+        s2.onconnect = e => {...}
+        s2.ondata = e => {...}
+        s2.onend = e => {...}
+        await s2.write("hello world!")
+        await s2.setEncoding("utf-8")
+        await s2.setNoDelay()
+        await s2.end()
+        await s2.destroy()
+
+        // d1 is the first UDP socket
+        var d0 = await dgram.createSocket({"type":"udp4","reuseAddr":true,"reusePort":true})
+        d0.onerror = e => {...}
+        d0.onclose = e => {...}
+        d0.onlistening = e => {...}
+        d0.onmessage = e => {...}
+        await d0.bind(8100)
+        await d0.connect()
+        await d0.address()
+        await d0.send("welcome here!")
+        await d0.close()
+
+        // d2 is the second UDP socket
+        var d1 = await dgram.createSocket({"type":"udp4","reuseAddr":true,"reusePort":true})
+        d1.onerror = e => {...}
+        d1.onclose = e => {...}
+        d1.onlistening = e => {...}
+        d1.onmessage = e => {...}
+        await d1.bind(0)
+        await d1.connect(8100,"127.0.0.1")
+        await d1.address()
+        await d1.send("hello there!",8100,"127.0.0.1")
+        await d1.send("hello on connection...")
+        await d1.close()
+        `.trim().split(/[\r\n]+/).map(l => l.trim()).filter(l => l);
+
+        nettests.forEach(test => {
+            const match1 = test.match(/^await\s+([\w\.]+)\((.*)\)$/);
+            const match2 = test.match(/^var\s+(\w+)\s*=\s*await\s+([\w\.]+)\((.*)\)$/);
+            const match3 = test.match(/^(\w+)\.(on\w+)\s*=\s*e\s*=>\s*\{(.*)\}/);
+            const match4 = test.match(/^\/\/(.*)$/);
+
+            if (!match1 && !match2 && !match3 && !match4) {
+                console.log("invalid test:", test);
+            } else if (match4) {
+                const p = document.createElement("p");
+                p.className = "comment";
+                p.textContent = test;
+                document.body.insertBefore(p, script);
+            } else if (match1) {
+                const func = match1[1], args = JSON.parse("[" + match1[2] + "]");
+                const p = document.createElement("p");
+                p.className = "test";
+                p.innerHTML = `await <span>${func}</span>(<span contenteditable="true">${match1[2]}</span>) => <span>click to run</span>`;
+
+                document.body.insertBefore(p, script);
+            } else if (match2) {
+                const func = match2[2], args = JSON.parse("[" + match2[3] + "]"), varname = match2[1];
+                const p = document.createElement("p");
+                p.className = "test";
+                p.innerHTML = `var ${varname} = await <span>${func}</span>(<span contenteditable="true">${match2[3]}</span>) => <span>click to run</span>`;
+                p._varname = varname; // will be set later
+
+                document.body.insertBefore(p, script);
+
+            } else if (match3) {
+                const varname = match3[1], handler = match3[2], func = match3[3];
+                const p = document.createElement("p");
+                p.className = "event";
+                p.innerHTML = `<span>${varname}.${handler}</span> = <span>e</span> => {<span>...</span>}`;
+
+                if (handlers[varname] === undefined) {
+                    handlers[varname] = {};
+                }
+
+                handlers[varname][handler] = (...args) => {
+                    const printuint8 = (value) => {
+                        return `Uint8Array[${Array.from(value).toString()}] or '${new TextDecoder("utf-8").decode(value)}' in utf-8`;
+                    };
+                    p.querySelector("span:nth-of-type(2)").textContent = "(...args)";
+                    p.querySelector("span:nth-of-type(3)").textContent = `  called with args [${args.map(arg => arg instanceof Uint8Array ? printuint8(arg) : JSON.stringify(arg)).join(",")}]${func !== "..." ? " and set " + func : ""} `;
+                    if (func !== "...") { // set variable
+                        const m = func.trim().match(/^(\w+)\s*=\s*(.*)$/);
+                        if (m) {
+                            if (m[1]) {
+                                const varname = m[1];
+                                console.log("setting", varname);
+                                const w = window[varname] = eval(m[2]);
+
+                                if (handlers[varname]) {
+                                    for (var onevent in handlers[varname]) {
+                                        w[onevent] = handlers[varname][onevent];
+                                    }
+                                }
+                            }
+                        } else {
+                            console.log("did not match for set var", func);
+                        }
+                    }
+                };
+
+                document.body.insertBefore(p, script);
+            }
+        });
+
+
+        [...document.querySelectorAll("p.test")].forEach(p => {
+            const [span0, span1, span2] = [...p.querySelectorAll("span")];
+
+            span0.onclick = span1.oninput = () => {
+                if (span2.textContent !== "click to run") {
+                    span2.textContent = "click to run";
+                }
+            };
+
+            span2.onclick = () => {
+                console.log(span0.textContent, span1.textContent);
+                
+                try {
+                    eval(span0.textContent)(...JSON.parse("[" + span1.textContent + "]"))
+                        .then(result => {
+                            try {
+                                if (result === undefined) {
+                                    span2.textContent = "undefined";
+                                } else {
+                                    span2.textContent = JSON.stringify(result);
+                                }
+                            } catch (e) {
+                                span2.textContent = result.toString();
+                            }
+                            if (p._varname) {
+                                console.log("setting", p._varname);
+                                const w = window[p._varname] = result;
+
+                                if (handlers[p._varname]) {
+                                    for (var onevent in handlers[p._varname]) {
+                                        w[onevent] = handlers[p._varname][onevent];
+                                    }
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error("error", error);
+                            span2.textContent = "" + error;
+                        })
+                } catch (error) {
+                    console.error("error", error);
+                    span2.textContent = "" + error;
+                };
+            };
+        });
+    </script>
+</body>
+</html>

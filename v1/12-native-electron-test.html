@@ -1,0 +1,261 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="native-electron.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        body { 
+            padding: 1ch;
+        }
+        body > div.log {
+            font-family: monospace;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        body > div.log.info {
+            font-style: italic;
+            font-weight: bold;
+            font-family: sans-serif;
+            margin-top: 0.5ch;
+        }
+        body > div.log.error, body > div.log.warn { 
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <native-electron src="ws://localhost:9090/native-electron?id={id}"></native-electron>
+    <script type="text/javascript">
+    const console_ = console;
+    console = {
+        log:   (...args) => { console_.log(...args);   mylog("LOG", ...args);},
+        debug: (...args) => { console_.debug(...args); mylog("DEBUG", ...args); },
+        info:  (...args) => { console_.info(...args);  mylog("INFO", ...args); },
+        trace: (...args) => { console_.trace(...args); mylog("TRACE", ...args); },
+        warn:  (...args) => { console_.warn(...args);  mylog("WARN", ...args); },
+        error: (...args) => { console_.error(...args); mylog("ERROR", ...args); },
+    };
+
+    function mylog(type, ...args) {
+        const span = document.createElement("div");
+        span.className = "log " + type.toLowerCase();
+        span.innerText = args.map(a => {
+            let r = a && a.toString();
+            if (r === "[object Object]") {
+                r = JSON.stringify(a);
+            } else if (a === undefined || a === null) {
+                r = "" + a;
+            }
+            return r;
+        }).join(" ");
+        document.body.appendChild(span);
+    }
+
+    (async () => {
+        console.log(`const electron = document.querySelector("native-electron")`);
+        const electron = document.querySelector("native-electron");
+        //electron.debug_level = 5; // warn+
+        console.log(`const {main, dns, net, dgram, os} = electron`);
+        const {main, dns, net, dgram, os} = electron;
+        //const {dgram} = electron;
+
+        // main
+
+        let win1;
+        if (typeof main !== "undefined") {
+            console.info("Testing main");
+            console.log("let win1 = await main.createWindow()");
+            win1 = await main.createWindow();
+            console.log(">>> win1 is " + win1);
+            win1.onclose = e => console.log("win1.onclose() called with", e);
+            win1.onclosed = e => console.log("win1.onclosed() called with", e);
+            console.log(`await win1.setPosition(screen.width - 330, 10)`);
+            await win1.setPosition(screen.width - 330, 10);
+            console.log(`await win1.setSize(320, 230`);
+            await win1.setSize(320, 230);
+            console.log(`await win1.loadURL("https://www.google.com")`);
+            await win1.loadURL("https://www.google.com");
+        }
+
+        // dns
+
+        if (typeof dns !== "undefined") {
+            console.info("Testing dns");
+
+            console.log("await dns.lookup('www.google.com') =>", JSON.stringify(await dns.lookup("www.google.com")));
+            console.log("await dns.resolve('columbie.edu', 'NAPTR') =>", JSON.stringify(await dns.resolve("columbia.edu", "NAPTR")));
+        }
+
+        // os
+
+        if (typeof os !== "undefined") {
+            console.info("Testing os");
+
+            console.log("await os.platform() =>", JSON.stringify(await os.platform()));
+            console.log("await os.networkInterfaces() =>", JSON.stringify(await os.networkInterfaces()));
+        }
+
+        // net
+
+        const sleep = async (timeout) => {
+            console.log(`await sleep(${timeout})`);
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    resolve();
+                }, timeout);
+            });
+        };
+
+        if (typeof net !== "undefined") {
+            console.info("Testing net");
+
+            console.log(`let listener = await net.createServer()`);
+            const server = await net.createServer();
+            console.log(">>> listener is " + server);
+            server.onconnection = async client => {
+                console.log("listener.onconnection() called with server as" + client); // do not use without string coercion
+                client.onend = async () => {
+                    console.log("server.onend() called");
+                    console.log("await server.destroy()");
+                    await client.destroy();
+
+                    await sleep(2000);
+
+                    console.log("await server.close()");
+                    await server.close();
+                };
+                client.ondata = data => {
+                    console.log("server.ondata() called with", data);
+                };
+                console.log(`await server.setEncoding("utf-8")`);
+                await client.setEncoding("utf-8");
+                console.log(`await server.setNoDelay()`);
+                await client.setNoDelay();
+
+                console.log(`await server.write(${JSON.stringify("hello\r\n")})`);
+                await client.write("hello\r\n");
+
+                console.log("server.pipe");
+                await client.pipe(client);
+            };
+
+            server.onerror = e => console.log("listener.onerror() called with", e);
+            server.onclose = e => console.log("listener.onclose() called with", e);
+            server.onlistening = e => console.log("listener.onlistening() called with", e);
+            server.ondrop = e => console.log("listener.ondrop() called with", e);
+
+            console.log(`await listener.listen(8124)`);
+            const result = await server.listen(8124);
+            console.log("await listener.address() => returned", await server.address());
+
+            console.log(`let client = await net.createConnection({ port: 8124 }`);
+            const client = await net.createConnection({ timeout: 5000, port: 8124, host: "localhost" });
+            console.log(">>> client is " + client); // do not use without string coercion
+            client.onconnect = async () => {
+                console.log("client.onconnect() called");
+                console.log(`await client.write(${JSON.stringify("world!\r\n")})`);
+                await client.write("world!\r\n");
+                console.log(`await client.write(${JSON.stringify("how are you")})`);
+                await client.write("how are you");
+                await sleep(1000);
+                console.log(`await client.write(${JSON.stringify("good bye")})`);
+                await client.write("good bye");
+                console.log(`await client.end()`);
+                await client.end();
+                console.log(`await client.destroy()`);
+                await client.destroy();
+            };
+            client.ondata = data => {
+                console.log("client.ondata() with", data);
+            };
+            client.onend = () => {
+                console.log("client.onend() called");
+            };
+
+            console.log(`await client.setEncoding("utf-8")`);
+            await client.setEncoding("utf-8");
+            console.log(`await server.setNoDelay()`);
+            await client.setNoDelay();
+
+            await sleep(3000);
+        }
+
+        // dgram
+
+        if (typeof dgram !== "undefined") {
+            console.info("Testing dgram");
+
+            console.log(`let sock0 = await dgram.createSocket({type: "udp4", ...})`);
+            const sock0 = await dgram.createSocket({type: "udp4", reuseAddr: true, reusePort: true});
+            sock0.onclose = () => console.log("sock0.onclose() called");
+            sock0.onerror = (e) => console.log("sock0.onerror() called with", e);
+            sock0.onlistening = () => console.log("sock0.onlistening() called");
+            sock0.onmessage = async (msg, rinfo) => {
+                console.log("sock0.onmessage() called with", JSON.stringify(msg), JSON.stringify(rinfo));
+                console.log(">>> msg text is", new TextDecoder("utf-8").decode(msg));
+                console.log(">>> sending", "😊 World 🌍 👋");
+                const buf = new TextEncoder("utf-8").encode("😊 World 🌍 👋");
+                console.log("await sock0.send() with", buf, rinfo.port, rinfo.address);
+                await sock0.send(buf, rinfo.port, rinfo.address);
+            };
+            console.log("await sock0.bind()");
+            await sock0.bind();
+            console.log("let bound = await sock0.address()")
+            const bound = await sock0.address();
+            console.log(">>> bound is", JSON.stringify(bound));
+
+            console.log(`let sock1 = await dgram.createSocket({type: "udp4", ...})`);
+            const sock1 = await dgram.createSocket({type: "udp4", reuseAddr: true, reusePort: true});
+            sock1.onclose = () => console.log("sock1.onclose() called");
+            sock1.onconnect = () => console.log("sock1.onconnect() called");
+            sock1.onerror = (e) => console.log("sock1.onerror() called with", e);
+            sock1.onmessage = async (msg, rinfo) => {
+                console.log("sock1.onmessage() called with", JSON.stringify(msg), JSON.stringify(rinfo));
+                console.log(">>> msg text is", new TextDecoder("utf-8").decode(msg));
+            };
+
+            console.log(`await sock1.send('testing', ${bound.port}, "127.0.0.1")`);
+            await sock1.send("testing", bound.port, "127.0.0.1");
+
+            console.log(`let sock2 = await dgram.createSocket({type: "udp4", ...})`);
+            const sock2 = await dgram.createSocket({type: "udp4", reuseAddr: true, reusePort: true});
+            sock2.onclose = () => console.log("sock2.onclose() called");
+            sock2.onconnect = () => console.log("sock2.onconnect() called");
+            sock2.onerror = (e) => console.log("sock2.onerror() called with", e);
+            sock2.onmessage = async (msg, rinfo) => {
+                console.log("sock2.onmessage() called with", JSON.stringify(msg), JSON.stringify(rinfo));
+                console.log(">>> msg text is", new TextDecoder("utf-8").decode(msg));
+            };
+
+            console.log(`await sock2.connect(${bound.port}, "127.0.0.1")`);
+            await sock2.connect(bound.port, "127.0.0.1");
+            console.log(`await sock2.send("connected test")`);
+            await sock2.send("connected test");
+
+            await sleep(2000);
+            console.log("await sock2.close()");
+            await sock2.close();
+            console.log("await sock1.close()");
+            await sock1.close();
+            console.log("await sock0.close()");
+            await sock0.close();
+            await sleep(3000);
+        }
+
+        // close main windows
+
+        if (typeof main !== "undefined") {
+            await sleep(1000);
+            console.log("await win1.close()");
+            await win1.close();
+            await sleep(2000);
+        }
+
+        console.info("Tests completed");
+    })().catch(error => console.warn(error));
+    </script>
+</body>
+</html>

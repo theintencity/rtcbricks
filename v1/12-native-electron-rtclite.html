@@ -1,0 +1,73 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="native-electron.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+    </style>
+</head>
+<body>
+    <native-electron src="ws://localhost:9090/native-electron?id={id}"></native-electron>
+    <script type="text/javascript">
+    (async () => {
+        const electron = document.querySelector("native-electron");
+        //electron.debug_level = 5; // warn+
+        const {main} = electron;
+
+        let win2, win3;
+        if (typeof main !== "undefined") {
+            let params = {
+                stream: "rtclite",
+                video: {
+                    camlabel: "face", controls: "false",
+                },
+                style: {
+                    position: "relative", "-webkit-app-region": "drag", "object-fit": "cover",
+                    left: "-1%", top: "-1%", //width: "calc(100% - 20px)", height: "calc(100% - 20px)", margin: "10px",
+                    "border-radius": "50%", "box-shadow": "0 0 10px 1px rgba(0,0,0,0.3)", overflow: "hidden",
+                    "background-color": "white",
+                },
+                body: {
+                    padding: "10px", "box-sizing": "border-box",
+                },
+                r: Math.random().toString(16).substring(2, 6)
+            };
+            params = Object.entries(params)
+                .map(([k, v]) => typeof v !== "object" ? [[k, v]] : Object.entries(v).map(([k1, v1]) => [`${k}.${k1}`, v1]))
+                .flat(1).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+            console.log("params=", params);
+            
+            console.log("win2 = main.createWindow()");
+            win2 = await main.createWindow({
+                show: true, transparent: true, resizable: true, movable: true, frame: false, 
+                roundedCorners: false, skipTaskbar: true, hasShadow: false, enableLargerThanScreen: true,
+            });
+            win2.onclose = e => console.log("win2.onclose", e);
+            win2.onclosed = e => console.log("win2.onclosed", e);
+            await win2.setPosition(10, 40);
+            await win2.setSize(240, 240);
+            console.log("win2.loadURL", "http://localhost:8000/video.html");
+            await win2.loadURL("http://localhost:8000/video.html?publish=ws://localhost:8080/stream/123&" + params);
+            await win2.setAlwaysOnTop(true);
+            await win2.setAspectRatio(1);
+
+            console.log("win3 = main.createWindow()");
+            win3 = await main.createWindow({
+                show: true, transparent: true, resizable: true, movable: true, frame: false, 
+                roundedCorners: false, skipTaskbar: true, hasShadow: false, enableLargerThanScreen: true,
+            });
+            win3.onclose = e => console.log("win3.onclose", e);
+            win3.onclosed = e => console.log("win3.onclosed", e);
+            await win3.setPosition(10, 300);
+            await win3.setSize(240, 240);
+            console.log("win2.loadURL", "http://localhost:8000/video.html");
+            await win3.loadURL("http://localhost:8000/video.html?subscribe=ws://localhost:8080/stream/123&" + params);
+            await win3.setAlwaysOnTop(true);
+            await win3.setAspectRatio(1);
+        }
+    })().catch(error => console.warn(error));
+    </script>
+</body>
+</html>

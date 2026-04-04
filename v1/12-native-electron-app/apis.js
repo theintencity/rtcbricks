@@ -1,0 +1,2 @@
+/* RTC Bricks, Copyright (c) 2026 Kundan Singh <theintencity@gmail.com>, See LICENSE. */
+const{electron,contextBridge,ipcRenderer}=require("electron"),Store=require("electron-store"),store=(window.addEventListener("DOMContentLoaded",()=>{}),new Store);contextBridge.exposeInMainWorld("API",{getWebAPI:(...e)=>ipcRenderer.invoke("getWebAPI",...e),getWebAccess:()=>store.get("acl"),setWebAccess:e=>store.set("acl",e)});

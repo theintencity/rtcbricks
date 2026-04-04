@@ -1,0 +1,2 @@
+/* RTC Bricks, Copyright (c) 2026 Kundan Singh <theintencity@gmail.com>, See LICENSE. */
+const{electron,contextBridge,ipcRenderer}=require("electron"),keytar=require("keytar"),service=(window.addEventListener("DOMContentLoaded",()=>{}),"native-electron");contextBridge.exposeInMainWorld("keytar",{getPassword:async(...e)=>keytar.getPassword(service,...e),setPassword:async(...e)=>keytar.setPassword(service,...e),deletePassword:async(...e)=>keytar.deletePassword(service,...e),findCredentials:async(...e)=>keytar.findCredentials(service,...e)});

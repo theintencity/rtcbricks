@@ -1,0 +1,2 @@
+/* RTC Bricks, Copyright (c) 2026 Kundan Singh <theintencity@gmail.com>, See LICENSE. */
+const{electron,contextBridge,ipcRenderer}=require("electron"),service=(window.addEventListener("DOMContentLoaded",()=>{}),"native-electron");contextBridge.exposeInMainWorld("API",{getWebClients:(...e)=>ipcRenderer.invoke("getWebClients",...e),onWebChange:(...e)=>ipcRenderer.on("onWebChange",...e),delWebClient:(...e)=>ipcRenderer.invoke("delWebClient",...e),delWebObject:(...e)=>ipcRenderer.invoke("delWebObject",...e)});

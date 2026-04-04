@@ -1,0 +1,73 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="native-electron.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        body { 
+            display: flex; flex-flow: row wrap; gap: 1ch;
+            align-items: center;
+            padding: 1ch;
+        }
+        span.color {
+            display: inline-block; width: 30px; height: 30px;
+        }
+    </style>
+</head>
+<body>
+    <native-electron src="ws://localhost:9090/native-electron?id={id}"></native-electron>
+    <span class="color" style="background-color: red;"></span>
+    <button>Start</button>
+    <p>First, make sure that the native-electron app is running on local machine, on
+    the default port of 9090, to receive the control connection from this web app. 
+    Then click the Start button to start drawing, and double click anywhere to stop. 
+    Click on the color box to change the pen color, before starting to draw.
+    Click anywhere and drag to draw. The drawing disappears 8s after completing the last
+    continuous drawing. Use Shift key when completing a drawing to change the
+    disappearance timer to 60s.</p>
+
+    <script type="text/javascript">
+        if (window.parent !== window) { // hide controls if from iframe
+            document.querySelector("span.color").style.display = "none";
+            document.querySelector("p").style.display = "none";
+            //document.querySelector("button").visibility = "hidden";
+            // setTimeout(() => {
+            //     document.querySelector("button").click();   
+            // });
+        }
+
+        const electron = document.querySelector("native-electron");
+        const colors = ["red", "green", "blue", "yellow", "cyan", "magenta", "black"];
+        const color = document.querySelector("span.color");
+        color.onclick = event => {
+            const current = event.currentTarget.style.backgroundColor;
+            event.currentTarget.style.backgroundColor = colors[(colors.indexOf(current) + 1) % colors.length];
+        };
+
+        const button = document.querySelector("button");
+
+        button.onclick = async event => {
+            //electron.debug_level = 5; // warn+
+            const {main} = electron;
+
+            const options = {
+                show: true, x: 0, y: 0, width: screen.width, height: screen.height,
+                resizable: false, transparent: true, frame: false,
+                movable: false, skipTaskbar: true, hasShadow: false, enableLargerThanScreen: true,
+            };
+
+            const url = new URL(window.location.href); // replace last part with overlay-draw.html
+            const parts = url.pathname.replace(/\/$/, '').split('/');
+            parts[parts.length - 1] = "overlay-draw.html";
+            url.pathname = parts.join("/");
+            url.search = "?stroke=" + encodeURIComponent(color.style.backgroundColor);
+
+            const win = await main.createWindow(options);
+            await win.moveTop();
+            await win.loadURL(url.toString(), { extraHeaders: 'pragma: no-cache\n' });
+        };
+    </script>
+</body>
+</html>
