@@ -1,0 +1,41 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="flex-box.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+    flex-box {
+        width: 640px; height: 240px;
+    }
+    </style>
+</head>
+<body>
+    <flex-box display="grid" ratio="4:3">
+        <video controls src="42-sample.mp4" width="320" height="240"></video>
+        <video controls src="42-sample.mp4" width="320" height="240"></video>
+        <video controls src="42-sample.mp4" width="320" height="240"></video>
+    </flex-box>
+    <spatial-audio></spatial-audio>
+    <div>
+        <button>Start</button>
+    </div>
+    <script type="text/javascript">
+let [flexbox, audio3d, button] = 
+    ["flex-box", "spatial-audio", "button"].map(selector => document.querySelector(selector));
+
+button.onclick = e => {
+    let button = e.currentTarget;
+    if (button.innerText == "Start") {
+        button.innerText = "Stop";
+        audio3d.input = flexbox;
+        [].slice.call(flexbox.children).forEach(video => { video.play(); });
+    } else {
+        button.innerText = "Start";
+        audio3d.input = null;
+        [].slice.call(flexbox.children).forEach(video => { video.pause(); });
+    }
+};
+    </script>
+</body>
+</html>

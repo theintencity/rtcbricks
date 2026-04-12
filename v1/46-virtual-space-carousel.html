@@ -1,0 +1,48 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+        <script type="text/javascript" src="video-io.js"></script>
+        <script type="text/javascript" src="virtual-space.js"></script>
+
+        <style type="text/css">
+            body { margin: 0; padding: 0; }
+            div.box { 
+                border: solid 2px white;
+                display: flex; justify-content: center; align-content: center;
+                font-size: 80px; line-height: 116px; font-weight: bold; color: white;
+                cursor: pointer;
+                box-shadow: 0 0 60px 1px rgba(255,255,255,0.2);
+            }
+        </style>
+
+	</head>
+	<body>
+        <virtual-space bgstars></virtual-space>
+        <script type="text/javascript">
+            let count = 5, minimum = 8;
+            let w = 320, h = 180, m = 10;
+            const radius = Math.round(((w + 2*m)/2)/Math.tan(Math.PI/Math.max(minimum, count)));
+
+            for (let i=0; i<count; ++i) {
+                const div = document.createElement("div");
+                div.className = 'box';
+                div.innerText = '' + i;
+                const j = count >= minimum || i < count / 2 ? i : (minimum - count + i);
+                const theta = Math.round((j / Math.max(minimum, count)) * 360);
+                const p = {x: 0, y: 0, z: radius, ry: theta, scale: 1.0, index: i};
+
+                div.style.background = `hsla(${theta}, 100%, 50%, 0.8)`;
+                div.style.width = w + 'px';
+                div.style.height = h + 'px';
+                div.setAttribute("position3d", `ry:${p.ry},x:${p.x},y:${p.y},z:${p.z},s:${p.scale}`);
+                document.querySelector("virtual-space").appendChild(div);
+
+                div.ondblclick = event => {
+                    event.currentTarget.setAttribute("selected", "");
+                };
+            }
+        </script>
+	</body>
+</html>

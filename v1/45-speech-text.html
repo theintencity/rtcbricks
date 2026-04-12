@@ -1,0 +1,111 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+    body { 
+        padding: 1ch;
+        width: 100%; height: 100%;
+    }
+    .vertical {
+        display: flex; flex-flow: column nowrap;
+        align-items: flex-start;
+    }
+    .vertical > :not(:first-child) {
+        margin-top: 1ch;
+    }
+    .horizontal {
+        display: flex; flex-flow: row nowrap;
+        align-items: flex-start;
+    }
+    .horizontal > :not(:first-child) {
+        margin-left: 1ch;
+    }
+    input[type="checkbox"] {
+        text-align: left;
+    }
+    input[type="checkbox"]:after {
+        content: attr(label);
+        position: relative; white-space: nowrap;
+        left: 20px; line-height: 0px;
+    }
+    div.text {
+        font-size: bold;
+    }
+    </style>
+</head>
+<body class="vertical">
+    <speech-text recognize exclusive></speech-text>
+    <div class="horizontal">
+        <div class="vertical">
+            <select id="lang"><option value="">Select lang</option></select>
+            <select id="voice"><option value="">Select voice</option></select>
+        </div>
+        <div class="vertical">
+            <input id="recognize" type="checkbox" checked label="recognize"/>
+            <input id="play" type="checkbox" checked label="play transcript"/>
+        </div>
+    </div>
+    <input id="text" type="text" placeholder="Type and enter to play..."/>
+    <div class="text"></div>
+
+    <script type="text/javascript">
+        const [speech, recognize, textarea, lang, voice, play, text] = 
+            ["speech-text", "input#recognize", "div.text", "select#lang", "select#voice", "input#play", "input#text"].map(selector => document.querySelector(selector));
+
+        recognize.onclick = event => {
+            speech.recognize = event.currentTarget.checked;
+        };
+
+        speech.addEventListener("recognize", event => {
+            textarea.innerHTML = event.transcript + (event.transcript ? " " : "") + (event.interim ? "<em>" + event.interim + "</em>" : "");
+            if (play.checked && event.transcript && !event.interim) {
+                speech.speak(event.transcript);
+            }
+        });
+
+        text.onkeydown = event => {
+            if (event.key == "Enter") {
+                speech.speak(text.value);
+                text.value = "";
+            }
+        };
+
+        if (window.speechSynthesis && window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                console.log("onvoices changed");
+                const langs = [];
+                while (voice.children.length > 1) {
+                    voice.removeChild(voice.children[voice.children.length-1]);
+                }
+                while (lang.children.length > 1) {
+                    lang.removeChild(lang.children[lang.children.length-1]);
+                }
+                speech.voices.forEach(code => {
+                    const option = document.createElement("option");
+                    option.value = code.name;
+                    option.innerText = code.name + " (" + code.lang + ")";
+                    voice.appendChild(option);
+                    if (langs.indexOf(code.lang) < 0 && code.lang.indexOf("-") >= 0) {
+                        langs.push(code.lang);
+                    }
+                });
+                voice.onchange = event => {
+                    speech.voice = event.currentTarget.value;
+                };
+
+                langs.sort().forEach(code => {
+                    const option = document.createElement("option");
+                    option.innerText = code;
+                    lang.appendChild(option);
+                });
+                lang.onchange = event => {
+                    speech.lang = event.currentTarget.value;
+                };
+            };
+        }
+    </script>
+</body>
+</html>

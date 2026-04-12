@@ -1,0 +1,236 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        div.table {
+            display: table;
+        }
+        div.table > div {
+            display: table-row;
+        }
+        div.table > div > div {
+            display: table-cell;
+            padding: 1ch;
+        }
+        div.box {
+            position: relative;
+            width: 320px; height: 240px;
+        }
+        
+        video-io {
+            position: absolute; width: 100%; height: 100%;
+        }
+        div.box > div {
+            pointer-events: none; user-select: none;
+            position: absolute; 
+            bottom: 4px; padding: 4px;
+            width: 100%; box-sizing: border-box;
+            text-align: center;
+        } 
+        span { 
+            color: white; background-color: black;
+            font-family: sans-serif;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        span:not(:empty) {
+            padding: 4px;
+        }
+        div.controls {
+            display: flex;
+            flex-flow: column nowrap;
+            align-items: flex-start;
+        }
+        input[type="checkbox"]:after {
+            content: attr(label);
+            position: relative; left: 18px; white-space: nowrap;
+            line-height: 0px;
+        }
+        video-mix {
+            z-index: -1; top: 0px; left: 0px; position: absolute;
+        }
+    </style>
+</head>
+<body>
+    <div class="table">
+        <div>
+            <div>
+                <div class="box">
+                    <video-io id="video1" controls microphone="false" channel="true"></video-io>
+                    <div><span id="caption1">caption is enabled!</span></div>
+                </div>
+            </div>
+            <div>
+                <div class="box">
+                    <video-io id="video2" controls sound="false" channel="true"></video-io>
+                    <div><span id="caption2"></span></div>
+                </div>
+            </div>
+            <div>
+                <div class="box">
+                    <video-io id="video3" controls microphone="false" sound="false" autoenable="true" channel="true"></video-io>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div>
+                <div class="controls">
+                    <input type="checkbox" class="recognize" checked label="auto"/>
+                    <input type="text" class="caption-text" placeholder="Type caption here..." />
+                </div>
+            </div>
+            <div>
+                <div class="controls">
+                    <input type="checkbox" class="closed-caption" checked label="closed caption"/>
+                    <input type="checkbox" class="speak" label="speak caption"/>
+                </div>
+            </div>
+            <div>
+                <div class="controls">
+                    <input type="checkbox" class="open-caption" checked label="open caption"/>
+                    <input type="checkbox" class="caption-bg" checked label="background"/>
+                </div>
+            </div>
+        </div>
+    </div>
+    <named-stream id="stream"></named-stream>
+    <speech-text id="speech"></speech-text>
+    <video-mix id="mixer">
+        <script for="video1" type="text/plain">
+            let ctx = canvas.getContext("2d");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            drawText(ctx, canvas.width, canvas.height);
+        </script>
+    </video-mix>
+        
+
+    <script type="text/javascript">
+        const [video1, video2, video3, mixer, caption1, caption2, stream, speech] = 
+            ["video1", "video2", "video3", "mixer", "caption1", "caption2", "stream", "speech"].map(id => document.getElementById(id));
+
+        const [input_recognize, input_text, input_closed, input_speak, input_open, input_bg] = 
+            ["input.recognize", "input.caption-text", "input.closed-caption", "input.speak", "input.open-caption", "input.caption-bg"].map(selector => document.querySelector(selector));
+
+        video1.srcObject = video2.srcObject = stream;
+        mixer.input = [video1];
+        video3.input = mixer;
+        video1.publish = video2.subscribe = video3.publish = speech.recognize = true;
+
+
+        let timer1 = null;
+        speech.addEventListener("recognize", event => {
+            console.log("recognize: " + event.transcript + (event.interim ? " (" + event.interim + ")" : ""));
+            if (input_recognize.checked) {
+                caption1.innerText = event.transcript + " " + event.interim;
+                caption1.style.fontStyle = event.interim ? "italic" : "";
+                if (timer1) {
+                    clearTimeout(timer1);
+                    timer1 = null;
+                }
+                timer1 = setTimeout(() => {
+                    caption1.innerText = "";
+                }, 2000);
+            }
+            if (event.transcript && !event.interim) {
+                video1.send(JSON.stringify({type: "caption", caption: event.transcript}));
+            }
+        });
+
+        let timer2 = null;
+        const receiver = event => {
+            console.log("message: " + event.data);
+            const transcript = JSON.parse(event.data).caption;
+            if (input_closed.checked) {
+                caption2.innerText = transcript;
+                    if (timer2) {
+                    clearTimeout(timer2);
+                    timer2 = null;
+                }
+                timer2 = setTimeout(() => {
+                    caption2.innerText = "";
+                }, 3000);
+            } else {
+                caption2.innerText = "";
+            }
+
+            if (input_speak.checked) {
+                speech.speak(transcript);
+            }
+        };
+        video2.addEventListener("message", receiver);
+
+        input_text.addEventListener("keydown", event => {
+            if (event.key == "Enter") {
+                let transcript = caption1.innerText = input_text.value;
+                input_text.value = "";
+                if (timer1) {
+                    clearTimeout(timer1);
+                    timer1 = null;
+                }
+                timer1 = setTimeout(() => {
+                    caption1.innerText = "";
+                }, 3000);
+                video1.send(JSON.stringify({type: "caption", caption: transcript}));
+            }
+        });
+
+        function drawText(ctx, width, height) {
+            let text = input_open.checked && caption1.innerText || "";
+            if (!text) {
+                return;
+            }
+
+            let x = 0, h = 30, margin = 10;
+            ctx.font = h + "px monospace";
+            ctx.textBaseline = "top";
+            let lines = getLines(ctx, text, width - 2*margin);
+            let y = height - lines.length * (h + margin);
+            //console.log(width, height);
+            lines.forEach(line => {
+                line = line.trim();
+                let w = ctx.measureText(line).width;
+                let x = margin;
+                if (w < width - 2*margin) {
+                    x = width/2 - w/2 + margin;
+                } else {
+                    w = width - 2*margin;
+                }
+                if (input_bg.checked) {
+                    ctx.fillStyle = "rgba(0,0,0,0.8)";
+                    ctx.fillRect(x - margin, y, w + 2*margin, h);
+                } else {
+                    ctx.shadowColor = "black";
+                    ctx.shadowBlur = 7;
+                }
+                ctx.fillStyle = "#ffffff";
+                //ctx.textAlign = "center";
+                ctx.fillText(line, x, y, w);
+                y += h + margin;
+            });
+        }
+
+        function getLines(ctx, text, maxWidth) {
+            const words = text.split(" ");
+            const lines = [];
+            let currentLine = words[0];
+            for (var i = 1; i < words.length; i++) {
+                const word = words[i];
+                const width = ctx.measureText(currentLine + " " + word).width;
+                if (width < maxWidth) {
+                    currentLine += " " + word;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            lines.push(currentLine);
+            return lines;
+        }
+    </script>
+</body>
+</html>

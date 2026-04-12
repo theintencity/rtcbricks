@@ -1,0 +1,55 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+    video-io {
+        width: 160px; height: 120px; float: right;
+        background: transparent;
+    }
+    audio-context {
+        display: block;
+    }
+    input[type="range"][orient="vertical"] {
+        -webkit-appearance: slider-vertical;
+        width: 8px; height: 100px; padding: 0 5px;
+    }
+    </style>
+</head>
+<body>
+    <named-stream id="stream"></named-stream>
+    <div>
+        <button>Start</button>
+    </div>
+    <video-io id="video1" camera="false" for="stream" hidden></video-io>
+    <video-io id="video2" for="stream" hidden></video-io>
+    <audio-context for="video1">
+        <delay value="2"></delay>
+        <biquad-filter value="lowshelf" frequency="1000" gain="10"></biquad-filter>
+        <input type="range" name="gain" min="0" max="1" step="0.02" value="0.8" 
+            onchange="event.currentTarget.setAttribute('value', event.currentTarget.value);"/>
+        <script type="text/plain">
+            let node = context.createGain();
+            node.gain.value = 1;
+            return node;
+        </script>
+    </audio-context>
+    <script type="text/javascript">
+let [video1, video2, context, button] = 
+    ["video-io:nth-of-type(1)", "video-io:nth-of-type(2)", "audio-context", "button"].map(selector => document.querySelector(selector));
+
+button.onclick = e => {
+    let button = e.currentTarget;
+    if (button.innerText == "Start") {
+        button.innerText = "Stop";
+        video1.publish = video2.subscribe = true;
+    } else {
+        button.innerText = "Start";
+        video1.publish = video2.subscribe = false;
+    }
+};
+    </script>
+</body>
+</html>

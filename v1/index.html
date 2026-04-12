@@ -1757,7 +1757,8 @@ supports the data channel and implements the message routing logic, you will not
 or subscriber to publisher data path using this mechanism.
 This is similar to the media path requirement at the media server.</p>
 
-<p>Although, the channel feature is useful, it is not
+<p>Later, we will see how this feature can be combined with the <code>speech-text</code> component
+to implement captioning and other features. Although, the channel feature is useful, it is not
 enough to implement several communication use cases such as discovering participants in a call or 
 registering to receive incoming call. For that we need some other application logic such as based on
 shared data, described next.</p>
@@ -3093,7 +3094,12 @@ adjustment is important. Typically, for webcam videos, adjusting the ratio, and 
 zooming in, is desirable. For screenshare or other content video, keeping the original
 aspect ratio is preferred.</p>
 
-
+<p>Later, we describe how to use 3D layout for the <code>video-io</code> components,
+in a multi-party call.
+The <code>flex-box</code> component also dispatches a <code>change</code> event whenever
+position or size of any of the container item changes, or when the size of the container
+changes, which may trigger a change in layout. This is used by spatial audio as discussed
+later.</p>
 
 <p>The following table describes all the attributes of the component.</p>
 
@@ -3612,7 +3618,7 @@ that serve other nodes, without any self benefit in that particular session.</p>
 
 
 
-<h2 id="topic-e2ee"category="Advanced - Media Processing"cat="Media"position="-48,44"short="encryption">How to do end-to-end encryption using insertable streams?</h2>
+<h2 id="topic-e2ee"category="Advanced - Media Processing"cat="Media"position="-55,50"spread="12"radius="200"short="encryption">How to do end-to-end encryption using insertable streams?</h2>
 
 <p>Use the <code>secret</code> attribute or property to enable end-to-end encryption using insertable 
 streams, in publish or subscribe <code>video-io</code> instance. Internally, the implementation uses a worker 
@@ -3645,7 +3651,7 @@ the encryption used here will prevent the middlebox from accessing the unencrypt
 
 
 
-<h2 id="topic-clone"short="modify video">How to clone and modify the video stream</h2>
+<h2 id="topic-clone"short="modify video"radius="120">How to clone and modify the video stream</h2>
 
 <p>Previously, we have shown examples of capturing video from webcam, screen or app. Here, we will show
 how to modify a video stream in real-time, e.g., to put caption or mix or perform some image processing 
@@ -3797,7 +3803,7 @@ by clicking on the "change" button in the previous example.</p>
 
 
 
-<h2 short="image processing">How to do image processing on video?</h2>
+<h2 short="image processing"radius="200">How to do image processing on video?</h2>
 
 <p>Previously, in <a href="#topic-clone">How to clone and modify the video stream?</a>, it was shown
 how to get access to and modify the raw image data, such as to put caption or multi-party layout.
@@ -3834,16 +3840,722 @@ frame is not required either.</p>
 
 
 
+<h2 id="audio-context"short="audio processing">How to do signal processing on audio?</h2>
+
+<p>The Web Audio API is very powerful in applying simple processing such as gain, delay,
+low pass filter as well as for complex signal processing such as for sound analyzer, colvolver, 
+wave shaper. The <code>audio-context</code> component wraps these features provided by
+the built-in <code>AudioContext</code> and related interfaces in the browser.</p>
+
+<p>Similar to the <code>video-mix</code> component, it plugs into the <code>video-io</code>
+instances, and can intercept and modify the audio stream.
+Similar to the <code>delayed-video</code> component, 
+you can include and attach an <code>audio-context</code> instance to a <code>video-io</code>
+instance using one of these attributes or properties: <code>for</code>, <code>input</code>
+or <code>srcObject</code>. Internally, both <code>for</code> and <code>input</code> are used to
+extract a <code>srcObject</code> and applied. Only one of <code>for</code>, <code>input</code>,
+or <code>srcObject</code> must be specified. These attributes and properties are
+summarized below.</p>
+
+<table class="properties nowrap">
+<tr><th>Property</th><th>Description</th></tr>
+<tr><td>for</td><td>
+    attribute, optional
+</td></tr><tr><td></td><td>
+    Set to the id of the source video-io element. The video-io element must 
+    be present in DOM at the time this attribute is set.
+</td></tr>
+<tr><td>input</td><td>
+    property, optional
+</td></tr><tr><td></td><td>
+    Set to the video-io element DOM object.
+</td></tr>
+<tr><td>srcObject</td><td>
+    property, optional
+</td></tr><tr><td></td><td>
+    Set to the MediaStream instance. See localStream or videoStream of video-io.
+</td></tr>
+<tr><td>remote</td><td>
+    boolean, attribute and property, optional, default is false
+</td></tr><tr><td></td><td>
+    If attribute is present or if the property is set to true, then this instance
+    is attached to a subscriber (or received or remote) MediaStream instance.
+    Default is to assume a publish (or sent or local) MediaStream instance.
+</td></tr>
+</table>
+
+<p>The <code>audio-context</code>
+component is implemented to work with both the publish and subscribe <code>video-io</code>
+instances. However, internally, the implementation differs due to some unresolved issues in the
+browser at this time. Thus, you must explicitly specify if the component is being applied to
+publish or subscribe mode.</p>
+
+<p>The following example shows how to use the component.
+It uses the <code>for</code> attribute to attach the component to the source.</p>
+
+<pre><code class="lang-html">&lt;video-io id="video" publish="true"&gt;&lt;/video-io&gt;
+&lt;audio-context for="video"&gt;
+    &lt;delay value="4"&gt;&lt;/delay&gt;
+    &lt;gain value="0.8"&gt;&lt;/gain&gt;
+&lt;/audio-context&gt;
+</code></pre>
+
+<p>The example shows two audio processing nodes applied to the published audio track &mdash;
+the delay and gain nodes &mdash; in that order. The delay node causes a delay in the
+audio path by the supplied number of seconds, and the gain causes the volume change on a scale
+of 0 to 1. Developers familiar with the Web Audio API or <code>AudioContext</code>
+can see how these map to the built-in APIs.</p>
+
+<p>Here is another example that does the same things, but uses the <code>input</code>
+property of the component.</p>
+
+<pre><code class="lang-html">&lt;video-io ... &gt;&lt;/video-io&gt;
+&lt;audio-context ...&gt;...&lt;/audio-context&gt;
+&lt;script type="text/javascript"&gt;
+    const video = document.querySelector("video-io");
+    const context = document.querySelector("audio-context");
+    context.input = video;
+&lt;/script&gt;
+</code></pre>
+
+<p>The following example shows how to use the <code>srcObject</code> property directly
+if you do not use or want to use the <code>video-io</code> component, as long as you have a
+<code>MediaStream</code> object.</p>
+
+<pre><code class="lang-js">const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+context.srcObject = stream;
+</code></pre>
+
+
+<p>The following example shows the gain node applied to the subscribed track. Note
+the <code>remote</code> attribute on the component instance.</p>
+<pre><code class="lang-html">&lt;video-io id="receive" subscribe="true"&gt;&lt;/video-io&gt;
+&lt;audio-context for="receive" remote="true"&gt;
+    &lt;gain value="0.5"&gt;&lt;/gain&gt;
+&lt;/audio-context&gt;
+</code></pre>
+
+<p>The component implementation is actually pretty generic, and can include any type of
+audio processing node supported by <code>AudioContext</code>. The popular <code>DelayNode</code>,
+<code>GainNode</code> and <code>BiquadFilterNode</code> constructs are explicitly allowed
+via their named elements, <code>delay</code>, <code>gain</code> and <code>biquad-filter</code>,
+respectively. However, these or any other node instance can be included using the generic
+<code>script</code> element described below. Moreover, these explicitly allowed elements may
+also be included using the <code>input</code> element with the specified name.</p>
+
+<p>Consider the following example, with four audio nodes in the component.</p>
+
+<pre><code class="lang-html">&lt;audio-context ...&gt;
+    &lt;delay value="2"&gt;&lt;/delay&gt;
+    &lt;biquad-filter value="lowshelf" frequency="1000" gain="10"&gt;&lt;/biquad-filter&gt;
+    &lt;input type="range" name="gain" min="0" max="1" step="0.02" value="0.8" 
+        onchange="event.currentTarget.setAttribute('value', event.currentTarget.value);"/&gt;
+    &lt;script type="text/plain"&gt;
+        let node = context.createGain();
+        node.gain.value = 1;
+        return node;
+    &lt;/script&gt;
+&lt;/audio-context&gt;
+</code></pre>
+
+<p>The <code>gain</code>, <code>delay</code> and <code>biquad-filter</code> elements use
+the <code>value</code> attribute to set their primary values, which are the gain value
+between 0 and 1, delay value in seconds, and the filter type. The <code>delay</code> element
+also allows a <code>max</code> attribute for the maximum delay in seconds, and unlike
+the <code>DelayNode</code> API, the attribute defaults to 60 seconds. The <code>biquad-filter</code>
+element allows several other attributes including <code>frequency</code>, <code>detune</code>,
+<code>Q</code> and <code>gain</code>, similar to the <code>BiquadFilter</code> API.</p>
+    
+<p>Using a headset is recommended for trying out the following example to avoid audio loop.
+It uses the above example snippet, at the publisher side, to play sound on the subscriber side.
+The camera is turned off for this audio-only example.</p>
+
+<button class="tryit"path="44-audio-context.html"width="500"height="80"></button>
+
+<p>The example above shows four audio nodes: <code>delay</code> for 2 seconds, 
+<code>biquad-filter</code> as bass booster, <code>input</code> for gain control via
+user input, and <code>script</code> for gain control via script. The last one particularly
+allows generic creation and application on any audio node.</p>
+
+<p>The <code>input</code> element contained in the component is displayed as a regular
+HTML element, with the difference that its <code>name</code> attribute defines the audio node
+type and its <code>value</code> attribute defines the primary value of that node. To allow
+user control of the value, the change must be propagated to the attribute, as shown in the 
+example with the <code>onchange</code> event handler. The primary value of the gain and the
+delay nodes is trivial, and that of the biquad-filter node is the filter <code>type</code> such
+as <code>lowshelf</code> or <code>lowpass</code>. For more information please refer to those
+built-in APIs.</p>
+
+<p>The <code>script</code> element must have the <code>type</code> attribute set to 
+<code>text/plain</code>. The body of the element must be written in JavaScript assuming that it
+will be called from a function, similar to the <code>video-mix</code> element's <code>script</code>
+child. Here, the function body must return an instance of the newly created audio node object.
+The above example shows a bypass audio node with gain of 1 for demonstration. In practice,
+this can be any other audio node such as a convolver or wave shaper, whose attributes may be
+controlled independently in the app. The function body gets a local parameter named 
+<code>context</code> representing the underlying <code>AudioContext</code> instance.</p>
+
+<p>Since enabling <code>AudioContext</code> requires user interaction in modern browsers,
+the above example includes another button to start, which when clicked triggers the
+user interaction necessary to enable the internal <code>audio-context</code>
+implementation.</p>
+
+<p>The next example uses the <code>audio-context</code> component attached to a
+publishing <code>video-io</code> component, and uses <code>AnalyserNode</code> to
+draw the audio waveform and frequency.</p>
+
+<button class="tryit"path="44-audio-waveform.html"preview width="700"height="270"></button>
+
+
+<p>Later in this document, we will also cover <a href="#topic-spatial">How to enable spatial or 3D audio?</a>.</p>
+
+
+
+<h2 short="speech/text">How to convert between speech and text?</h2>
+
+<p>Converting between speech and text is often needed for accessibility, captioning or just for saving
+bandwidth. Modern browsers natively support speech recognition and speech synthesis. However, there
+are certain restrictions, such as speech recognition can only be applied to local microphone captured
+sound. This makes certain features such as closed caption on received stream not trivial. In this
+section, we will describe how to achieve various such use cases in an application.</p>
+
+<h3 id="speech-text"short="speech-text">The speech-text component</h3>
+
+<p>The <code>speech-text</code> component allows speech recognition and speech synthesis using
+builtin JavaScript APIs as follows. To enable continuous speech recognition, set the 
+<code>recognize</code> attribute on the instance.</p>
+<pre><code class="lang-html">&lt;speech-text id="speech" recognize&gt;&lt;/speech-text&gt;
+</code></pre>
+    
+<p>This will cause the <code>recognize</code>
+event dispatched often from the component instance whenever a final or interim transcript is recognized from
+the user's microphone.</p>
+
+<pre><code class="lang-js">let speech = document.querySelector("#speech");
+speech.addEventListener("recognize", event => {
+    // either event.transcript (final) or event.interim (interim) string is valid.
+});
+</code></pre>
+
+<p>Try the following example to perform both speech recognition and speech synthesis on
+the recognized final transcript.</p>
+
+<button class="tryit"path="45-speech-text.html"preview width="430"height="150"></button>
+
+<p>The above example allows you to experiment with the <code>lang</code> and <code>voice</code>
+properties, described below. It also allows you speak out some custom text, or selectively
+disable or enable recognition and synthesis.</p>
+
+<table class="properties nowrap">
+<tr><th>Property</th><th>Description</th></tr>
+<tr><td>lang</td><td>
+A valid language code such as en-US. If not supplied, then uses 
+platform specific <code>navigator.language</code> or defaults to en-US. If explicitly set, then
+it is used for both speech recognition and synthesis. If voice property is set, then the lang is
+implicitly derived from the voice value, but can be overwritten by explicitly setting this property.
+</td></tr><tr><td>voices</td><td>(readonly)
+A list of items, each containing name, lang or local attribute. The name and lang are strings,
+and local is boolean indicating local or server driven synthesis.
+The name of an item may be used as a value of the <code>voice</code> property.
+</td></tr><tr><td>voice</td><td>
+A valid voice name to be used for speech synthesis. It must be the name attribute of an item 
+of the <code>voices</code> list.
+</td></tr><tr><td>exclusive</td><td>
+(boolean) If set, then speech recognition is paused when speech synthesis is in progress, to avoid
+feedback from spoken sound of speaker back to speech recognition from microphone. This is recommended
+when not using the headset and when both recognition and synthesis are active.
+</td></tr>
+</table>
+
+<p>These properties are also reflected as attributes. Thus, the following two are equivalent.</p>
+<pre><code class="lang-js">speech.setAttribute("lang", "hi-IN"); // attribute
+speech.lang = "hi-IN";                // property
+</code></pre>
+
+<p>Usually only one of <code>lang</code> or <code>voice</code> needs to be set, and the other is 
+automatically derived.</p>
+
+<table class="properties nowrap">
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td>speak</td><td>speech.speak("Hello there, how are you?");
+</td></tr><tr><td></td><td>
+Convert the supplied text to speech and play out the voice.
+</td></tr><tr><td>cancel</td><td>speech.cancel();
+</td></tr><tr><td></td><td>
+Cancel any ongoing text to speech and stop voice play out.
+</td></tr><tr><td>text</td><td>var text = await speech.text("yes | no | maybe");
+</td></tr><tr><td></td><td>
+Recognize speech to text using the supplied optional grammar. It returns a promise that resolves to 
+the recognized text. The supplied grammar string should either be in <code>#JSGF</code> format,
+or contain list of text phrases such as <code>red | green | blue | black</code>.</td></tr>
+</table>
+
+<p>More examples of this component are described next.</p>
+
+<h3>Closed caption</h3>
+
+<p>Closed caption can be implemented using the <code>speech-text</code> component. The data channel
+described earlier can be used to send the recognized text from publisher to subscriber and displayed
+as closed caption on subscriber as well.</p>
+
+<p>Try the following example to see the closed and open captions in action.</p>
+
+<button class="tryit"path="45-closed-caption.html"preview width="1050"height="350"></button>
+
+<p>The example above allows you to experiment with various options such as to enable or 
+disable automatic speech recognition for caption, to speak out closed caption, or to 
+hide background in open caption.</p>
+
+<p>The example above uses a <code>speech-text</code> to detect text from speech, and when detected, uses
+the <code>send</code> function on the publisher <code>video-io</code> to send the caption text.</p>
+
+<pre><code class="lang-js">speech.addEventListener("recognize", event => {
+    if (event.transcript && !event.interim)
+        video1.send(JSON.stringify({type: "caption", caption: event.transcript}));
+});
+</code></pre>
+
+<p>In this example, for closed caption, the publisher side displays both the final and interim 
+transcript, whereas the send is done to the subscriber only for the final transcript, which only 
+displays that.</p>
+    
+<h3>Open caption</h3>
+
+<p>Open caption differs from closed caption in that the caption text is part of the video stream
+in open caption, whereas the user can control when and how to display the caption text in closed 
+caption. These differ from subtitles, which often refers to caption text with translated language, 
+e.g., sound is in one language and caption text is in another.</p>
+
+<p>Open caption is implemented using the <code>video-mix</code> component in the above example. In particular,
+it draws the text on the canvas of the component, which is then used as input source of another
+publisher. The canvas context's <code>measureText</code> function is used to detect long line
+captions, and split them across multiple lines. In the above example, the open caption is set
+for both final and interim transcript of speech recognition. The checkbox allows enabling or
+disabling the closed caption on the publisher side. However, that is not possible on the 
+subscriber side, since caption text will already be part of the received video stream, instead
+of out-of-band, via data channel.</p>
 
 
 
 
+<h2 short="3D display">How to display in 3D?</h2>
+
+<p>We provide two web components for displaying multiple <code>video-io</code> or other components
+in a 3-dimensional (3D) space. These are primitive implementations, and may require further work in
+a real 3D video conferencing application. The components are generic and can
+be used for display of other web elements besides the <code>video-io</code> components.</p>
+
+<h3 id="threejs-space"short="3D three.js">Virtual space using three.js</h3>
+
+<p>The following example shows a sample 3D space using the popular <a href="https://threejs.org">three.js</a>
+Javascript library. It uses <code>video-io</code> elements, but can be changed to <code>video</code> or
+custom <code>img</code> elements, as we will see later.</p>
+
+<button class="tryit"path="46-threejs.html"preview width="900"height="400"></button>
+
+<p>Note that the example uses threejs' <code>OrbitControls</code> to navigate the camera around 
+the scene. You can,</p>
+<ul>
+<li>move while [holding mouse left / single finger on trackpad] to rotate camera around target point</li>
+<li>move [mouse wheel / two fingers on trackpad] to move closer/farther to the target point</li>
+<li>hold [cmd / windows key] + [mouse left / single finger on trackpad] to move camera to another target point</li>
+</ul>
+
+<p>The <code>threejs-space</code> web component is a wrapper around the three.js library to 
+facilitate the above behavior. Besides the default navigation shown above, the component also allows 
+clicking on the displayed items, and when clicked, attempts to put that item as target focus of the
+camera.</p>
+        
+<p>By default a grid is displayed, along with some ambient lighting. Those can be altered by changing the
+component implementation.</p>
+
+<p>To use the component in your implementation, first include the <code>three.js</code> and 
+<code>OrbitControls.js</code> from that project, and then our <code>threejs-space.js</code>, as follows.</p>
+<pre><code class="lang-html">&lt;script type="text/javascript" src="https://rawcdn.githack.com/mrdoob/three.js/r132/build/three.min.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="https://rawcdn.githack.com/mrdoob/three.js/r132/examples/js/controls/OrbitControls.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="https://rtcbricks.kundansingh.com/v1/threejs-space.js"&gt;&lt;/script&gt;
+</code></pre>
+
+
+<p>After that, use the <code>threejs-space</code> element as the container for other elements
+of type <code>video-io</code>, <code>video</code> or <code>img</code>. An example is shown below.
+The path to the font file should be correct, e.g.,
+<span style="word-break:break-all;">https://rawcdn.githack.com/mrdoob/three.js/r132/examples/fonts/helvetiker_regular.typeface.json</span></p>
+
+<pre><code class="lang-html">&lt;threejs-space font="https://... typeface.json" 
+    camera3d="x:-100,y:10,z:300" target3d="x:0,y:50,z:0" &gt;
+    &lt;video-io id="video1" for="stream" subscribe="true"
+        displayname="Big Screen"
+        position3d="shape:rectangle,w:240,h:180,x:150,y:100,z:-100,ry:-45deg" &gt;&lt;/video-io&gt;
+    &lt;video-io id="video2" for="stream" autoenable="true" microphone="false" publish="true"
+        displayname="First"
+        position3d="shape:cube,side:30,x:-50,y:15,z:0" &gt;&lt;/video-io&gt;
+    &lt;video-io id="video3" for="stream" subscribe="true"
+        displayname="Second"
+        position3d="shape:cube,side:30,x:0,y:15,z:0" &gt;&lt;/video-io&gt;
+&lt;/threejs-space&gt;
+</code></pre>
+
+<p>Many of the attribute values shown above are optional, and the implementation picks the right defaults
+as needed. The attributes are in a set of name-value pairs, and set as comma separated name:value format as 
+shown above. The name-value pairs can also be represented using JSON object, and set using property via
+script as shown below. When setting via script, numeric values vs. string are used as applicable.</p>
+
+<pre><code class="lang-js">document.querySelector("threejs-space").target3d = {x: 100, y: 50, z: 0};
+document.querySelector("#video1").position3d = {x: 300, y: 200, shape: "rectangle"};
+</code></pre>
+
+<p>Setting an attribute/property applies the change, instead of full override of the name-value pairs.
+For example, if the initial attribute value for <code>camera3d</code> included x, y, z; but the 
+property JSON object included only y, then other x and z will remain unchanged.</p>
+
+<p>The attributes/properties are described below. For the container element:</p>
+
+<ul>
+<li><b>font</b> - the path of the font file compatible with three.js. An example font file is
+included in our demonstrations. This is needed only when the <code>displayname</code> attribute 
+of any of the container item is set. The font is needed for rendering the display name text.
+There is no default for <code>font</code>, and if not supplied, then display names are not shown.</li>
+
+<li><b>camera3d</b> - this defines the properties of the camera, including its position. The property
+names are x, y, z for position, and <code>fov</code>, <code>aspect</code>, <code>near</code> and
+<code>far</code> for the underlying <code>PerspectiveCamera</code> instance of three.js. The default
+for <code>camera3d</code> is 
+<code>{x:0,y:10,z:300, fov:45,aspect:...,near:1,far:10000}</code>, where the default for the 
+<code>aspect</code> property is derived from the containers currently displayed aspect ratio.</li>
+
+<li><b>target3d</b> - this defines the properties of the target which is in focus by the camera. 
+The property names are x, y, z for position, and <code>min</code> and <code>max</code> for 
+<code>minDistance</code> and <code>maxDistance</code>, respectively, of the underlying 
+<code>OrbitControls</code> instance of three.js. The default for <code>target3d</code> is
+<code>{x:0,y:0,z:0, min:50,max:500}</code>.</li>
+</ul>
+
+<p>For the container items, the allowed attributes are:</p>
+
+<ul>
+<li><b>hidden</b> - if this attribute is present, then the item is not included in the display.</li>
+<li><b>displayname</b> - if this attribute is present and has some text, that is displayed on top
+of the item in the space. The <code>font</code> attribute of the container must be valid too.</li>
+<li><b>position3d</b> - this defines the shape, size, position and rotation of the item. The 
+property names are x, y, z for position, rx, ry, rz for rotation, and <code>shape</code> for the display
+shape. Currently, shape can be one of "cube" or "rectangle" (default). For cube, 
+additionally, the <code>side</code> property can specify the size of the side, default to 30. For 
+rectangle, the w and h properties can specify the width and height, and default to 40 and 30, respectively.</li>
+</ul>
+
+<h3 id="virtual-space"short="3D CSS">Virtual space using CSS transform</h3>
+
+<p>One issue with the previous three.js based approach is that it uses <code>canvas</code> internally, 
+and WebGL for rendering everything
+on that canvas. This makes it hard to apply CSS or other DOM manipulation to the 3D objects directly.
+Thus, the rendered cube or rectangle or other shapes are rigid, and cannot be easily styled or
+changed by the application, unless the component creates an appropriate mapping from those styles to
+the rendered objects on the canvas.</p>
+
+<p>Fortunately, 3D is natively supported in CSS, using perspective and transform attributes. Unlike
+a true computer graphics or vision library like three.js, this approach lacks the implicit lighting
+and shadow support, making the visuals less appealing. However, it is easier to deal with and has
+better integration with existing web development tools and skills.</p>
+
+<p>Here, we describe an alternate web component that facilitates rendering of <code>video-io</code> instances 
+in a 3D space using CSS and DOM manipulation. Try the following example.</p>
+
+<button class="tryit"path="46-virtual-space.html"preview width="800"height="400"></button>
+
+<p>It shows multiple elements included in a 3D space. Double-clicking on an element makes it 
+focussed in the view by moving the camera infront of that element. A small anchor point appears
+at the center to allow resetting the camera to the original position. Several white dots on black
+background appear mimicing stars in the space. The above example uses the <code>virtual-space</code>
+web component described next.</p>
+
+<p>The <code>virtual-space</code> web component can be included and used in your application as follows.</p>
+
+<pre><code class="lang-html">&lt;script src="https://rtcbricks.kundansingh.com/v1/virtual-space.js"&gt;&lt;/script&gt;
+&lt;virtual-space stars bgstars&gt;
+    &lt;img src="..."
+        style="width: 1000px; height: 700px;"
+        position3d="x:200,y:-400,z:0,rx:-30,ry:-30" /&gt;
+    ...
+&lt;/virtual-space&gt;
+</code></pre>
+
+<p>The component supports these attributes:</p>
+
+<ul>
+<li><b>stars</b> - if present then small white dots appear in the 3D space mimicking stars.
+When the camera position changes, these stars appear to move too.</li>
+<li><b>bgstars</b> - if present then small white dots appear in the background 2D space
+as if they are very far away. When the camera position changes, these background stars do not
+move.</li>
+</ul>
+
+<p>The container items can be any valid HTML element including <code>img</code>, <code>video</code>,
+<code>video-io</code> or even <code>span</code> or <code>div</code>. The size of the 
+item can be specified using standard CSS or other means. The parent container component
+interprets these attributes on the item:</p>
+
+<ul>
+<li><b>hidden</b> - if present, then the item is not shown in the 3D space.</li>
+<li><b>selected</b> - if present, then the camera is moved to bring this item in front.</li>
+<li><b>position3d</b> - specifies the position and rotation of the item in the 3D space.</li>
+</ul>
+
+<p>The <code>position3d</code> attribute directly maps to the CSS transform attribute for
+positioning the element. It just provides a convenient way to easily change the position
+of the item. The item is comma separated list of <code>name:value</code>, where the property
+name is one of x, y, z for position in <code>px</code> unit, rx, ry, rz for rotation in degrees,
+and s for scaling if needed.</p>
+
+<p>To bring the camera to the front of the item on some event, just set the selected
+property, as shown below.</p>
+<pre><code class="lang-html">&lt;img ... ondblclick="event.currentTarget.setAttribute('selected', '');" /&gt;
+</code></pre>
+<pre><code class="lang-js">document.querySelector("img").ondblclick = event => {
+    event.currentTarget.setAttribute('selected', '');
+}
+</code></pre>
+
+<p>A number of controlling behavior of the component is currently fixed in the implementation,
+and may be exposed as configurable properties or attributes in the future.</p>
+
+<p>Try the following example to compare the two components, <code>virtual-space</code> on left,
+and <code>threejs-space</code> on right.</p>
+
+<button class="tryit"path="46-space-compare.html"preview width="1200"height="400"></button>
+
+
+<p>Rendering video elements for multi-party conferencing using the three.js or CSS based components
+described previously is not trivial. In particular, it requires you to visualize the 3D layout, and
+setup the positions and rotations of the video elements, and camera angles and target focus precisely
+for a good visual effect.</p>
+
+<p>Here we show how to define a generic behavior for N-elements, such as in a carousel.
+This can be used to display the multi-party video elements in a circle, and can scale to different
+number of participants. The element selection can be done using events such as click or talker indictaion,
+to rotate the carousel, and bring the selected element to the front of the camera. The
+example below shows five boxes in a eight-slot carousel display. Double clicking on a box brings 
+it to front.</p>
+
+<button class="tryit"path="46-virtual-space-carousel.html"width="900"height="400"></button>
+
+<p>The code snippet which calculates the <code>position3d</code> attribute of the boxes is shown
+below.</p>
+
+<pre><code class="lang-js">let count = 5, minimum = 8;   // actual and slots count
+let w = 320, h = 180, m = 10; // box size and margin
+const radius = Math.round(((w + 2*m)/2)/Math.tan(Math.PI/Math.max(minimum, count)));
+
+for (let i=0; i&lt;count; ++i) {
+    // to keep first item in center.
+    const j = count >= minimum || i &lt; count / 2 ? i : (minimum - count + i);
+    const theta = Math.round((j / Math.max(minimum, count)) * 360);
+    const p = {ry: theta, z: radius}; // transform
+    ...
+    const div = document.createElement("div");
+    div.style.width = w + 'px'; div.style.height = h + 'px';
+    div.setAttribute("position3d", `ry:${p.ry},z:${p.z}`);
+    document.querySelector("virtual-space").appendChild(div);
+    ...
+}
+</code></pre>
+
+<p>To visualize the carousel, you need to visualize the transform for each box. First, 
+we calculate the angle of the box. Then rotate the box with that angle on Y-axis, and 
+move the box away from center on Z-axis. How much to move away depends on the radius
+of the carousel, which depends on the number of slots and width of each slot. Note that 
+the order of transform is crucial here to see the desired effect, because the rotation
+also causes the axes to rotate for future moves and rotations.</p>
+
+<p>The <code>virtual-space</code> component also dispatches three events &mdash; 
+<code>added</code>, <code>removed</code> and <code>transform</code> &mdash; when
+a container item is added or removed or its position is altered by applying the 
+CSS 3D transform. The <code>transform</code> event is also dispatched when the
+viewer or camera position is altered in the component, e.g., via navigation 
+described earlier. The <code>element</code> property in the event object contains the 
+DOM element such as the container item to which the event applies.</p>
+
+<p>For the 
+<code>transform</code> event, the <code>subtype</code> and <code>transform</code>
+properties are also present. The <code>subtype</code> is either <code>observer</code>
+or <code>object</code>, to indicate that the element is the viewer or camera or the
+container item. The <code>transform</code> property is just the string containing
+the applied CSS transform, which can also be obtained via the CSS transform style attribute.
+These events are used by spatial audio as discussed later, and can be used
+by your application for other purposes.</p>
 
 
 
+<h2 id="topic-spatial"short="spatial audio">How to enable spatial or 3D audio?</h2>
 
+<p>Previously we showed how to use the Web Audio API with <code>video-io</code> using the
+<code>audio-context</code> component. Here, we further expand the use of Web Audio API for
+spatial or 3D audio. Unlike attaching to the <code>video-io</code> instance, the spatial
+audio contructs attach to the container instances such as <code>flex-box</code> or 
+<code>virtual-space</code>. The basic idea is to make the sound from a container item
+appear to come from a position and in a direction, and have the listener present in the space
+to listen to the sounds from different container items differently.</p>
 
+<p>We have implemented two such spatial audio components &mdash; <code>spatial-audio</code>
+and <code>audio-space</code> &mdash; that attach to <code>flex-box</code> and <code>virtual-space</code>,
+respectively, to cater to 2D and 3D positions of the container items, respectively. 
+However, these new components are generic and can potentially be attached to other
+similarly behaving containers of video elements.</p>
 
+<h3 id="spatial-audio">spatial-audio</h3>
+
+<p>This component caters to the spatial sound requirements of 2D layouts such as
+<code>flex-box</code>. The sound source model does not use a panner cone, but assumes
+equal sound in all direction, attenuated by distance. The 2D position of the container
+item inside the container component determines the position of the sound source from that
+container item. The listener is assumed to be at the center of the rectangular box that
+covers all the container items. In particular, it is not at the center of the container,
+but at the center of the imaginary rectangle that covers all the container items, especially when there
+are empty spaces in the container. At this time, the component does not work with the 
+scrollable view of the <code>flex-box</code>, e.g., when the <code>display</code> is 
+set to <code>page</code>.</p>
+
+<p>To use the component, just create it and assign its <code>for</code> attribute or 
+<code>input</code> property. The <code>for</code> attribute contains the <code>id</code>
+of the associated 2D container such as <code>flex-box</code> as shown below.</p>
+
+<pre><code class="lang-html">&lt;flex-box id="flexbox" ...&gt;
+    &lt;video .../&gt; &lt;video .../&gt; &lt;video .../&gt;
+&lt;/flex-box&gt;
+&lt;spatial-audio for="flexbox"&gt;&lt;/spatial-audio&gt;
+</code></pre>
+
+<p>The container item must be present in the DOM, when the <code>for</code> attribute
+is assigned. Alternatively, the <code>input</code> attribute can be set to the container
+instance as shown below.</p>
+
+<pre><code class="lang-html">
+&lt;flex-box&gt; ... &lt;/flex-box&gt;
+&lt;spatial-audio&gt;&lt;/spatial-audio&gt;
+&lt;script type="text/javascript"&gt;
+let flexbox = document.querySelector("flex-box"), 
+    spatial = document.querySelector("spatial-audio");
+spatial.input = flexbox;
+&lt;/script&gt;
+</code></pre>
+
+<p>The <code>flex-box</code> container items must include <code>width</code>
+and <code>height</code> for their layout, and may be of a sound producing elements 
+such as <code>video</code> or <code>video-io</code>, or some non-sound producing
+element. Internally, the <code>spatial-audio</code> component ignores the
+non-sound producing elements in the container.</p>
+
+<p>Once attached, the component listens for any <code>change</code> event dispatched
+from the container, and readjusts the spatial sound positions of various sound sources
+on such events, and on the initial attachment. The <code>flex-box</code> container
+dispatches such an event anytime there is any change in the position or any container
+item or any change in the size of the container itself.</p>
+
+<p>Try the following example with a headset to see the spatial audio combined with
+<code>flex-box</code>.</p>
+
+<button class="tryit"path="47-audio-3d.html"width="800"height="300"></button>
+
+<p>The example above has three container items, all <code>video</code> elements,
+playing the same video. As you mute and unmute some or all of the elements, you can
+hear the sound coming from different directions.</p>
+
+<p>The spatial sound position of the elements are assumed to be all the way from left
+to all the way to right, and all the way from top to all the way bottom. Thus, if there
+are only one row of elements, as in the above example, they will all be centered
+vertically, and the three elements are aligned at -0.5, 0 and +0.5 positions, in a -0.5 to 0.5 space
+horizontally. If there are five such items, then they will likely get positioned
+at -0.5, -0.25, 0, +0.25 and +0.5. Other layout positions are similarly calculated
+by mapping the center of the element to a 2D space such that the elements cover
+the whole space both vertically and horizontally. Thus, this is just one way of mapping 
+the 2D positions to 2D sound positions.</p>
+
+<h3 id="audio-space">audio-space</h3>
+
+<p>For a real 3D positional audio, the actual position of the container item is 
+assigned to the sound source associated with that item. This only makes good sense 
+when the layout is also in 3D, such as with <code>virtual-space</code> or <code>threejs-space</code>.
+The <code>audio-space</code> component does this and is described here.</p>
+
+<p>Using the component is similar to the previous, using either the <code>for</code>
+attribute or the <code>input</code> property. The following example shows the 
+<code>for</code> attribute.</p>
+
+<pre><code class="lang-html">&lt;virtual-space id="space" ...&gt;
+    ...
+&lt;/virtual-space&gt;
+&lt;audio-space for="space"&gt;&lt;/audio-space&gt;
+</code></pre>
+
+<p>Try the following example with a headset to see the spatial audio combined with
+<code>virtual-space</code>. Click on a video to toggle play and pause. Then use the
+3D navigation described earlier to rotate or move the listener in the space. 
+As mentioned earlier, double clicking on the video brings the listener to focus.</p>
+
+<button class="tryit"path="47-audio-space.html"width="800"height="500"></button>
+
+<p>Try the following example as another layout of the same set of video elements.</p>
+
+<button class="tryit"path="47-audio-space-alt.html"width="800"height="300"></button>
+
+<p>Unlike the previous component which keeps the listener position and orientation
+fixed, but changes the sound source positions, this one can modify both the listener
+position and orientation as you navigate in the 3D space, and the source  
+position and orientation. By default, the sound is assumed to be front facing from
+the sound source, and the listener position and orientation is same as interpreted in
+the 3D view of the container.</p>
+
+<p>When attached, the <code>audio-space</code> component instance listens for the three
+events from the container instance &mdash; <code>added</code>, <code>removed</code> and
+<code>transform</code> &mdash; and alters the position and orientation of the 
+source of the container item and/or the listener.</p>
+
+<p>Unlike the previous 2D spatial audio component, this one uses a panner cone for the 
+sound source. The default values for the <code>PannerNode</code> is shown below.
+As mentioned before, the position and orientation of the sound source is same as
+their position and front-facing vector in the 3D layout of <code>virtual-space</code>.</p>
+<pre><code class="lang-js">{
+    coneInnerAngle: 30, coneOuterAngle: 90, coneOuterGain: 0.1, 
+    panningModel: "equalpower", distanceModel: "linear", 
+    maxDistance: 10000, refDistance: 1, rollOffFactor: 1, ...
+}
+</code></pre>
+
+<p>The default values for the specific sound source can be altered by using the 
+<code>audio3d</code> attribute on the container item as shown below. The first
+<code>video</code> element alters the panner attribute, but the second one uses
+the default.</p>
+
+<pre><code class="lang-html">&lt;virtual-space id="space" ...&gt;
+    &lt;video ... audio3d="i:90,o:180,g:0,m:40000"&gt;&lt;/video&gt;
+    &lt;video ... &gt;&lt;/video&gt;
+&lt;/virtual-space&gt;
+</code></pre>
+
+<p>The value of <code>audio3d</code> attribute is a comma separate name:value
+pair, where name is a short hand for the panner properties as shown below.</p>
+<pre><code class="lang-js">{
+    i: "coneInnerAngle", o: "coneOuterAngle", g: "coneOuterGain", 
+    p: "panningModel", d: "distanceModel", m: "maxDistance", 
+    r: "refDistance", f: "rollOffFactor",
+}
+</code></pre>
+
+<p>Thus the example above changes for the first video: <code>coneInnerAngle</code> from default
+30 to new 90, <code>coneOuterAngle</code> from default 90 to new 180,
+<code>coneOuterGain</code> from default 0.1 to new 0 (no sound if outside the outer
+angle), <code>maxDistance</code> from default 10000 to new 40000 (in pixels).
+The net effect of these is that the first video can be listened much farther, and
+at a larger angle, but cannot be listened if not in front facing.</p>
+
+<p>Both, 3D layout and 3D sound, are very complex topics, and these components
+attempt to provide a bridge to use them with other useful components
+of <code>video-io</code> or <code>flex-box</code> we created. However, the
+new components <code>virtual-space</code>, <code>spatial-audio</code> and <code>audio-space</code>
+are not comprehensive to cover all types of application scenarios. Some generic hooks
+are available nevertheless, to allow using some complex scenarios. If the
+existing implementation is not enough, you can always create a derived component
+that extends our initial implementation.</p>
 
 
 <h2 category="Advanced - Collaboration"cat="Collab"position="-45,-42"spread="12"short="create components">How to create components using shared storage?</h2>
@@ -6055,12 +6767,21 @@ related to each other, and how they interact with each other.</p>
                 This allows delayed playback of audio and video using internal recording of the 
                 source media stream. It can be attached to a video-io component or a media stream.
             </td></tr>
-            
+            <tr><td><a href="#audio-context">audio-context</a></td><td>Include video-io.js</td></tr>
+            <tr><td></td><td>
+                This allows wide range of audio signal processing such as delay, gain, biquad-filter,
+                convolver, wave shaper and such, unsing the Web Audio API. It can be attached to
+                a video-io component or a MediaStream directly.
+            </td></tr>
+            <tr><td><a href="#speech-text">speech-text</a></td><td>Include video-io.js</td></tr>
+            <tr><td></td><td>
+                This allows speech recognition and speech synthesis using built-in JavaScript
+                APIs.
             <tr><td><a href="#device-selector">device-selector</a></td><td>Include device-selector.js</td></tr>
             <tr><td></td><td>
                 This displays user interface to select devices such as microhone, speaker and camera.
             </td></tr>
-        </table>
+        </td></tr></table>
     </td></tr>
     <tr><td><a href="#named-stream">named-stream</a></td><td>Include video-io.js</td></tr>
     <tr><td></td><td>
@@ -6173,7 +6894,32 @@ related to each other, and how they interact with each other.</p>
     <tr><td></td><td>
         The flexible layout container component that can work in fixed, grid or flexible
         mode for a wide range of layout requirements of multi-party video conferencing.
-        
+        <table class="properties nowrap">
+            <tr><th>Additional component</th><th>Description</th></tr>
+            <tr><td><a href="#threejs-space">threejs-space</a></td><td>Include threejs-space.js</td></tr>
+            <tr><td></td><td>
+                The 3D space container for layout of multi-party video conferencing elements,
+                that supports simple cube and rectangle layout of <code>video-io</code> in a
+                3D space using the popular three.js project.
+            </td></tr>
+            <tr><td><a href="#virtual-space">virtual-space</a></td><td>Include virtual-space.js</td></tr>
+            <tr><td></td><td>
+                The 3D space container for layout of various elements including <code>video-io</code>
+                components, in a 3D space, using standard CSS transforms.
+            </td></tr>
+            
+            <tr><td><a href="#spatial-audio">spatial-audio</a></td><td>Include flex-box.js</td></tr>
+            <tr><td></td><td>
+                Spatial audio using 2D position of sound sources of attached flex-box items,
+                and a fixed listener position.
+            </td></tr>
+            <tr><td><a href="#audio-space">audio-space</a></td><td>Include virtual-space.js</td></tr>
+            <tr><td></td><td>
+                Spatial audio using 3D position and cone panner orientation of sound 
+                sources of the attached virtual-space items, and a moving and flexible
+                listener orientation and position based on the camera or viewer position.
+            </td></tr>
+        </table>
     </td></tr>
     <tr><td>collaboration</td><td></td></tr>
     <tr><td></td><td>

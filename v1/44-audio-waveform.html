@@ -1,0 +1,116 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <!-- inspired from https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API -->
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+    video-io {
+        width: 320px; height: 240px;
+        background: transparent;
+    }
+    audio-context {
+        display: block;
+    }
+    input[type="range"][orient="vertical"] {
+        -webkit-appearance: slider-vertical;
+        width: 8px; height: 100px; padding: 0 5px;
+    }
+    div.waveform {
+        vertical-align: top;
+        display: inline-flex; flex-flow: column nowrap;
+        width: 320px; height: 240px;
+
+    }
+    button {
+        outline: none;
+    }
+    </style>
+</head>
+<body>
+    <video-io id="video1"></video-io>
+    <div class="waveform">
+        <canvas id="canvas1" width="320" height="120"></canvas>
+        <canvas id="canvas2" width="320" height="120"></canvas>
+    </div>
+    <div>
+        <button>Start</button>
+    </div>
+    <audio-context for="video1">
+        <script type="text/plain">
+            let node = context.createAnalyser();
+            node.fftSize = 512;
+            return node;
+        </script>
+    </audio-context>
+    <script type="text/javascript">
+let [video1, canvas1, canvas2, context, button] = 
+    ["video-io", "canvas#canvas1", "canvas#canvas2", "audio-context", "button"].map(selector => document.querySelector(selector));
+
+let interval = null;
+
+button.onclick = e => {
+    let button = e.currentTarget;
+    if (button.innerText == "Start") {
+        button.innerText = "Stop";
+        video1.publish = true;
+
+        const analyser = context.nodes[0];
+        const length = analyser.frequencyBinCount;
+        const array1 = new Uint8Array(length);
+        const array2 = new Uint8Array(length);
+        const ctx1 = canvas1.getContext("2d");
+        const ctx2 = canvas2.getContext("2d");
+
+        interval = setInterval(() => {
+            analyser.getByteTimeDomainData(array1);
+            ctx1.fillStyle = "rgb(240,240,240)";
+            ctx1.fillRect(0, 0, canvas1.width, canvas1.height);
+            ctx1.lineWidth = 2;
+            ctx1.strokeStyle = "rgb(0, 0, 0)";
+            ctx1.beginPath();
+            const slice = canvas1.width / length;
+            let x = 0;
+            for (let i = 0; i < length; i++) {
+                const v = array1[i] / 128.0;
+                const y = v * (canvas1.height / 2);
+
+                if (i === 0) {
+                    ctx1.moveTo(x, y);
+                } else {
+                    ctx1.lineTo(x, y);
+                }
+
+                x += slice;
+            }
+            ctx1.lineTo(canvas1.width, canvas1.height / 2);
+            ctx1.stroke();
+
+            analyser.getByteFrequencyData(array2);
+            ctx2.fillStyle = "rgb(240,240,240)";
+            ctx2.fillRect(0, 0, canvas2.width, canvas2.height);
+            const barWidth = (canvas2.width / length) * 2.5;
+            let barHeight;
+            x = 0;
+            for (let i = 0; i < length; i++) {
+                barHeight = array2[i] / 2;
+
+                ctx2.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
+                ctx2.fillRect(x, canvas2.height - barHeight / 2, barWidth, barHeight);
+
+                x += barWidth + 1;
+            }
+
+        }, 1000/30);
+    } else {
+        clearInterval(interval);
+        interval = null;
+
+        button.innerText = "Start";
+        video1.publish = false;
+    }
+};
+    </script>
+</body>
+</html>

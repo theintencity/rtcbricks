@@ -1,0 +1,52 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+        <script type="text/javascript" src="video-io.js"></script>
+        <script type="text/javascript" src="virtual-space.js"></script>
+
+        <style type="text/css">
+            body { margin: 0; padding: 0; }
+            video { object-fit: cover; }
+        </style>
+
+        <script type="text/javascript">
+            function select(el) {
+                el.setAttribute("selected", "");
+            }
+            function toggle(el) {
+                el.paused ? el.play() : el.pause();
+            }
+        </script>
+	</head>
+	<body>
+        <virtual-space id="space" stars bgstars>
+            <div ondblclick="select(event.currentTarget);"
+                style="background-color: white; border-radius: 15px; width: 30px; height: 30px;"
+                position3d="x:0,y:0,z:0"></div>
+            <video src="42-sample.mp4"
+                ondblclick="select(event.currentTarget)"
+                onclick="toggle(event.currentTarget)"
+                style="width: 1000px; height: 700px;"
+                position3d="x:200,y:-400,z:0,rx:-30,ry:-30"
+                audio3d="i:90,o:180,g:0,m:40000"></video>
+            <video src="42-sample.mp4"
+                ondblclick="select(event.currentTarget)"
+                onclick="toggle(event.currentTarget)"
+                style="width: 400px; height: 400px;"
+                position3d="x:-650,y:200,ry:45"></video>
+            <video src="42-sample.mp4"
+                ondblclick="select(event.currentTarget)"
+                onclick="toggle(event.currentTarget)"
+                style="width: 400px; height: 400px;"
+                position3d="x:-1000,y:200,z:100,ry:-35"></video>
+            <!--
+            <div ondblclick="select(event.currentTarget)"
+                style="background-color: white; width: 200px; height: 200px;"
+                position3d="x:0,y:0,z:0"></video>
+            -->
+        </virtual-space>
+        <audio-space for="space"></audio-space>
+	</body>
+</html>

@@ -1,0 +1,35 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+        <script type="text/javascript" src="video-io.js"></script>
+        <script type="text/javascript" src="virtual-space.js"></script>
+
+        <style type="text/css">
+            body { margin: 0; padding: 0; }
+            /* img { transition: transform 0.3s linear; } */
+        </style>
+
+	</head>
+	<body>
+        <named-stream id="stream"></named-stream>
+        <virtual-space stars bgstars>
+            <div ondblclick="event.currentTarget.setAttribute('selected', '');"
+                style="background-color: white; border-radius: 15px; width: 30px; height: 30px;"
+                position3d="x:0,y:0,z:0"></div>
+            <video-io id="video1" for="stream" subscribe="true"
+                ondblclick="event.currentTarget.setAttribute('selected', '');"
+                style="width: 1000px; height: 700px;"
+                position3d="x:200,y:-400,z:0,rx:-30,ry:-30"></video-io>
+            <video-io id="video2" for="stream" autoenable="true" microphone="false" publish="true"
+                ondblclick="event.currentTarget.setAttribute('selected', '');"
+                style="width: 400px; height: 400px;"
+                position3d="x:-650,y:200,ry:45"></video-io>
+            <video-io id="video3" for="stream" subscribe="true"
+                ondblclick="event.currentTarget.setAttribute('selected', '');"
+                style="width: 400px; height: 400px;"
+                position3d="x:-1000,y:200,z:100,ry:-35" />
+        </virtual-space>
+	</body>
+</html>

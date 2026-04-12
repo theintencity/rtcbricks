@@ -1,0 +1,36 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+        <!-- I use an older non-module release:
+        <script src="https://cdn.jsdelivr.net/npm/three@0.132.0/build/three.min.js" integrity="sha256-OCXuhAdvX7IkQO9Wy+xQDj0MK2PcR9qHaBx/3Bk45Yo=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r132/three.min.js" integrity="sha512-ttFD25YD3UE06h9/BJ+Bj0Hr4iXks5LbqcVEJuWo+mg4buxWmANuRm+xk5Xf1WskcwQo92qPlcuFErGndXHuxg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        or -->
+        <script src="https://rawcdn.githack.com/mrdoob/three.js/r132/build/three.min.js"></script>
+        <script src="https://rawcdn.githack.com/mrdoob/three.js/r132/examples/js/controls/OrbitControls.js"></script>
+
+        <script type="text/javascript" src="video-io.js"></script>
+        <script type="text/javascript" src="threejs-space.js"></script>
+
+        <style type="text/css">
+            body { margin: 0; padding: 0; }
+        </style>
+
+	</head>
+	<body>
+        <named-stream id="stream"></named-stream>
+        <threejs-space font="https://rawcdn.githack.com/mrdoob/three.js/r132/examples/fonts/helvetiker_regular.typeface.json" 
+            camera3d="x:-100,y:10,z:300" target3d="x:0,y:50,z:0">
+            <video-io id="video1" for="stream" subscribe="true"
+                displayname="Big Screen"
+                position3d="shape:rectangle,w:240,h:180,x:150,y:100,z:-100,ry:-45deg"></video-io>
+            <video-io id="video2" for="stream" autoenable="true" microphone="false" publish="true"
+                displayname="First"
+                position3d="shape:cube,side:30,x:-50,y:15,z:0" ></video-io>
+            <video-io id="video3" for="stream" subscribe="true"
+                displayname="Second"
+                position3d="shape:cube,side:30,x:0,y:15,z:0" ></video-io>
+        </threejs-space>
+	</body>
+</html>
