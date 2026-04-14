@@ -1,0 +1,90 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="speech-bubble.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        img {
+            max-height: 100%;
+            user-drag: none; -webkit-user-drag: none;
+        }
+        speech-bubble {
+            background: #ddd;
+        }
+        /* speech-bubble::part(bubble) {
+            border: solid 2px black; 
+        } */
+    </style>
+</head>
+<body>
+    <speech-text recognize></speech-text>
+    <speech-bubble>
+        <div id="one"><img src="alice1.jpg"/></div>
+        <div id="two"><img src="bob1.jpg"/></div>
+        <div id="three"><img src="alice2.jpg"/></div>
+        <div id="four"><img src="bob3.jpg"/></div>
+    </speech-bubble>
+
+    <script type="text/javascript">
+        const speech = document.querySelector("speech-text");
+        const space = document.querySelector("speech-bubble");
+
+        const items = [];
+        // const items = ["first", "second", "third", "fourth"];
+        items.forEach(item => {
+            add_item(item);
+        });
+
+
+        function add_item(item) {
+            const div = document.createElement("div");
+            div.className = "item";
+            div.innerHTML = `<span>${item}</span>`;
+            space.appendChild(div);
+        }
+
+        const messages = [
+            ["one", "Hello there!"],
+            ["two", "Hello"], ["two", "How are you?"],
+            ["three", "When are we meeting?"],
+            ["two", "When are you coming here?"],
+            ["three", "Are we going to the party?"],
+            ["two", "I am traveling next week."],
+            ["three", "Who is organizing"],
+            ["three", "Can you send me a text?"],
+            ["one", "I am going to say one more time. We are not going anywhere. All our favorite places are closed. No party for anyone."],
+        ];
+
+        let firsttime = true;
+        let interval = setInterval(() => {
+            if (!messages.length) {
+                clearInterval(interval);
+                return;
+            }
+            let [who, text] = messages.shift();
+            space.says(document.querySelector("#" + who), text);
+            // let ts = firsttime ? Date.now() - 10*60*1000 : undefined
+            // firsttime = false;
+            // space.says(document.querySelector("#" + who), text, ts);
+        }, 1000);
+
+        space.addEventListener("input", event => {
+            //console.log("says " + event.data);
+            space.says(event.source, event.data);
+        });
+
+        let selected = space.children[Math.floor(Math.random()*space.children.length)];
+        speech.addEventListener("recognize", event => {
+            if (event.interim) {
+                space.input(selected, event.interim);
+            } else if (event.transcript) {
+                space.input(selected, "");
+                space.says(selected, event.transcript);
+                selected = space.children[Math.floor(Math.random()*space.children.length)];
+            }
+        });
+    </script>
+</body>
+</html>

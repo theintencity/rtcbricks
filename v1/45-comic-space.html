@@ -1,0 +1,349 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script type="text/javascript" src="comic-space.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        img {
+            max-width: 100%;
+            user-drag: none; -webkit-user-drag: none;
+        }
+        img[slot="background"] {
+            max-width: unset;
+            min-width: 100%;
+            max-height: 100%;
+        }
+        video {
+            visibility: hidden; position: absolute;
+            width: 320px; height: 240px;
+        }
+    </style>
+</head>
+<body>
+    <speech-text recognize></speech-text>
+    <video muted autoplay></video>
+    <comic-space>
+        <img slot="background" src="screencapture.png" />
+        <!--<div class="self"><img /></div> -->
+        <div id="one"><img data="alice1.jpg"/></div>
+        <div id="two"><img data="bob3.jpg"/></div>
+        <div id="three"><img data="alice2.jpg"/></div>
+        <div id="four"><img data="bob1.jpg"/></div>
+    </comic-space>
+
+    <script type="text/javascript">
+        const speech = document.querySelector("speech-text");
+        const space = document.querySelector("comic-space");
+        space.textsmall = 50;
+
+
+        const messages = [
+            ["one", "Hello there!"],
+            ["two", "Hello"], ["two", "How are you?"],
+            ["three", "When are we meeting?"],
+            ["two", "When are you coming here?"],
+            ["three", "Are we going to the party?"],
+            ["two", "I am traveling next week."],
+            ["three", "Who is organizing"],
+            ["three", "Can you send me a text?"],
+            ["one", "I am going to say one more time. We are not going anywhere. All our favorite places are closed. No party for anyone."],
+        ];
+
+        function startMessages() {
+            let interval = setInterval(() => {
+                if (!messages.length) {
+                    clearInterval(interval);
+                    return;
+                }
+                let [who, text] = messages.shift();
+                space.says(document.querySelector("#" + who), text);
+            }, 1000);
+        }
+
+        space.addEventListener("input", event => {
+            space.says(event.source, event.data);
+        });
+
+        let children = [].slice.call(space.querySelectorAll("div"));
+        let selected = children[Math.floor(Math.random()*children.length)];
+        speech.addEventListener("recognize", event => {
+            if (event.interim) {
+                space.input(selected, event.interim);
+            } else if (event.transcript) {
+                space.input(selected, "");
+                space.says(selected, event.transcript);
+                selected = children[Math.floor(Math.random()*children.length)];
+            }
+        });
+
+        window.onload = () => {
+            // navigator.mediaDevices.getUserMedia({video: {width: 240, height: 240}})
+            //     .then(stream => {
+            //         document.querySelector("video").srcObject = stream;
+
+                    bodyPix.load({architecture: "MobileNetV1", outputStride: 16, multiplier: 0.5})
+                        .then(net => {
+                            images = [].slice.call(document.querySelectorAll("img[data]"));
+                            let remaining = images.length;
+                            images.forEach(img => {
+                                var img0 = new Image();
+                                img0.onload = () => {
+                                    updateImage(net, toCanvas(img0), (canvas) => {
+                                        img.src = canvas.toDataURL();
+                                        remaining --;
+                                        if (remaining <= 0) {
+                                            startMessages();
+                                        }
+                                    });
+                                };
+                                img0.src = img.getAttribute("data");
+                            });
+
+                            // let interval = setInterval(() => { updateVideo(net); }, 10000);
+                            // setTimeout(() => { updateVideo(net); }, 1000);
+
+                        });
+                // });
+        };
+
+function updateImage(net, canvas, callback) {
+    net.segmentPerson(canvas, {maxDetection: 1, internalResolution: "medium", segmentationThreshold: 0.75})
+        .then(segmentation => {
+            const output = removebg(net, canvas, segmentation);
+            const c = new comicify(output, 35, () => {
+                callback(output);
+            });
+        });
+}
+
+function updateVideo(net) {
+    let video = document.querySelector("video");
+    let canvas = document.createElement("canvas");
+    let img = document.querySelector("div.self img");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    //img.src = canvas.toDataURL();
+    updateImage(net, canvas, canvas => {
+        img.src = canvas.toDataURL();
+    });
+}
+
+// img or video to canvas
+function toCanvas(img) {
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth || img.videoWidth || img.width;
+    canvas.height = img.naturalHeight || img.videoHeight || img.width;
+    canvas.getContext("2d").drawImage(img, 0, 0);
+    return canvas;
+}
+
+// remove bg using body pix
+
+function removebg(net, input, segmentation) {
+    const array = new ArrayBuffer(segmentation.width * segmentation.height * 4);
+    const buffer = new Uint8ClampedArray(array);
+    new Uint32Array(array).fill(0x00ffffff);
+
+    for (let i=0; i<segmentation.data.length; ++i) {
+        buffer[i * 4 + 3] = segmentation.data[i] == 1 ? 0 : 255;
+    }
+
+    const image = new ImageData(buffer, segmentation.width, segmentation.height);
+    
+    // mask print
+    const mask = document.createElement("canvas");
+    mask.width = segmentation.width; mask.height = segmentation.height;
+    mask.getContext("2d").putImageData(image, 0, 0);
+
+    const bg = document.createElement("canvas");
+    bg.width = segmentation.width; bg.height = segmentation.height;
+    bgctx = bg.getContext("2d");
+    bgctx.globalCompositeOperation = "source-over";
+    //bgctx.filter = "blur(2px)";
+    bgctx.drawImage(mask, 0, 0);
+    //bgctx.filter = "none";
+    bgctx.globalCompositeOperation = "source-out";
+    bgctx.drawImage(input, 0, 0);
+
+    // remove background
+    const output = document.createElement("canvas");
+    output.width = segmentation.width; output.height = segmentation.height;
+    ctx = output.getContext("2d");
+    // canvas4.width = segmentation.width;
+    // canvas4.height = segmentation.height;
+    // ctx.fillStyle = "white";
+    // ctx.fillRect(0, 0, segmentation.width, segmentation.height);
+    ctx.drawImage(bg, 0, 0); 
+    return output;
+}
+
+
+
+// modified from: https://stackoverflow.com/questions/52119538/image-to-cartoon-via-javascript
+
+function comicify(canvas, dist, outf) {
+    var t = this;
+    t.canvas = canvas;
+    t.distance = dist;
+    t.outfun = outf;
+    t.process();
+}
+
+comicify.prototype = {
+    process: function() {
+        var t = this;
+        var canvas = t.canvas;
+        var w = canvas.width, h = canvas.height;
+        t.ctx = canvas.getContext('2d');
+        t.image = t.ctx.getImageData(0, 0, w, h); //array [4*w*h] of colors RGBA
+        t.ctx.clearRect(0, 0, w, h);
+        t.mask = Array(w);
+        var zz = Array();
+        for (var i = 0; i < w * h; i++) {
+            zz[i] = i;
+        }
+        for (var i = 0; i < w; i++) {
+            t.mask[i] = Array(h);
+            for (var j = 0; j < h; j++) {
+                t.mask[i][j] = true;
+                var n = Math.floor(w * h * Math.random());
+                var z = zz[n];
+                zz[n] = zz[i * j];
+                zz[i * j] = z;
+            }
+        }
+
+        var n = 0;
+        var err = "";
+        var step = (w * h) / 100;
+        var progress = 0;
+        var fn = function() {
+            if (n < (w * h) && err == "") {
+                var q = Math.floor(step);
+                while (q > 0 && n < (w * h) && err == "") {
+                    var x = zz[n];
+                    var j = Math.floor(x / w);
+                    var i = x % w;
+
+                    if (t.mask[i][j]) {
+                        var y = x * 4;
+                        var avgct = 0;
+                        t.avg = [t.image.data[y++], t.image.data[y++], t.image.data[y++], t.image.data[y++]];
+                        try {
+                            t.doPoint(i, j); // do all the points next to it too...
+                            t.doPaint();
+                        } catch (e) {
+                            if (!e.message == "Maximum call stack size exceeded") {
+                                err = e.message;
+                                console.error(e.message);
+                            } else {
+                                //console.log("max callstack");
+                                t.doPaint();
+                            } // ignore call stack (we'll try 
+                        }
+                    }
+                    n++;
+                    q--;
+                }
+                progress++;
+                if (err == "") {
+                    //console.log("Processing " + String(progress) + "%");
+                    window.setTimeout(fn, 0);
+                }
+            } else {
+                t.ctx.putImageData(t.image, 0, 0);
+                t.outfun();
+            }
+        };
+        window.setTimeout(fn, 0);
+    },
+    doPaint: function() {
+        var t = this;
+        var w = t.canvas.width;
+        var h = t.canvas.height;
+        var avgct = 1;
+        for (var i = 0; i < w; i++) {
+            for (var j = 0; j < h; j++) {
+                var x = 4 * (i + (j * w));
+                if (null == t.mask[i][j]) {
+                    for (var k = 0; k < 4; k++) {
+                        t.avg[k] = ((t.avg[k] * avgct) + t.image.data[x + k]) / (avgct + 1);
+                    }
+                    avgct++;
+                }
+            }
+        }
+        for (var i = 0; i < w; i++) {
+            for (var j = 0; j < h; j++) {
+                if (null == t.mask[i][j]) {
+                    var n = 4 * (i + (j * w));
+                    for (var k = 0; k < 4; k++) {
+                        t.image.data[n + k] = Math.floor(t.avg[k]);
+                    }
+                    t.mask[i][j] = 0;
+                }
+            }
+        }
+    },
+
+    doPoint: function(i, j) {
+        var t = this;
+        var w = t.canvas.width;
+        var h = t.canvas.height;
+        var x = 4 * (i + (j * w));
+        var p = [t.image.data[x++], t.image.data[x++], t.image.data[x++], t.image.data[x++]]
+        if (t.distance > distance(t.avg, p)) {
+            t.mask[i][j] = null;
+            if (i + 1 < w && t.mask[i + 1][j]) {
+                t.doPoint(i + 1, j)
+            }
+            if (i - 1 > 0 && t.mask[i - 1][j]) {
+                t.doPoint(i - 1, j)
+            }
+            if (j + 1 < h && t.mask[i][j + 1]) {
+                t.doPoint(i, j + 1)
+            }
+            if (j - 1 > 0 && t.mask[i][j - 1]) {
+                t.doPoint(i, j - 1)
+            }
+        }
+        return;
+    },
+    avgPt: function(i, j, ct) {
+        var t = this;
+        var w = t.canvas.width;
+        var h = t.canvas.height;
+        if (i > 0 && j > 0 && i < w && j < h) {
+            var x = 4 * (i + (j * w));
+            var p = [t.image.data[x++], t.image.data[x++], t.image.data[x++], t.image.data[x++]]
+            for (var k = 0; k < 4; k++) {
+                t.avg[k] = ((t.avg[k] * ct) + p[k]) / (ct + 1);
+            }
+        }
+    },
+    avgct: 0,
+    ctx: 0,
+    mask: 0,
+    image: 0,
+    avg: 0,
+    canvas: 0,
+    cnv: 0,
+    distance: 35,
+    container: 0 // container
+} // proto
+
+function distance(a, b) {
+    var o = 0;
+    for (let i = 0; i < 4; ++i) {
+        o += (a[i] - b[i]) * (a[i] - b[i]);
+    }
+    return (Math.sqrt(o));
+}
+    </script>
+</body>
+</html>

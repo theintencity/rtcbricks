@@ -3252,7 +3252,7 @@ Additional methods are in the <a href="#stream-methods">named-stream</a> base cl
 </script>
 
 
-<h3 short="Freeswitch">Using FreeSwitch as media server</h3>
+<h3 id="verto-stream"short="Freeswitch">Using FreeSwitch as media server</h3>
 
 <p>The <code>verto-stream</code> component alows using the <code>video-io</code> instances with the 
 <a target="_blank"href="https://signalwire.com/freeswitch">FreeSwitch media server</a>
@@ -4135,7 +4135,137 @@ disabling the closed caption on the publisher side. However, that is not possibl
 subscriber side, since caption text will already be part of the received video stream, instead
 of out-of-band, via data channel.</p>
 
+<h3 id="speech-bubble">Speech bubble</h3>
 
+<p>Chat or comic book style speech bubbles can easily be implemented and attached to the 
+speech recognition flow. The <code>speech-bubble</code> container component implements a
+multi-party conference interface where each participant appears in a tiny box, and speech 
+bubbles are used to show the spoken text by the participants. If text chat is enabled,
+then it can reuse the speech bubbles too.</p>
+
+<p>Try the following example with a pre-configured conversation flow to get started
+to see that in action.</p>
+
+<button class="tryit"path="45-speech-bubble.html"preview width="1000"height="600"></button>
+
+<p>In the above example, you can move the participant boxes to a different position on
+left or right side. Click-and-hold on the box to enable move.
+When you click on a participant box, it allows you to type a message
+sent from that participant in the layout. Spoken voice is also captured and recognized
+using the <code>speech-text</code> component, and sent as message from a random participant.
+This is for demonstration purpose only. Resizing the display verically shows or hides 
+participant boxes or slots at the bottom if available or applicable.</p>
+
+<p>Furthermore, the message history is stored, and can be retrieved, using the arrow keys.
+The up arrow goes all the way to the beginning of the conversation. The left and right arrows
+go one message at a time backwards or forwards. And the down arrow stops the history display,
+and goes to the end of the conversation so far, for next live message display. The message
+bubble from history display appears in a different color, and also shows the date/time
+of when the message was added to the component. You cannot click on the box to send 
+a live message in the history display.</p>
+
+<p>The container component is used similar to other containers such as <code>flex-box</code>
+as shown below. It is recommended to use <code>div</code> elements as children, and wrap
+other elements such as <code>img</code> or <code>video</code> or <code>video-io</code> inside
+<code>div</code> if needed.</p>
+
+<pre><code class="lang-html">&lt;script type="text/javascript" src="https://rtcbricks.kundansingh.com/v1/speech-bubble.js"&gt;&lt;/script&gt;
+...
+&lt;speech-bubble&gt;
+    &lt;div&gt;..first participant...&lt;/div&gt;
+    &lt;div&gt;..second participant...&lt;/div&gt;
+    &lt;div&gt;..third participant...&lt;/div&gt;
+&lt;/speech-bubble&gt;
+</code></pre>
+
+<p>A couple of customization is allowed by the component, e.g., the <code>shape</code>
+attribute can take value of "rounded" or "circle", to show the participant boxes in
+that shape.</p>
+
+<pre><code class="lang-html">&lt;speech-bubble shape="rounded"&gt;...&lt;/speech-bubble&gt;
+</code></pre>
+
+<p>The <code>textsmall</code> property with default 0 can take a number, for length of the
+text, such that a smaller text is displayed in ellipse shaped bubble instead of 
+rectangular. The <code>textclip</code> property with default 100 can take a number,
+for length of the text, such that a larger text is clipped and a ellipsis is shown.</p>
+
+<pre><code class="lang-html">const space = document.querySelector("speech-bubble");
+space.textsmall = 50;
+space.textclip = 200;
+</code></pre>
+
+<p>Finally, CSS style can directly be used on the container as well
+as the bubbles as follows.</p>
+<pre><code class="lang-css">speech-bubble {
+    background: black;
+}
+speech-bubble::part(bubble) {
+    border: solid 2px black; 
+}
+</code></pre>
+
+<p>The underlying code of the example application shows the usage of certain 
+functions such as <code>says</code> and <code>input</code>. These are illustrated
+below.</p>
+
+<pre><code class="lang-js">const space = document.querySelector("speech-bubble");
+const second = document.querySelector("speech-bubble > :nth-child(2)");
+space.says(second, "How are you?"); // live message
+</code></pre>
+<pre><code class="lang-js">const first = document.querySelector("speech-bubble > :nth-child(1)");
+const ts = new Date("4/13/2026 6:30:05 PM").getTime();
+space.says(first, "Hello there!", ts); // history message with timestamp
+</code></pre>
+<pre><code class="lang-js">space.input(second, "Hello"); // unsent typed message in input box
+</code></pre>
+
+<p>As mentioned before, the <code>speech-text</code> component can be used to
+feed a text message from a participant displayed in the container.</p>
+<pre><code class="lang-html">&lt;speech-text recognize&gt;&lt;/speech-text&gt;
+</code></pre>
+<pre><code class="lang-js">const speech = document.querySelector("speech-text");
+speech.addEventListener("recognize", event => {
+    if (event.interim) {
+        space.input(first, event.interim); // unsent yet
+    } else if (event.transcript) {
+        space.input(first, ""); // remove input box
+        space.says(first, event.transcript); // sent message
+    }
+});
+</code></pre>
+
+<p>Note that the container component is just for display, and does not actually send the 
+text message. You can use the other mechanisms such as data channel or shared data described
+earlier to send and receive text chat in an application.</p>
+            
+
+
+<h3 id="comic-space">Comic book</h3>
+
+<p>Another component <code>comic-space</code> is a container that implements
+comic book style speech bubbles where participants or characters are aligned at the 
+bottom of the page, and some content such as shared screen video can be in the 
+background. It also removes background from participant image using the 
+body-pix segmentation model mentioned earlier, and converts the images to comic
+book style characters by re-adjusting the colors. In the future, this may be
+changed using AI to use, say, Gibli style pictures.</p>
+
+<p>Try the following example with pre-configured conversation flow to get started
+to see that in action.</p>
+
+<button class="tryit"path="45-comic-space.html"preview width="1000"height="500"></button>
+
+<p>Many of the other functions in this component is similar to that in the <code>speech-bubble</code>
+component. The properties of <code>textsmall</code> and <code>textclip</code>, and the
+style for the bubble part are also applicable to this component.
+Some differences are as follows. The participants are represented using 
+background removed image or video instead of in a circle. The speech bubbles grow
+upwards instead of downwards. The participant images are not draggable.
+And if there are too many participants that can fit horizontally, then the list of
+participants becomes scrollable. The background removal and comicification is done
+in the app itself instead of the component, and the component just displays the
+supplied images representing the participants as an overlay.</p>
 
 
 <h2 short="3D display">How to display in 3D?</h2>
@@ -4400,7 +4530,8 @@ to listen to the sounds from different container items differently.</p>
 and <code>audio-space</code> &mdash; that attach to <code>flex-box</code> and <code>virtual-space</code>,
 respectively, to cater to 2D and 3D positions of the container items, respectively. 
 However, these new components are generic and can potentially be attached to other
-similarly behaving containers of video elements.</p>
+similarly behaving containers of video elements. In particular, <code>spatial-audio</code>
+can potentially be used with the <code>comic-space</code> component too.</p>
 
 <h3 id="spatial-audio">spatial-audio</h3>
 
@@ -4580,7 +4711,7 @@ components are related, use the shared storage, and interact with other componen
 
 <p>
     
-    <img class="image"src="51-web-components.png"style="width: 1100px;">
+    <img class="image"src="51-web-components.png"style="width: 1204px;"usemap="#51-web-components-map">
 </p>
 
 <p>Besides the <code>list</code> and <code>object</code> data abstractions
@@ -5520,7 +5651,7 @@ The right side shows the component in action. There are some pre-configured item
 the user-roster and text-chat for demonstration purpose. The left side also allows sending
 a sample text message from another user.</p>
 
-<h3 name="toolbar-buttons"short="Toolbar/Menu">toolbar-buttons and overlay-menu</h3>
+<h3 id="media-chat-toolbar-menu"name="toolbar-buttons"short="Toolbar/Menu">toolbar-buttons and overlay-menu</h3>
 
 <p>The <code>toolbar-buttons</code> and <code>overlay-menu</code> components are used
 in the previous examples to customize the toolbar buttons and the overlay menu.
@@ -5675,7 +5806,7 @@ videos display, e.g., by slowly zooming in, setting a border color,
 making the speaker video as float in the <code>flex-box</code> component,
 or changing non-speakers to monochrome color.</p>
 
-<h3 name="volume-level">Sound level</h3>
+<h3 id="volume-level"name="volume-level">Sound level</h3>
 
 <p>The <code>volume-level</code> component can be used to display the
 sound activity level of the microphone or speaker sound, as well as to 
@@ -6485,7 +6616,7 @@ example to start these apps from the text chat
 input area too. For example, typing "/start whiteboard" or "/start chess"
 are interpreted to launch those apps.</p>
 
-<h3 name="media-share"short="media-share">media-share, slide-show, pdf-viewer</h3>
+<h3 id="media-share"name="media-share"short="media-share">media-share, slide-show, pdf-viewer</h3>
 
 <script type="text/javascript">
     tabulateComponent("media-share");
@@ -6740,7 +6871,81 @@ as well as to try new things by extending the existing applications.</p>
 related to each other, and how they interact with each other.</p>
 
 <p>
-    <img class="image"src="51-web-components.png"style="width: 1100px;">
+    <img class="image"src="51-web-components.png"style="width: 1204px;"usemap="#51-web-components-map">
+    <map name="51-web-components-map">
+        <area shape="rect"coords="712, 113, 798, 134"href="#phone-state">
+        <area shape="rect"coords="674, 137, 780, 158"href="#conference-state">
+        <area shape="rect"coords="716, 194, 802, 215"href="#videos-control">
+        <area shape="rect"coords="655, 254, 742, 274"href="#click-to-call">
+        <area shape="rect"coords="1091, 134, 1199, 156"href="#ludo-board"alt="ludo-board-data">
+        <area shape="rect"coords="1087, 231, 1173, 252"href="#ludo-board">
+        <area shape="rect"coords="1047, 111, 1164, 134"href="#chess-board"alt="chess-board-data">
+        <area shape="rect"coords="1047, 208, 1135, 230"href="#chess-board">
+        <area shape="rect"coords="965, 161, 1083, 181"href="#shared-editor"alt="shared-editor-data">
+        <area shape="rect"coords="980, 257, 1068, 276"href="#shared-editor">
+        <area shape="rect"coords="901, 138, 1027, 156"href="#locked-notepad"alt="locked-notepad-data">
+        <area shape="rect"coords="916, 233, 1014, 253"href="#locked-notepad">
+        <area shape="rect"coords="843, 111, 961, 132"href="#white-board"alt="white-board-data">
+        <area shape="rect"coords="859, 208, 945, 228"href="#white-board">
+        <area shape="rect"coords="506, 182, 581, 203"href="#media-share"alt="pdf-viewer">
+        <area shape="rect"coords="507, 205, 581, 225"href="#media-share"alt="slide-show">
+        <area shape="rect"coords="506, 237, 594, 257"href="#media-share">
+        <area shape="rect"coords="431, 421, 532, 440"href="#device-selector">
+        <area shape="rect"coords="492, 384, 573, 405"href="#volume-level">
+        <area shape="rect"coords="517, 354, 619, 377"href="#media-chat-toolbar-menu"alt="toolbar-buttons">
+        <area shape="rect"coords="529, 323, 631, 344"href="#media-chat-toolbar-menu"alt="overlay-menu">
+        <area shape="rect"coords="505, 146, 622, 167"href="#media-chat"alt="media-chat-data">
+        <area shape="rect"coords="519, 279, 607, 300"href="#media-chat">
+        <area shape="rect"coords="569, 111, 665, 132"href="#storage-stream">
+        <area shape="rect"coords="414, 111, 521, 132"href="#user-roster"alt="user-roster-data">
+        <area shape="rect"coords="411, 208, 497, 227"href="#user-roster">
+        <area shape="rect"coords="320, 360, 427, 382"href="#text-feed-slack"alt="text-input-slack">
+        <area shape="rect"coords="368, 335, 504, 355"href="#text-feed-slack"alt="text-overlay-file-slack">
+        <area shape="rect"coords="346, 310, 482, 331"href="#text-feed-slack"alt="text-overlay-item-slack">
+        <area shape="rect"coords="331, 287, 458, 308"href="#text-feed-slack"alt="text-date-item-slack">
+        <area shape="rect"coords="320, 265, 427, 286"href="#text-feed-slack"alt="text-item-slack">
+        <area shape="rect"coords="324, 242, 431, 260"href="#text-feed-slack">
+        <area shape="rect"coords="222, 310, 297, 331"href="#text-chat"alt="textarea">
+        <area shape="rect"coords="344, 171, 463, 193"href="#user-roster"alt="communicator-icons">
+        <area shape="rect"coords="43, 170, 119, 191"href="#click-to-call"alt="text-feed-bubbles">
+        <area shape="rect"coords="54, 147, 130, 168"href="#text-feed"alt="alert-sounds">
+        <area shape="rect"coords="56, 121, 147, 142"href="#text-feed"alt="yahoo-smileys">
+        <area shape="rect"coords="194, 238, 314, 258"href="#text-item-bubbles">
+        <area shape="rect"coords="194, 208, 314, 228"href="#text-feed-bubbles">
+        <area shape="rect"coords="89, 211, 166, 231"href="#text-feed">
+        <area shape="rect"coords="165, 111, 263, 132"href="#text-feed"alt="text-feed-data">
+        <area shape="rect"coords="107, 328, 184, 352"href="#text-chat">
+        <area shape="rect"coords="794, 272, 875, 291"href="#spatial-audio">
+        <area shape="rect"coords="1053, 292, 1134, 313"href="#audio-space">
+        <area shape="rect"coords="928, 346, 1007, 366"href="#comic-space">
+        <area shape="rect"coords="927, 321, 1019, 342"href="#threejs-space">
+        <area shape="rect"coords="929, 293, 1022, 313"href="#virtual-space">
+        <area shape="rect"coords="718, 305, 783, 326"href="#flex-box">
+        <area shape="rect"coords="120, 495, 221, 516"href="#native-electron">
+        <area shape="rect"coords="170, 51, 283, 71"href="#partition-storage">
+        <area shape="rect"coords="172, 29, 290, 51"href="#redundant-storage">
+        <area shape="rect"coords="666, 2, 783, 24"href="#peerstorage"alt="peer-storage">
+        <area shape="rect"coords="526, 3, 643, 24"href="#firebase-storage">
+        <area shape="rect"coords="390, 1, 507, 23"href="#restserver-storage">
+        <area shape="rect"coords="387, 50, 485, 74"href="#storage"alt="shared-storage">
+        <area shape="rect"coords="860, 441, 947, 461"href="#split-stream">
+        <area shape="rect"coords="255, 494, 354, 515"href="#external-stream">
+        <area shape="rect"coords="877, 487, 1003, 508"href="#videosdklive-stream">
+        <area shape="rect"coords="849, 512, 935, 532"href="#livekit-stream">
+        <area shape="rect"coords="815, 537, 902, 557"href="#agora-stream">
+        <area shape="rect"coords="778, 559, 867, 579"href="#jitsi-stream">
+        <area shape="rect"coords="626, 542, 714, 562"href="#verto-stream">
+        <area shape="rect"coords="588, 516, 675, 536"href="#janus-stream">
+        <area shape="rect"coords="471, 544, 558, 565"href="#dbgun-stream">
+        <area shape="rect"coords="425, 521, 521, 538"href="#firebase-stream">
+        <area shape="rect"coords="376, 495, 464, 516"href="#rtclite-stream">
+        <area shape="rect"coords="635, 427, 722, 447"href="#named-stream">
+        <area shape="rect"coords="878, 388, 958, 407"href="#speech-text">
+        <area shape="rect"coords="775, 399, 852, 418"href="#video-mix">
+        <area shape="rect"coords="773, 373, 861, 391"href="#delayed-video">
+        <area shape="rect"coords="768, 347, 855, 366"href="#audio-context">
+        <area shape="rect"coords="650, 352, 737, 375"href="#topic-api">
+    </map>
 </p>
 
 
@@ -6907,7 +7112,16 @@ related to each other, and how they interact with each other.</p>
                 The 3D space container for layout of various elements including <code>video-io</code>
                 components, in a 3D space, using standard CSS transforms.
             </td></tr>
-            
+            <tr><td><a href="#speech-bubble">speech-bubble</a></td><td>Include speech-bubble.js</td></tr>
+            <tr><td></td><td>
+                The speech bubble based conversation tracking container component focussed towards
+                text chat and speech recognition based conversations.
+            </td></tr>
+            <tr><td><a href="#comic-space">comic-space</a></td><td>Include comic-space.js</td></tr>
+            <tr><td></td><td>
+                Another speech bubble based container, which removes background and 
+                comicifies the participant images.
+            </td></tr>
             <tr><td><a href="#spatial-audio">spatial-audio</a></td><td>Include flex-box.js</td></tr>
             <tr><td></td><td>
                 Spatial audio using 2D position of sound sources of attached flex-box items,
