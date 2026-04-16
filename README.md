@@ -17,10 +17,15 @@ driven web component to support a large number of communication
 scenarios. A presentation and demonstration video, and the
 complete comprehensive tutorial are also available below.
 
-| Video Demonstration | Research paper | Complete tutorial |
+| Video Demonstration | Research paper |
 |:-----:|:-----:|:-----:|
-|32 min| 11 pages | 383 pages, 50MB |
-| [![Demonstration](https://img.youtube.com/vi/AOIM0-C75y8/0.jpg)](https://youtu.be/AOIM0-C75y8) | [![Paper](page1.png)](https://arxiv.org/pdf/2602.22011) | [![Tutorial](toc.png)](https://doi.org/10.13140/RG.2.2.18147.92969) |
+|32 min| 11 pages |
+| [![Demonstration](https://img.youtube.com/vi/AOIM0-C75y8/0.jpg)](https://youtu.be/AOIM0-C75y8) | [![Paper](page1.png)](https://arxiv.org/pdf/2602.22011) |
+
+| Complete tutorial |
+|:-----:|
+| 383 pages, 50MB |
+| [![Tutorial](toc.png)](https://doi.org/10.13140/RG.2.2.18147.92969) |
 
 
 As I worked through many sample and demo web apps using this
