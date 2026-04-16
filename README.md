@@ -53,7 +53,9 @@ rtcbricks directory, to launch a simple web server, to see the tutorial.
 I have also hosted the tutorial on my website, at
 [rtcbricks.kundansingh.com/v1](https://rtcbricks.kundansingh.com/v1/)
 but this is access controlled. Please reach out to the project owner to get access,
-if you can't run the tutorial on your local server.
+if you can't run the tutorial on your local server. Alternatively, you can open
+this project on [githack](https://raw.githack.com/theintencity/rtcbricks/main/v1/index.html)
+to check out the live tutorial.
 
 <!-- Early ideas are in:
 1. A generic video-io component for WebRTC [[HTML](https://blog.kundansingh.com/2019/06/a-generic-video-io-component-for-webrtc.html)]
