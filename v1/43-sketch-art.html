@@ -1,0 +1,229 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        input {
+            outline: none;
+        }
+        input[type="range"] {
+            vertical-align: bottom;
+        }
+    </style>
+</head>
+<body>
+    <video-io id="video1" controls microphone="false"></video-io>
+    <video-io id="video2" controls autoenable="true" style="--preview-transform: scaleX(-1);"></video-io>
+    <video-mix id="mixer" style="display: none;"></video-mix>
+    <br/>
+    Live? <input type="checkbox" class="live" checked>
+    Remove BG? <input type="checkbox" class="removebg">
+    Thickness <input type="range" class="thickness" min="1" max="20" value="5" step="1">
+    Sharpness <input type="checkbox" class="dosharpen" checked>
+              <input type="range" class="sharpness" min="0.0" max="1.0" value="0.9" step="0.1">
+
+    <script type="text/javascript">
+        // see https://stackoverflow.com/questions/72664200/how-to-convert-image-to-sketch-like-image-using-javascript-canvas-api
+
+        window.onload = async () => {
+            let video1 = document.querySelector("#video1"), 
+                video2 = document.querySelector("#video2"), 
+                mixer = document.querySelector("#mixer");
+
+            mixer.input = [video1];
+            video2.input = mixer;
+            video1.publish = video2.publish = true;
+
+            const selfieSegmentation = new SelfieSegmentation({locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
+            }});
+            selfieSegmentation.setOptions({
+                modelSelection: 1,
+            });
+
+            const canvas0 = document.createElement("canvas");
+            const canvas3 = document.createElement("canvas");
+            const canvas4 = document.createElement("canvas");
+            const canvas1 = document.createElement("canvas");
+            const canvas2 = document.createElement("canvas");
+
+
+            let queue = [];
+
+            let live = document.querySelector("input.live").checked;
+            document.querySelector("input.live").onclick = event => {
+                live = event.currentTarget.checked;
+            };
+
+            let removebg = document.querySelector("input.removebg").checked;
+            document.querySelector("input.removebg").onclick = event => {
+                removebg = event.currentTarget.checked;
+                queue.splice(0, queue.length);
+            };
+
+            let thickness = document.querySelector("input.thickness").value;
+            document.querySelector("input.thickness").onchange = event => {
+                thickness = event.currentTarget.value;
+            };
+
+            let sharpness = document.querySelector("input.sharpness").value;
+            document.querySelector("input.sharpness").onchange = event => {
+                sharpness = event.currentTarget.value;
+            };
+
+            let dosharpen = document.querySelector("input.dosharpen").checked;
+            document.querySelector("input.dosharpen").onclick = event => {
+                dosharpen = event.currentTarget.checked;
+            };
+
+            let index = -1;
+
+            mixer.addEventListener("frame", async (event) => {
+                index += 1;
+                if (!live && (index % 75) !== 0) {
+                    return;
+                }
+
+                let video = event.videos[0];
+                let canvas = event.canvas;
+                //console.log("frame received");
+                if (video && video.videoWidth && video.videoHeight) {
+                    if (canvas.width != video.videoWidth || canvas.height != video.videoHeight) {
+                        canvas0.width = canvas1.width = canvas2.width = canvas3.width = canvas4.width = canvas.width = video.videoWidth; 
+                        canvas0.height = canvas1.height = canvas2.height = canvas3.height = canvas4.height = canvas.height = video.videoHeight;
+                    }
+
+                    if (removebg) {
+                        if (queue.length == 0) {
+                            const promise = new Promise((resolve, reject) => { queue.push(resolve); });
+                            await selfieSegmentation.send({image: video});
+                            const results = await promise;
+                            detect(results);
+                            await process(canvas4);
+                        }
+                    } else {
+                        await process(video);
+                    }
+                }
+            });
+            selfieSegmentation.onResults(results => {
+                if (queue.length > 0) {
+                    const resolve = queue.shift();
+                    resolve(results);
+                }
+            });
+
+            async function detect(results) {
+                const video = results.image;
+                const canvas = mixer._canvas;
+
+                if (!video1.videoWidth || !video1.videoHeight)
+                    return;
+
+                if (canvas.width && canvas.height) {
+                    // mask to canvas0
+                    const ctx0 = canvas0.getContext("2d");
+                    ctx0.save();
+                    ctx0.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx0.drawImage(results.segmentationMask, 0, 0, canvas.width, canvas.height);
+                    ctx0.globalCompositeOperation = "source-out";
+                    ctx0.fillStyle = "#FFFFFF";
+                    ctx0.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx0.restore();
+
+                    const ctx3 = canvas3.getContext("2d");
+                    ctx3.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx3.globalCompositeOperation = "source-over";
+                    ctx3.drawImage(canvas0, 0, 0);
+                    ctx3.globalCompositeOperation = "source-out";
+                    ctx3.drawImage(video, 0, 0);
+
+                    const ctx4 = canvas4.getContext("2d");
+                    ctx4.fillStyle = "white";
+                    ctx4.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx4.drawImage(canvas3, 0, 0);
+                }
+            }
+
+            async function process(video) {
+                const canvas = mixer._canvas;
+
+                if (canvas.width && canvas.height) {
+                    const bmp = await createImageBitmap(video);
+
+                    const ctx1 = canvas1.getContext("2d");
+                    ctx1.filter = "grayscale(1)";
+                    ctx1.drawImage(bmp, 0, 0);
+
+                    const ctx2 = canvas2.getContext("2d");
+                    ctx2.filter = `grayscale(1) invert(1) blur(${thickness}px)`;
+                    ctx2.drawImage(bmp, 0, 0);
+
+                    // canvas.__skipFilterPatch = true; // davidenke/context-filter-polyfill fix for safari ios devices
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(canvas1, 0, 0, canvas.width, canvas.height);
+                    ctx.globalCompositeOperation = 'color-dodge';
+                    ctx.drawImage(canvas2, 0, 0, canvas.width, canvas.height);
+
+                    if (dosharpen)
+                        sharpen(ctx, canvas.width, canvas.height, parseInt(sharpness));
+                }
+            };
+
+            
+            // see https://gist.github.com/mikecao/65d9fc92dc7197cb8a7c
+            function sharpen(ctx, w, h, mix) {
+                var x, sx, sy, r, g, b, a, dstOff, srcOff, wt, cx, cy, scy, scx,
+                    weights = [0, -1, 0, -1, 5, -1, 0, -1, 0],
+                    katet = Math.round(Math.sqrt(weights.length)),
+                    half = (katet * 0.5) | 0,
+                    dstData = ctx.createImageData(w, h),
+                    dstBuff = dstData.data,
+                    srcBuff = ctx.getImageData(0, 0, w, h).data,
+                    y = h;
+
+                while (y--) {
+                    x = w;
+                    while (x--) {
+                        sy = y;
+                        sx = x;
+                        dstOff = (y * w + x) * 4;
+                        r = 0;
+                        g = 0;
+                        b = 0;
+                        a = 0;
+
+                        for (cy = 0; cy < katet; cy++) {
+                            for (cx = 0; cx < katet; cx++) {
+                                scy = sy + cy - half;
+                                scx = sx + cx - half;
+
+                                if (scy >= 0 && scy < h && scx >= 0 && scx < w) {
+                                    srcOff = (scy * w + scx) * 4;
+                                    wt = weights[cy * katet + cx];
+
+                                    r += srcBuff[srcOff] * wt;
+                                    g += srcBuff[srcOff + 1] * wt;
+                                    b += srcBuff[srcOff + 2] * wt;
+                                    a += srcBuff[srcOff + 3] * wt;
+                                }
+                            }
+                        }
+
+                        dstBuff[dstOff] = r * mix + srcBuff[dstOff] * (1 - mix);
+                        dstBuff[dstOff + 1] = g * mix + srcBuff[dstOff + 1] * (1 - mix);
+                        dstBuff[dstOff + 2] = b * mix + srcBuff[dstOff + 2] * (1 - mix);
+                        dstBuff[dstOff + 3] = srcBuff[dstOff + 3];
+                    }
+                }
+
+                ctx.putImageData(dstData, 0, 0);
+            }
+        };
+    </script>
+</body>
+</html>

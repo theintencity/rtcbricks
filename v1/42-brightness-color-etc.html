@@ -1,0 +1,90 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        video-mix {
+            width: 0px; height: 0px;
+        }
+    </style>
+</head>
+<body>
+    <named-stream id="stream"></named-stream>
+    <video-io id="video1" microphone="false" controls></video-io>
+    <video-io id="video2" autoenable="true" controls style="--preview-transform: scaleX(-1);"></video-io>
+    <video-mix id="mixer">
+        <script for="video1" type="text/plain" filter="">
+            let ctx = canvas.getContext("2d");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.filter = script.getAttribute("filter") || "none";
+            ctx.drawImage(video, 0, 0);
+        </script>
+    </video-mix>
+    <div style="display: inline-block">
+        <div>
+            <label>Brightness:</label>
+            <input id="brightness" type="range" min="0" max="200" value="100" step="5"/>
+        </div>
+        <div>
+            <label>Contrast:</label>
+            <input id="contrast" type="range" min="0" max="200" value="100" step="5"/>
+        </div>
+        <div>
+            <label>Grayscale:</label>
+            <input id="grayscale" type="range" min="0" max="100" value="0" step="5"/>
+        </div>
+        <div>
+            <label>Hue Rotate:</label>
+            <input id="hue-rotate" type="range" min="0" max="360" value="0" step="1" suffix="deg"/>
+        </div>
+        <div>
+            <label>Invert:</label>
+            <input id="invert" type="range" min="0" max="100" value="0" step="5"/>
+        </div>
+        <div>
+            <label>Opacity:</label>
+            <input id="opacity" type="range" min="0" max="100" value="100" step="5"/>
+        </div>
+        <div>
+            <label>Saturate:</label>
+            <input id="saturate" type="range" min="0" max="100" value="100" step="5"/>
+        </div>
+        <div>
+            <label>Sepia:</label>
+            <input id="sepia" type="range" min="0" max="100" value="0" step="5"/>
+        </div>
+        <div>
+            <label>Blur:</label>
+            <input id="blur" type="range" min="0" max="40" value="0" step="1" suffix="px"/>
+        </div>
+            
+    </div>
+    <script type="text/javascript">
+        let video1 = document.querySelector("#video1"),
+            video2 = document.querySelector("#video2"),
+            mixer = document.querySelector("#mixer");
+
+        video2.input = mixer;
+        mixer.input = [video1];
+        video1.publish = video2.publish = true;
+
+        let filters = {};
+        document.querySelector("#brightness").onchange = 
+        document.querySelector("#contrast").onchange = 
+        document.querySelector("#grayscale").onchange = 
+        document.querySelector("#hue-rotate").onchange = 
+        document.querySelector("#invert").onchange = 
+        document.querySelector("#opacity").onchange = 
+        document.querySelector("#saturate").onchange = 
+        document.querySelector("#sepia").onchange = 
+        document.querySelector("#blur").onchange = event => {
+            filters[event.currentTarget.id] = event.currentTarget.value + (event.currentTarget.getAttribute("suffix") || "%");
+            let filter = Object.keys(filters).map(key => key + '(' + filters[key] + ')').join(' ');
+            mixer.querySelector("script").setAttribute("filter", filter);
+        };
+    </script>
+</body>
+</html>

@@ -65,7 +65,7 @@
 <h4 class="no-print">By <a href="https://kundansingh.com">Kundan Singh, PhD</a></h4>
 
 <p>This project aims to unleash WebRTC creativity using web components.
-It has a collection of more than <a href="#summary">fifty web components</a> for building a wide range of
+It has a collection of more than <a href="#summary">seventy web components</a> for building a wide range of
 real-time communication and collaboration web applications.</p>
 
 <p>I started this project with one generic web component, &lt;video-io&gt;, 
@@ -92,7 +92,7 @@ this project remains the same, as follow:</p>
 <ol>
 <li>Separate any app logic from any user data.</li>
 <li>Keep the app logic in the endpoint, if possible.</li>
-<li>Use vanilla JavaScript, and say no to any framework.</li>
+<li>Use vanilla JavaScript, and avoid any client side framework.</li>
 <li>Create flexible and extensible interfaces in HTML5 web components.</li>
 </ol>
 
@@ -3618,7 +3618,7 @@ that serve other nodes, without any self benefit in that particular session.</p>
 
 
 
-<h2 id="topic-e2ee"category="Advanced - Media Processing"cat="Media"position="-55,50"spread="12"radius="200"short="encryption">How to do end-to-end encryption using insertable streams?</h2>
+<h2 id="topic-e2ee"category="Advanced - Media Processing"cat="Media"position="-55,45"spread="12"radius="200"short="encryption">How to do end-to-end encryption using insertable streams?</h2>
 
 <p>Use the <code>secret</code> attribute or property to enable end-to-end encryption using insertable 
 streams, in publish or subscribe <code>video-io</code> instance. Internally, the implementation uses a worker 
@@ -3651,7 +3651,7 @@ the encryption used here will prevent the middlebox from accessing the unencrypt
 
 
 
-<h2 id="topic-clone"short="modify video"radius="120">How to clone and modify the video stream</h2>
+<h2 id="topic-clone"short="modify video"radius="90">How to clone and modify the video stream</h2>
 
 <p>Previously, we have shown examples of capturing video from webcam, screen or app. Here, we will show
 how to modify a video stream in real-time, e.g., to put caption or mix or perform some image processing 
@@ -3687,7 +3687,7 @@ so that pausing the video also disables the published tracks. Note that the came
 microphone controls are not shown when the input source is used, e.g., in <code>video2</code>
 above.</p>
 
-<h3 id="video-mix">video-mix</h3>
+<h3 id="video-mix"angle="165">video-mix</h3>
 
 <p>Second, there is a new <code>video-mix</code> custom element or component. It can modify and mix the audio/video 
 stream from one or more sources. The following example shows how to add caption on a video. Internally, the
@@ -3800,10 +3800,66 @@ can do advanced layout such as with drop shadow and clip-in-circle. You can try 
 by clicking on the "change" button in the previous example.</p>
 
 
+<p>The following example shows how to change brightness, contrast, color, and other image properties in 
+live video, which can then be published in a call. It also uses the <code>--preview-transfrom</code> CSS
+style to mirror the second video similar to the first camera published video.</p>
+
+<pre><code class="lang-html">&lt;video-mix id="mixer"&gt;
+    &lt;script for="..." type="text/plain"&gt;
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.filter = "brightness(130%) contrast(80%)";
+        ctx.drawImage(video, 0, 0);
+    &lt;/script&gt;
+&lt;/video-mix&gt;
+</code></pre>
+
+<button class="tryit"path="42-brightness-color-etc.html"preview width="900"height="250"></button>
+
+<p>Here is another example that shows a multi-party conference layout. The video elements
+are laid out in 3x2 tile. 
+You may alternatively add the <code>script</code> element dynamically in JavaScript. Please inspect
+the example code to learn how to do that.</p>
+
+<pre><code class="lang-html">&lt;video-mix id="mixer"&gt;
+    &lt;script for="video1" type="text/plain"&gt;
+        canvas.width = 640;
+        canvas.height = 480;
+        canvas.getContext("2d").drawImage(video, 107, 0, 426, 480, 0, 213, 240);
+    &lt;/script&gt;
+    &lt;script for="video2" type="text/plain"&gt;
+        canvas.getContext("2d").drawImage(video, 107, 0, 426, 480, 214, 0, 213, 240);
+    &lt;/script&gt;
+    &lt;script for="video3" type="text/plain"&gt;
+        canvas.getContext("2d").drawImage(video, 107, 0, 426, 480, 428, 0, 213, 240);
+    &lt;/script&gt;
+    &lt;script for="video4" type="text/plain"&gt;
+        canvas.getContext("2d").drawImage(video, 107, 0, 426, 480, 0, 240, 213, 240);
+    &lt;/script&gt;
+    &lt;script for="video5" type="text/plain"&gt;
+        canvas.getContext("2d").drawImage(video, 107, 0, 426, 480, 214, 240, 213, 240);
+    &lt;/script&gt;
+    &lt;script for="video6" type="text/plain"&gt;
+        canvas.getContext("2d").drawImage(video, 107, 0, 426, 480, 428, 240, 213, 240);
+    &lt;/script&gt;
+&lt;/video-mix&gt;
+</code></pre>
+
+<button class="tryit"path="42-multiparty-layout.html"preview width="780"height="250"></button>
+
+<p>Although the previous example demonstrates 
+the same video copied to multiple slots, they can be different video elements, e.g.,
+subscribed to different participant's published named streams in a conference call.</p>
+
+<p>Note, however, that you do not generally need to use the <code>video-mix</code> component in a conference
+or video call application. Separate <code>video-io</code> elements subscribed to different participants'
+published named streams can be displayed separately in the app, instead of having to create a mixed
+video stream. However, for certain use cases, such as recording or republished mixed or modified stream, 
+the application could use the <code>video-mix</code> component.</p>
 
 
 
-<h2 short="image processing"radius="200">How to do image processing on video?</h2>
+<h2 short="image processing"radius="180">How to do image processing on video?</h2>
 
 <p>Previously, in <a href="#topic-clone">How to clone and modify the video stream?</a>, it was shown
 how to get access to and modify the raw image data, such as to put caption or multi-party layout.
@@ -3834,13 +3890,258 @@ up processing, without blocking the user interface thread. Moreover, invoking th
 frame is not required either.</p>
 
 
+<h3 short="Face track">Face, eye and mouth tracking</h3>
+
+<p>The following example uses <a href="https://trackingjs.com/"target="_blank">trackingjs</a>
+library for detecting face, and draws a
+rectangle on top of the video identifying the detected face if any.</p>
+
+<button class="tryit"path="43-trackingjs.html"preview width="660"height="250"></button>
+
+<p>In practice, this can be used for zooming in to the detected face, or to blur out everything not
+a face, or to augment with external drawings such as hat or sunglasses on top of the video.</p>
+
+<h3 short="Merge cameras">Merge multiple webcams</h3>
+
+<p>The following example shows how to mix images from multiple cameras to generate a single combined
+video stream that can be published. This example will work only if you have more than one cameras,
+and it will use the first two cameras found in the <code>devices</code> property. The example code
+uses intermediate canvas and image processing to combine the two images with alpha-gradient in the
+middle.</p>
+
+<button class="tryit"path="43-two-camera-publish.html"preview width="800"height="250"></button>
+
+<p>In practice, using multiple cameras can lead to many innovative use cases in video conferencing. 
+The image processing shown in the above example is just one use case.</p>
+
+<h3 short="Video speed">Change video speed</h3>
+
+<p>The following example shows how to alter the video speed in the modified video stream. The basic
+idea is to change the perceived frame rate to slow motion or fast forward, by saving images in the 
+frame event or playing saved ones faster. The example alters between slow motion and fast forward mode.</p>
+
+<button class="tryit"path="43-video-speed-change.html"width="700"height="300"></button>
+
+<p>Note that the audio is not altered. In practice this feature can be used for instant replay,
+e.g., to play last 10 seconds in slow motion, and to speed up after that to catchup. This is 
+similar to instant replay in TV.</p>
+
+<h3>Capture slowly</h3>
+
+<p>The following example shows capturing an image from the webcam slowly from left to right,
+so that the view can change during the capture, and create dramatic effects. It is modified
+from my earlier toy project <a href="https://github.com/theintencity/samples"target="_blank">capture-slowly</a>.
+The basic idea is to use a backup canvas to capture one vertical line of pixels at a time.
+Additionally, the preview of the capture shows the part that are already captured as static 
+image portion on the left of the yellow line, and the part that is still pending as video
+portion on the right of the yellow line, as the yellow line moves from left to right during
+capture.</p>
+
+<button class="tryit"path="43-capture-slowly.html"preview width="650"height="270"></button>
+
+<p>Click on the start button to start the slow capture. Once completed, the download button is active,
+and the right side preview shows the captured image. Click on the clear button to stop the capture
+or the pause button to temporarily pause the moving yellow line of active capture.
+The following examples illustrate the dramatic effects using slow capture.</p> 
+
+<p>
+    <img class="image"src="43-capture-slowly-1.png"style="width: 160px;">
+    <img class="image"src="43-capture-slowly-3.png"style="width: 160px;">
+    <img class="image"src="43-capture-slowly-5.png"style="width: 160px;">
+    <img class="image"src="43-capture-slowly-6.png"style="width: 160px;">
+    <img class="image"src="43-capture-slowly-2.png"style="width: 160px;">
+    <img class="image"src="43-capture-slowly-4.png"style="width: 160px;">
+</p>
+<p>The last two
+images are captured with a single stuffie, using the pause button, to generate two pictures during
+slow capture. The first four effects are done by slowly moving the stuffie along or away from
+the moving yellow line, to stretch or compress the picture horizontally.</p>
+
+
+<h3>Sketch art</h3>
+
+<p>Here is an example that demonstrates how to convert live webcam feed to sketch art using the technique
+that uses grayscale, invert and blur filters followed by color-dodge to mix. Additionally,
+image sharpen is performed at the end.</p>
+
+<button class="tryit"path="43-sketch-art.html"preview width="650"height="270"></button>
+
+<p>A few controls allow removing background before conversion, changing the blur size,
+or sharpness scale.</p>
+
+<h3 short="p5 drawing">Use p5.js for drawing</h3>
+
+<p>The <a href="https://p5js.org/"target="_blank">p5.js</a>
+project provides a JavaScript library for creative coding and drawing for artists and designers.
+The following example shows how to use this third-party library to add special effects like snowflakes,
+rain, fire, particles or pixels. The project includes hundreds of effects and drawing examples, and a handful of them
+are included in this example below.</p>
+
+<button class="tryit"path="43-p5js-effects.html"preview width="800"height="253"></button>
+
+<p>The included effects are further illustrated below: snowflakes, pixels, particles,
+rain, bouncy, explosion and fire.</p>
+<p>
+    <img class="image"src="43-p5js-snowflakes.png"style="width: 160px;">
+    <img class="image"src="43-p5js-pixels.png"style="width: 160px;">
+    <img class="image"src="43-p5js-particles.png"style="width: 160px;">
+    <img class="image"src="43-p5js-rain.png"style="width: 160px;">
+    <img class="image"src="43-p5js-bouncy.png"style="width: 160px;">
+    <img class="image"src="43-p5js-explosion.png"style="width: 160px;">
+    <img class="image"src="43-p5js-fire.png"style="width: 160px;">
+</p>
+
+<p>This example does not use <code>video-mix</code> because p5.js already provides
+similar functions using its canvas for drawing. The example uses two <code>video-io</code>
+instances - the first one's <code>video</code> element is wrapped in <code>p5.MediaElement</code>,
+so that it can be used there, and the second one's <code>input</code> is assigned to 
+p5's <code>canvas</code> element. After that all the drawings are done in p5, but 
+without the global context.</p>
+
+
+<h3>Perspective projection</h3>
+
+<p>Here is an example that uses the popular
+<a href="https://github.com/TechStark/opencv-js"target="_blank">opencv.js</a>
+project to generate a new video stream
+with the webcam video projected onto a rectangle detected in a background image.</p>
+
+<button class="tryit"path="43-detect-rect.html"preview width="1000"height="250"></button>
+
+<p>Clicking the first background image allows you to change the background in the 
+generated and project third video. The application logic is explained in the following diagram.</p>
+
+<p>
+    <img class="image"src="43-detect-rect-logic.png"style="width: 600px;">
+</p>
+
+<p>Rectangle detection in the current implementation is not very accurate. This application
+is also meant only for demonstration purpose, and is not robust. The following example 
+takes two input images and generates two output images using the above application logic.</p>
+
+<button class="tryit"path="43-detect-rect/demo.html"width="720"height="550"></button>
+
+<p>Some use cases for detecting rectangles and perspective projections are as follows:</p>
+<ul>
+    <li>Online virtual event environment where live slide share or webcam video can be
+    projected to wall frames, TV or other objects in the simulated set up.</li>
+    <li>Pointing a webcam to a real white board in a conference room, and be able to
+    extract only the white board portion for streaming, recording or content analysis.</li>
+    <li>Automatically detecting white board, paper, or billboard in a webcam
+    video in the background, and replacing it with other content, to hide sensitive
+    context and/or to replace with advertisement or promotional content.</li>
+</ul>
+
+<p>The second and third use cases are not yet feasible in real-time, due to the large processing
+requirement of shape detection in the current code. They can however be done in a
+semi-real-time manner, where detection happens only periodically, say, once in 5 or
+10 seconds. Furthermore, user assisted rectangle detection can be used instead of
+automatic, by allowing the user to click-select the four corners of the rectangle in
+the video.</p>
+
+<h3 short="glfx effects">Use glfx.js for effects</h3>
+
+<p>The alternative <a href="https://github.com/evanw/glfx.js"target="_blank">glfx.js</a>
+project provides a more efficient WebGL based perspective
+transformation. The higher level API of this project is also easier to use then the
+previous one.</p>
+
+<button class="tryit"path="43-glfx-rect.html"preview width="720"height="500"></button>
+
+<p>The above example is similar to the one previously shown, except that
+it uses this new library, and it allows user assisted rectangle detection. It allows
+drag-move of the four corners of the rectangle in the source image.</p>
+
+<p>In addition to perspective transform, the glfx.js project implements several 
+image effects in JavaScript using WebGL. Here is an example that demonstrates various
+image processing effects on webcam video using the glfx.js project.</p>
+
+<button class="tryit"path="43-glfx-demo.html"preview width="660"height="380"></button>
+
+<p>The included effects are further illustrated below: brightnessContrast, hueSaturation,
+vibrance, denoise, unsharpMask, noise, sepia, vignette, zoomBlur, triangleBlur, tiltShift, lensBlur,
+swirl, bulgePinch, perspective, ink, edgeWork, hexagonalPixelate, dotScreen, and colorHalftone.</p>
+<p style="text-align: left;">
+    <img class="image"src="43-glfx-demo/brightnessContrast.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/hueSaturation.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/vibrance.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/denoise.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/unsharpMask.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/noise.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/sepia.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/vignette.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/zoomBlur.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/triangleBlur.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/tiltShift.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/lensBlur.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/swirl.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/bulgePinch.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/perspective.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/ink.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/edgeWork.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/hexagonalPixelate.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/dotScreen.png"style="width: 160px;">
+    <img class="image"src="43-glfx-demo/colorHalftone.png"style="width: 160px;">
+</p>
 
 
 
 
+<h3 short="Pixel match">Pixel match for security camera</h3>
+
+<p>The lightweight <a href="https://github.com/mapbox/pixelmatch"target="_blank">pixelmatch.js</a>
+library compares two images to detect differences in pixels.
+This is useful in a variety of scenarios, including optimization for security camera. The following 
+example shows the difference detected using pixel match due a slight movement of the object in view.</p>
+
+<p>
+    <img class="image"src="43-security-camera-logic.png"style="width: 652px;">
+</p>
+
+<p>Try the following as an example security camera application. Once started, move away
+from the camera for few minutes. Then appear again briefly for 10-30 seconds, and
+move away again. Come back and see the recordings captured, both snapshots and video,
+for the duration when there was some activity in the webcam video.</p>
+
+<button class="tryit"path="43-security-camera.html"width="1100"height="400"></button>
+
+<p>It uses <code>recordmax</code> property of the <code>video-io</code> component, to keep
+recording of the last ten seconds of the webcam video. It periodically captures snapshots every
+five seconds. It then uses pixelmatch.js to detect any differences in the snapshot from the 
+previous snapshot. If a difference is detected, in more than 0.1% of pixels, indicating some
+activity in the webcam video, then it updates the <code>recordmax</code> property to record
+longer video, and continues to save the snapshots. After no activity is detected, it saves the
+recorded video as well as stops saving the snapshots, and reverts the <code>recordmax</code>
+property back to last ten seconds.</p>
+
+<p>The net effect is that it captures and records video and images of any activity detected,
+including few seconds before the activity started, and few seconds after it stopped. 
+Not saving the images or video when there is no activity helps in storage management as well
+as review of the security camera footage. The sensitity of activity detection can be easily 
+adjusted based on the threshold for pixel match.</p>
+
+<h3 short="OCR">Use tesseract for OCR</h3>
+
+<p><a href="https://github.com/naptha/tesseract.js"target="_blank">Tesseract.js</a>
+is a JavaScript library for optical character recognition.
+It takes an image and extracts words in almost any language. The following example
+uses it to extract notes out of shared screen or app video.</p>
+
+<button class="tryit"path="43-tesseract-auto.html"preview width="650"height="290"></button>
+
+<p>First, click to start the screen or app capture in the <code>video-io</code> instance
+on the left. You can resize the red selector, to limit how much of the video image to
+use for text detection. Typically, you would ignore the window header or footer.</p>
+
+<p>Click on the detect button to detect text and populate it in the <code>textarea</code>
+on the right. You can also check the auto checkbox. If checked, it automatically triggers
+detection when the video image changes by more than 4% in pixel comparison. This is useful
+for slide share scenario, where it automatically captures the text notes when the slide
+changes. Clicking on the ignore button deletes the last detection from the text.</p>
 
 
-<h2 id="audio-context"short="audio processing">How to do signal processing on audio?</h2>
+
+<h2 id="audio-context"short="audio processing"radius="130">How to do signal processing on audio?</h2>
 
 <p>The Web Audio API is very powerful in applying simple processing such as gain, delay,
 low pass filter as well as for complex signal processing such as for sound analyzer, colvolver, 
@@ -4239,6 +4540,10 @@ speech.addEventListener("recognize", event => {
 text message. You can use the other mechanisms such as data channel or shared data described
 earlier to send and receive text chat in an application.</p>
             
+<p>The image processing techniques such as face tracking described earlier using the 
+<code>video-mix</code> component can potentially be used to zoom to the participant face
+to be displayed in the box, captured from live camera, for a video conferencing
+experience.</p>
 
 
 <h3 id="comic-space">Comic book</h3>
@@ -7177,7 +7482,28 @@ related to each other, and how they interact with each other.</p>
             <tr><td></td><td>
                 Web assets for border image of chat bubbles.
             </td></tr>
-            
+        </table>
+        <table class="properties nowrap">
+            <tr><td><a href="#text-feed-slack">text-feed-slack</a></td><td>Include text-chat-slack.js</td></tr>
+            <tr><td></td><td>
+                Displays Slack style text chat feed.
+            </td></tr>
+            <tr><td>text-item-slack</td><td>Include text-chat-slack.js</td></tr>
+            <tr><td></td><td>
+                Used by text-feed-slack to display a single chat item.
+            </td></tr>
+            <tr><td>text-date-item-slack</td><td>Include text-chat-slack.js</td></tr>
+            <tr><td></td><td>
+                Displays a date/time item.
+            </td></tr>
+            <tr><td>text-over-item-slack</td><td>Include text-chat-slack.js</td></tr>
+            <tr><td></td><td>
+                Displays overlay buttons for chat item.
+            </td></tr>
+            <tr><td>text-input-slack</td><td>Include text-chat-slack.js</td></tr>
+            <tr><td></td><td>
+                Input controls for entering a text message.
+            </td></tr>
             <tr><td><a href="#user-roster">user-roster</a></td><td>Include user-roster.js</td></tr>
             <tr><td></td><td>
                 Displays a list of users and their attributes from a data model
@@ -7196,6 +7522,8 @@ related to each other, and how they interact with each other.</p>
             <tr><td></td><td>
                 Data model for media-chat, using shared storage.
             </td></tr>
+        </table>
+        <table class="properties nowrap">
             <tr><td>communicator-icons</td><td>Include web-assets.js</td></tr>
             <tr><td></td><td>
                 Web assets for icons to be used by media-chat or others.
@@ -7257,6 +7585,8 @@ related to each other, and how they interact with each other.</p>
             <tr><td></td><td>
                 Data model for ludo-board, using shared storage.
             </td></tr>
+        </table>
+        <table class="properties nowrap">
             <tr><td><a href="#media-share">media-share</a></td><td>Include media-chat.js</td></tr>
             <tr><td></td><td>
                 Internally used to wrap shared app within media-chat.

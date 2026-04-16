@@ -1,0 +1,160 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/glfx@0.0.4/glfx.min.js"></script>
+    <!-- <script src="glfx.js" type="text/javascript"></script> -->
+
+    <style type="text/css">
+        body {
+            margin: 8px; padding: 0;
+        }
+        .inputoutput { 
+            display: inline-block;
+        }
+        img, canvas {
+            zoom: 0.3;
+        }
+        #canvasOutput {
+            border: solid 1px black;
+        }
+        div {
+            vertical-align: top;
+        }
+        input {
+            outline: none;
+        }
+        div.caption {
+            margin-bottom: 4px;
+            height: 22px;
+        }
+        div#nubs {
+            position: absolute; top: 34px; left: 8px;
+            transform-origin: 0 0;
+            transform: scale(0.3);
+        }
+        .nub {
+            position: absolute; width: 18px; height: 18px; margin: -17px;
+            background: #3F9FFF; border: 2px solid white; border-radius: 17px;
+            box-shadow: 0 2px 2px rgba(0, 0, 0, 0.5);
+            cursor: move;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <div class="inputoutput">
+            <div class="caption">background <input type="file" id="fileInput" name="file" /></div>
+            <img id="imageSrc" alt="No Image" src="43-detect-rect/frametv.jpg"/>
+            <div id="nubs"></div>
+        </div>
+        <div class="inputoutput">
+            <div class="caption">image <input type="file" id="fileAdd" name="file" /></div>
+            <img id="imageAdd" src="43-detect-rect/photo.png"/>
+        </div>
+        <br/>
+        <div class="inputoutput">
+            <div class="caption">Merged</div>
+            <canvas id="canvasRects"></canvas>
+        </div>
+        <div class="inputoutput">
+            <div class="caption">Extracted</div>
+            <canvas id="canvasOutput"></canvas>
+        </div>
+    </div>
+    <script type="text/javascript">
+let [imageSrc, fileInput, imageAdd, fileAdd, canvasRects, canvasOutput, nubs] = ["imageSrc", "fileInput", "imageAdd", "fileAdd", "canvasRects", "canvasOutput", "nubs"].map(n => document.getElementById(n));
+let canvas1 = null, texture1 = null, canvas2 = null, texture2 = null;
+let canvasTemp1 = null, canvasTemp2 = null;
+
+window.onload = () => {
+    try {
+        canvas1 = fx.canvas();
+        canvas2 = fx.canvas();
+    } catch (e) { // webGL not supported
+        console.error("failed to create webGL canvas", e);
+        return;
+    }
+
+    if (imageSrc.naturalWidth && imageAdd.naturalWidth) {
+        onLoad();
+    }
+    imageSrc.onload = imageAdd.onload = () => {
+        if (imageSrc.naturalWidth && imageAdd.naturalWidth) {
+            onLoad();
+        }
+    };
+
+    addNubs();
+};
+
+fileInput.addEventListener("change", (e) => {
+    imageSrc.src = URL.createObjectURL(event.target.files[0]);
+}, false);
+fileAdd.addEventListener("change", (e) => {
+    imageAdd.src = URL.createObjectURL(event.target.files[0]);
+}, false);
+
+function onLoad() {
+    nubs.style.width = imageSrc.naturalWidth + "px";
+    nubs.style.height = imageSrc.naturalHeight + "px";
+
+    canvasTemp1 = document.createElement("canvas");
+
+    canvasRects.width = canvasTemp1.width = imageSrc.naturalWidth;
+    canvasRects.height = canvasTemp1.height = imageSrc.naturalHeight;
+    canvasOutput.width = imageAdd.naturalWidth;
+    canvasOutput.height = imageAdd.naturalHeight;
+
+    texture1 = canvas1.texture(imageSrc);
+
+    canvasTemp1.getContext("2d").drawImage(imageAdd, 0, 0, canvasTemp1.width, canvasTemp1.height);
+    texture2 = canvas2.texture(canvasTemp1);
+
+    update();
+}
+
+function update() {
+    let rect = [[0,0],[canvasRects.width,0],[0,canvasRects.height],[canvasRects.width, canvasRects.height]];
+    canvas1.draw(texture1).perspective(points.flat(), rect.flat()).update();
+
+    canvasOutput.getContext("2d").drawImage(canvas1, 0, 0, canvasOutput.width, canvasOutput.height);
+
+    canvas2.draw(texture2).perspective(rect.flat(), points.flat()).update();
+    canvasRects.getContext("2d").drawImage(imageSrc, 0, 0, canvasRects.width, canvasRects.height);
+    canvasRects.getContext("2d").drawImage(canvas2, 0, 0, canvasRects.width, canvasRects.height);
+}
+
+var points = [[255,55],[932,112],[247,426],[934,428]];
+
+function addNubs() {
+    points.forEach((point, i) => {
+        let [x,y] = point;
+        var div = document.createElement("div");
+        div.className = "nub";
+        div.id = "nub" + i;
+        nubs.appendChild(div);
+
+        div.onmousedown = event => {
+            nubs.onmouseup = nubs.onmousemove = ev => {
+                if (ev.target === ev.currentTarget) {
+                    //console.log(ev);
+                    var x = ev.offsetX, y = ev.offsetY;
+                    points[i] = [x, y];
+                    div.style.left = x + "px";
+                    div.style.top = y + "px";
+                    update();
+                }
+                if (ev.type == "mouseup") {
+                    nubs.onmouseup = nubs.onmousemove = null;
+                }
+            };
+        };
+        div.style.left = x + "px";
+        div.style.top = y + "px";
+    });
+
+}
+    </script>
+</body>
+</html>

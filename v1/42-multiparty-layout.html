@@ -1,0 +1,76 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        div.table {
+            display: table;
+        }
+        div.table > div {
+            display: table-row;
+        }
+        div.table > div > div {
+            display: table-cell;
+            font-size: 40px;
+            vertical-align: middle;
+        }
+        div.padding {
+            padding: 1ch;
+            word-wrap: none;
+        }
+        video-io {
+            background-color: black;
+        }
+        video-mix {
+            visibility: hidden;
+            position: absolute; width: 0px; height: 0px;
+        }
+    </style>
+</head>
+<body>
+    <div class="table">
+        <div>
+            <div><video-io id="video1" controls publish="true"></video-io></div>
+            <div class="padding">&times; 6 =</div>
+            <div><video-io id="video2" autoenable="true" controls></video-io></div>
+            <div><video-mix id="mixer"></video-mix></div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        let video1 = document.querySelector("#video1"), 
+            video2 = document.querySelector("#video2"), 
+            mixer = document.querySelector("#mixer");
+
+        const W = 640, H = 480, rows = 2, cols = 3;
+        const w = Math.floor(W/cols), h = Math.floor(H/rows), w_ = Math.ceil(W/cols), h_ = Math.ceil(H/rows);
+        const w0 = w/h * H, h0 = H;
+        const x0 = W/2 - w0/2, y0 = 0;
+
+        let items = [];
+        for (let row=0; row<rows; ++row) {
+            for (let col=0; col<cols; ++col) {
+                let text = '';
+                if (row == 0 && col == 0) {
+                    text += 'canvas.width = ' + W + '; canvas.height = ' + H + ';';
+                }
+                const x = col * w_, y = row * h_;
+                text += 'canvas.getContext("2d").drawImage(video, ' + x0 + ', ' + y0 + ', ' + w0 + ', ' + h0 + ', ' + x + ', ' + y + ', ' + w + ', ' + h + ');';
+                items.push(text);
+            }
+        }
+        items.forEach(text => {
+            let script = document.createElement("script");
+            script.setAttribute("for", "video1");
+            script.setAttribute("type", "text/plain");
+            script.innerText = text;
+            mixer.appendChild(script);
+        });
+
+        mixer.input = [video1];
+        video2.input = mixer;
+        video1.publish = video2.publish = true;
+    </script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+    <video-io id="video1" controls microphone="false"></video-io>
+    <video-io id="video2" controls autoenable="true"></video-io>
+    <video-mix id="mixer"></video-mix>
+    <script type="text/javascript">
+        let video1 = document.querySelector("#video1"), 
+            video2 = document.querySelector("#video2"), 
+            mixer = document.querySelector("#mixer");
+
+        mixer.input = [video1];
+        video2.input = mixer;
+        video1.publish = video2.publish = true;
+
+        const frames = [];
+        let index = 0;
+        const stored = document.createElement("canvas");
+        const ctx0 = stored.getContext("2d");
+        let state = "slow";
+        const count = 3;
+
+        mixer.addEventListener("frame", event => {
+            const video = event.videos[0];
+            //console.log("video=" + video.videoWidth + "x" + video.videoHeight);
+            if (video.videoWidth && video.videoHeight) {
+                const canvas = event.canvas;
+                stored.width = canvas.width = video.videoWidth; 
+                stored.height = canvas.height = video.videoHeight;
+
+                ctx0.drawImage(video, 0, 0);
+                frames.push(ctx0.getImageData(0, 0, canvas.width, canvas.height)); // enqueue
+
+                const ctx = canvas.getContext("2d");
+                let image = frames[0];
+                
+                ctx.putImageData(image, 0, 0);
+                let text = state == "fast" ? "Fast forward" : "Slow motion";
+                ctx.font = "48px serif";
+                ctx.fillStyle = "#ffffff";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "top";
+                ctx.fillText(text, 320, 10, 640);
+
+                // 10seconds of slow, followed by fast.
+                if (state == "slow") {
+                    if (index % count === 0) { // even => reduce fps by half
+                        frames.shift();
+                    }
+                    if (frames.length > 30*10) {
+                        state = "fast";
+                    }
+                } else { // increase fps by double
+                    frames.shift();
+                    frames.shift();
+                    if (frames.length <= 1) {
+                        state = "slow";
+                    }
+                }
+                ++index;
+            }
+        });
+
+    </script>
+</body>
+</html>

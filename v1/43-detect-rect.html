@@ -1,0 +1,257 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <!-- see https://stackoverflow.com/questions/60021855/opencv-js-to-detect-rectangular-shape-from-image-and-cut-it -->
+    <script src="https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.12.0-release.1/dist/opencv.min.js"></script>
+    <!-- <script src="43-detect-rect/opencv4.8.js" type="text/javascript"></script> -->
+
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
+    <style type="text/css">
+        .inputoutput { 
+            display: inline-block;
+        }
+        #canvasOutput {
+            border: solid 1px black;
+        }
+        div {
+            vertical-align: top;
+        }
+        input {
+            outline: none;
+        }
+        div.caption {
+            margin-bottom: 4px;
+        }
+        img {
+            zoom: 0.3333;
+        }
+    </style>
+</head>
+<body>
+    <img id="imageSrc" src="43-detect-rect-bg.jpg" />
+    <video-io id="video1" controls microphone="false" mirrored="false"></video-io>
+    <video-io id="video2" controls autoenable="true"></video-io>
+    <video-mix id="mixer" style="display: none;"></video-mix>
+    <input type="file" id="fileInput" name="file" style="display: none;"/>
+
+    <script type="text/javascript">
+let [imageSrc, video1, video2, mixer, fileInput] = ["imageSrc", "video1", "video2", "mixer", "fileInput"].map(n => document.getElementById(n));
+
+cv['onRuntimeInitialized'] = () => { onready(); };
+
+let rect = null;
+
+function onready() {
+    if (imageSrc.naturalWidth) {
+        onLoad();
+    }
+    imageSrc.onload = onLoad;
+
+    mixer.input = [video1];
+    video2.input = mixer;
+    video1.publish = video2.publish = true;
+}
+function onLoad() {
+    //console.log("calling detect");
+    rect = detect_rectangles(imageSrc, { 
+        //drawContours: "canvasRects",
+        //topCount: 50,
+    });
+    //console.log(rect);
+}
+
+fileInput.addEventListener("change", (e) => {
+    if (event.target.files.length > 0)
+        imageSrc.src = URL.createObjectURL(event.target.files[0]);
+}, false);
+imageSrc.addEventListener("click", () => {
+    fileInput.click();
+});
+
+let canvas0 = document.createElement("canvas");
+let index = 0;
+mixer.addEventListener("frame", event => {
+    index += 1;
+    if (index % 30 != 0) // reduce framerate to 1 fps.
+        return;
+
+    let video = event.videos[0];
+    let canvas = event.canvas;
+
+    if (canvas && imageSrc.naturalWidth && imageSrc.naturalHeight && imageSrc.naturalWidth != canvas.width && imageSrc.naturalHeight != canvas.height) {
+        canvas.width = imageSrc.naturalWidth;
+        canvas.height = imageSrc.naturalHeight;
+    }
+    if (video && video.videoWidth && video.videoHeight && video.videoWidth != canvas0.width && video.videoHeight != canvas0.height) {
+        canvas0.width = video.videoWidth;
+        canvas0.height = video.videoHeight;
+    }
+
+    //console.log(rect);
+    if (rect && rect.length > 0 && imageSrc.naturalWidth && imageSrc.naturalHeight && video.videoWidth && video.videoHeight) {
+        const ctx0 = canvas0.getContext("2d");
+        ctx0.drawImage(video, 0, 0);
+
+        draw_rectangles(canvas, [canvas0], rect, {
+            //extractTo: "canvasOutput", 
+            background: imageSrc,
+            border: false,
+            //borderMode: "solid",
+            // topCount: 6,
+        });
+
+    }
+});
+
+
+// optional opt can include these with defaults mentioned below
+// grayscale = false,
+// threshold1 = 30, threshold2 = 300, apertureSize = 3, 
+// topCount = 4, precise = 0.02, approx = 0.1,
+// minarea = 0.05, drawContours
+function detect_rectangles(image, opt = {}) {
+    let mat = cv.imread(image);
+
+    let dst = new cv.Mat();
+
+    if (opt.grayscale) {
+        cv.cvtColor(mat, mat, cv.COLOR_RGB2GRAY);
+        // gray = cv.bilateralFilter(gray, 11, 17, 17)
+    }
+    cv.Canny(mat, dst, opt.threshold1 || 30, opt.threshold2 || 200, opt.apertureSize || 3, false);
+
+    let contours = new cv.MatVector();
+    let hierarchy = new cv.Mat();
+
+    cv.findContours(dst, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
+
+    // if (opt.drawContours) {
+    //     let temp1 = cv.imread(imgElement);
+    //     cv.drawContours(temp1, contours, -1, new cv.Scalar(255, 0, 0, 255), 2);
+    //     cv.imshow(opt.drawContours, temp1);
+    // }
+
+    // sort by area, pick top 4
+    let sorted = vector2array(contours).map(cnt => {
+        return {area: cv.contourArea(cnt, false), perimiter: cv.arcLength(cnt, false), contour: cnt};
+    }).sort((a,b) => (a.area < b.area) ? 1 : -1).slice(0, opt.topCount || 4);
+
+    if (opt.drawContours) {
+        let temp1 = cv.imread(imageSrc);
+        let cnt = new cv.MatVector()
+        sorted.forEach(item => cnt.push_back(item.contour))
+        cv.drawContours(temp1, cnt, -1, new cv.Scalar(255, 0, 0, 255), 2);
+        cv.imshow(opt.drawContours, temp1);
+    }
+
+    //iterates through the largest contours and creates transformed images if the contour's shape is a rectangle
+    let transforms = [];
+    for (let item of sorted) {
+        let perimeter = cv.arcLength(item.contour, true), precise = new cv.Mat(), approx = new cv.Mat(), contour = item.contour;
+        cv.approxPolyDP(contour, precise, (opt.precise || 0.02) * perimeter, true);
+        cv.approxPolyDP(contour, approx, (opt.approx || 0.1) * perimeter, true);
+        if (precise.rows == 4) {
+            let {dst, M, dsize} = perspective_transform(mat, precise);
+            transforms.push({contour, dst, M, dsize})
+        } else
+        if (approx.rows == 4) {
+            let {dst, M, dsize} = perspective_transform(mat, approx)
+            transforms.push({contour, dst, M, dsize})
+        }
+        precise.delete();
+        approx.delete();
+    }
+
+    transforms = transforms.map(a => { 
+        let area = a.dst && (a.dst.rows * a.dst.cols)
+        let b = {mat, area}
+        return {...a, ...b};
+    })
+    let minarea = mat.rows * mat.cols * (opt.minarea || 0.05);
+    transforms = transforms.filter(a => a.area && a.area >= minarea);
+    transforms.sort((a, b) => b.area - a.area);
+    //console.log(transforms);
+    return transforms;
+}
+
+// optional opt can include these with defaults mentioned below
+// borderMode // solid if not transparent
+// extractTo // largest rect pictue is extracted to this canvas
+// border = false // if true, draw border too.
+// background // image of background to display
+
+function draw_rectangles(output, images, rects, opt={}) {
+    let size = Math.min(images.length, rects.length);
+    images = images.slice(0, size);
+    rects = rects.slice(0, size);
+
+    let {extractTo, background, border} = opt;
+    let final;
+    if (output && background) {
+        final = cv.imread(background);
+    } else {
+        final = new cv.Mat();
+    }
+
+    rects.forEach((rect, index) => {
+        let {contour, dst, M, dsize, mat} = rect;
+        let image = images[index];
+
+        if (extractTo && index === 0) {
+            cv.imshow(extractTo, dst)
+        }
+
+        if (output && background) {
+            let selected = new cv.MatVector();
+            selected.push_back(contour)
+            cv.fillConvexPoly(final, contour, new cv.Scalar(255, 255, 255, 255), lineType=8, shift=0)
+            if (border) {
+                cv.drawContours(final, selected, -1, new cv.Scalar(255, 0, 0, 255), 3);
+            }
+            cv.imshow(output, final);
+        }
+
+        if (output && image) {
+            let orig = cv.imread(image);
+            let resized = new cv.Mat();
+            cv.resize(orig, resized, dsize)
+            let borderMode = !background && opt.borderMode == "solid" ? cv.BORDER_CONSTANT : cv.BORDER_TRANSPARENT;
+            cv.warpPerspective(resized, final, M, new cv.Size(mat.cols, mat.rows), cv.WARP_INVERSE_MAP, borderMode=borderMode);
+            if (!background && border) {
+                let selected = new cv.MatVector();
+                selected.push_back(contour);
+                cv.drawContours(final, selected, -1, new cv.Scalar(255, 0, 0, 255), 3);
+            }
+            cv.imshow(output, final);
+        }
+    });
+}
+
+function vector2array(vec) {
+    let array = [];
+    for (let i=0; i<vec.size(); ++i) {
+        array.push(vec.get(i));
+    }
+    return array;
+}
+
+function perspective_transform(image, contour) {
+    let p = contour.data32S.slice(0, 8).reduce((s,a,i) => (i % 2 ? s[s.length-1].push(a) : s.push([a]), s), []).map(([x,y]) => new cv.Point(x, y));
+    p.sort((p1, p2) => { return p1.y < p2.y ? -1 : p1.y > p2.y ? 1 : 0; }).slice(0, 5);
+    let tl = p[0].x < p[1].x ? p[0] : p[1], tr = p[0].x > p[1].x ? p[0] : p[1], bl = p[2].x < p[3].x ? p[2] : p[3], br = p[2].x > p[3].x ? p[2] : p[3];
+    let wb = Math.hypot(br.x - bl.x, br.y - bl.y), wt = Math.hypot(tr.x - tl.x, tr.y - tl.y);
+    let hr = Math.hypot(tr.x - br.x, tr.y - br.y), hl = Math.hypot(tl.x - bl.x, tr.y - bl.y);
+    let w = (wb > wt) ? wb : wt, h = (hr > hl) ? hr : hl;
+    let dc = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, w - 1, 0, w - 1, h - 1, 0, h - 1]); 
+    let sc = cv.matFromArray(4, 1, cv.CV_32FC2, [tl.x, tl.y, tr.x, tr.y, br.x, br.y, bl.x, bl.y]);
+    let dsize = new cv.Size(w, h), M = cv.getPerspectiveTransform(sc, dc), dst = new cv.Mat();
+    cv.warpPerspective(image, dst, M, dsize);
+    return {dst, M, dsize}
+}
+
+    </script>
+</body>
+</html>

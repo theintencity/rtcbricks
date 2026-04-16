@@ -1,7 +1,7 @@
 # RTC Bricks
 
 This project aims to unleash WebRTC creativity using web components.
-It has a collection of about 40 web components for building a wide range of
+It has a collection of more than 70 web components for building a wide range of
 real-time communication and collaboration web applications.</p>
 
 I started this project with one generic web component, &lt;video-io&gt;, 
@@ -14,12 +14,13 @@ In summary, it promotes reuse of media features across different
 applications, reduces vendor lock-in of communication features, and
 provides a flexible, extensible, secure, feature-rich, and end-point
 driven web component to support a large number of communication
-scenarios. A presentation and demonstration video is also available
-below.
+scenarios. A presentation and demonstration video, and the
+complete comprehensive tutorial are also available below.
 
-| Video Demonstration | Research paper |
-|:-----:|:-----:|
-| [![Demonstration](https://img.youtube.com/vi/AOIM0-C75y8/0.jpg)](https://youtu.be/AOIM0-C75y8) | [![Paper](page1.png)](https://arxiv.org/pdf/2602.22011) |
+| Video Demonstration | Research paper | Complete tutorial |
+|:-----:|:-----:|:-----:|
+|32 min| 11 pages | 383 pages, 50MB |
+| [![Demonstration](https://img.youtube.com/vi/AOIM0-C75y8/0.jpg)](https://youtu.be/AOIM0-C75y8) | [![Paper](page1.png)](https://arxiv.org/pdf/2602.22011) | [![Tutorial](toc.png)](https://doi.org/10.13140/RG.2.2.18147.92969) |
 
 
 As I worked through many sample and demo web apps using this
@@ -32,7 +33,7 @@ this project remains the same, as follow:
 
  1. Separate any app logic from any user data.
  1. Keep the app logic in the endpoint, if possible.
- 1. Use vanilla JavaScript, and say no to any framework.
+ 1. Use vanilla JavaScript, and avoid any client side framework.
  1. Create flexible and extensible interfaces in HTML5 web components.
 
 ## Getting Started

@@ -1,0 +1,254 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <!-- based on https://github.com/naptha/tesseract.js -->
+    <script type="text/javascript" src="video-io.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.0.0/tesseract.min.js" integrity="sha512-UuD4WkaaOqD7Gi00fwh3NT52U4Nox94NMcsyozcAY/urY+bniCNhTjOMtjPh9ZuK0pf0AT9i+O0YRnoLVsNDwg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
+    <script type="text/javascript" src='https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js'></script>
+
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
+    <style type="text/css">
+        body {
+            display: flex;
+        }
+        body > div {
+            display: inline-flex; flex-flow: column nowrap;
+            width: 320px;
+            vertical-align: top;
+        }
+        video-io, textarea {
+            flex: 1;
+        }
+        div.buttons, button {
+            align-self: center;
+            margin-top: 8px;
+        }
+        textarea {
+            resize: none;
+            overflow: auto;
+            border-radius: 0px;
+            outline: none;
+        }
+        div.progress {
+            height: 2px;
+            width: 0%;
+            background-color: green;
+        }
+        div.selector {
+            position: absolute;
+            left: 0px; top: 0px; width: 320px; height: 240px;
+            box-sizing: border-box;
+            border: dashed 3px red;
+            overflow: hidden;
+            resize: both;
+            cursor: move;
+            max-width: 320px; max-height: 240px;
+            transition: opacity .3s linear;
+        }
+        div.selector:not(:hover) {
+            opacity: 0;
+            resize: none;
+        }
+        input {
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <video-io id="video" screen="true" microphone="false"></video-io>
+        <div class="selector" draggable></div>
+        <button class="capture" title="start/stop screen or app capture">Capture</button>
+    </div>
+    <div>
+        <textarea></textarea>
+        <div class="progress"></div>
+        <div class="buttons">
+            <input type="checkbox" class="auto" title="automatically initiate detection when more than 4% change"/>
+            <label>Auto?</label>
+            &nbsp;&nbsp;
+            <button class="detect" title="manually initiate detection">Detect</button>
+            <button class="ignore" title="delete the last detection">Ignore</button>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        let video = document.querySelector("video-io");
+        let selector = document.querySelector("div.selector");
+
+        let auto = document.querySelector('input.auto');
+
+        let capture = document.querySelector("button.capture");
+        capture.onclick = event => {
+            if (capture.innerText == "Capture") {
+                video.publish = true;
+                capture.innerText = "Stop";
+                if (auto.checked)
+                    start_interval();
+            } else {
+                video.publish = false;
+                capture.innerText = "Capture";
+                if (auto.checked)
+                    stop_interval();
+            }
+        };
+
+        auto.onclick = event => {
+            if (auto.checked) 
+                start_interval();
+            else
+                stop_interval();
+        };
+
+        let canvas = document.createElement("canvas");
+        canvas.width = 320; canvas.height = 240;
+
+        const separator = '\n-----------------------\n';
+
+        let textarea = document.querySelector("textarea");
+
+        let ignore = document.querySelector("button.ignore");
+        ignore.onclick = event => {
+            var text = textarea.value;
+            var index = text.lastIndexOf(separator);
+            if (index < 0) {
+                index = 0;
+            }
+            textarea.value = text.substring(0, index);
+        };
+
+        let detect = document.querySelector("button.detect");
+        detect.onclick = async event => {
+            if (detect.innerText != "Detect")
+                return;
+            
+            const ctx = canvas.getContext("2d");
+            const v = video.video;
+            const vw = v.videoWidth, vh = v.videoHeight, vW = v.offsetWidth, vH = v.offsetHeight;
+            if (!vw || !vh)
+                return;
+            const sw = selector.offsetWidth, sh = selector.offsetHeight, sx = selector.offsetLeft, sy = selector.offsetTop;
+            canvas.width = vw * (sw/vW);
+            canvas.height = vh * (sh/vH);
+
+            detect.innerText = "Detecting...";
+
+            ctx.drawImage(v, (vw/vW)*sx, (vh/vH)*sy, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+
+            const worker = await Tesseract.createWorker({
+                logger: m => {
+                    //m => console.log(m);
+                    if (m.status == "recognizing text") {
+                        update_progress(m.progress);
+                    }
+                }
+            });
+
+            (async () => {
+                await worker.loadLanguage('eng');
+                await worker.initialize('eng');
+                const { data: { text } } = await worker.recognize(canvas);
+                console.log(text);
+                if (textarea.value) {
+                    textarea.value += separator;
+                }
+                textarea.value += text;
+                textarea.scrollTop = textarea.scrollHeight;
+
+                await worker.terminate();
+
+                detect.innerText = "Detect";
+                update_progress(0);
+            })();
+
+        };
+
+        let progress = document.querySelector("div.progress");
+
+        function update_progress(value) {
+            progress.style.width = Math.round(value * 100) + "%";
+        }
+
+        let interval = null;
+        function stop_interval() {
+            if (interval) {
+                clearInterval(interval);
+                interval = null;
+            }
+        }
+
+        let last_data = null;
+
+        function start_interval() {
+            if (!interval) {
+                var handler = () => {
+                    if (detect.innerText == "Detect") {
+                        const ctx = canvas.getContext("2d");
+                        const v = video.video;
+                        if (v.videoWidth && v.videoHeight) {
+                            canvas.width = v.videoWidth;
+                            canvas.height = v.videoHeight;
+                            ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+                            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            const data = imgData.data;
+                            if (!last_data || differs(last_data, data)) {
+                                console.log("found difference");
+                                last_data = data;
+                                detect.click();
+                            }
+                        }
+                    }
+                };
+
+                interval = setInterval(handler, 5000);
+                handler();
+            }
+        }
+
+        function differs(last, current) {
+            if (last.length != current.length)
+                return true;
+            if (!last.length)
+                return false;
+            var diff = 0;
+            for (var i=0; i<last.length; ++i) {
+                diff += last[i] === current[i] ? 0 : 1;
+            }
+            diff /= last.length;
+            return (diff > 0.04);
+        }
+
+        let pos;
+
+        selector.onmousedown = e => {
+            if (e.clientX > selector.offsetWidth - 20 && e.clientY > selector.offsetHeight - 20)
+                return;
+            e.preventDefault();
+            pos = {x: e.clientX, y: e.clientY};
+            document.onmouseup = e => {
+                document.onmouseup = document.onmousemove = null;
+            };
+            document.onmousemove = e => {
+                e.preventDefault();
+                const diff = {x: pos.x - e.clientX, y: pos.y - e.clientY};
+                pos = {x: e.clientX, y: e.clientY};
+                let x = (selector.offsetLeft - diff.x);
+                let y = (selector.offsetTop - diff.y);
+                if (x < 0)
+                    x = 0;
+                else if (x >= video.offsetWidth - selector.offsetWidth)
+                    x = video.offsetWidth - selector.offsetWidth;
+                if (y < 0)
+                    y = 0;
+                else if (y >= video.offsetHeight - selector.offsetHeight)
+                    y = video.offsetHeight - selector.offsetHeight;
+                selector.style.left = x + "px";
+                selector.style.top = y + "px";
+            };
+        };
+
+    </script>
+</body>
+</html>

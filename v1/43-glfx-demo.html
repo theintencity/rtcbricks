@@ -1,0 +1,481 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <!-- see http://evanw.github.io/glfx.js/docs/ -->
+    <script src="https://cdn.jsdelivr.net/npm/glfx@0.0.4/glfx.min.js"></script>
+    <!-- <script src="glfx.js" type="text/javascript"></script> -->
+
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
+    <style type="text/css">
+        img, video-io, canvas {
+            width: 320px; height: 240px;
+        }
+        input, select {
+            outline: none;
+        }
+        div#nubs {
+            position: relative;
+            left: -320px;
+        }
+        div.videos {
+            position: relative; width: 650px; height: 240px;
+        }
+        video-io {
+            position: absolute; width: 320px; height: 240px;
+        }
+        div#nubs {
+            position: absolute;
+            transform-origin: 0 0; transform: scale(0.5);
+            width: 640px; height: 480px; 
+        }
+        #video1 {
+            left: 0px;
+        }
+        #video2, div#nubs {
+            left: 330px;
+        }
+        video-mix {
+            display: none;
+        }
+        .nub {
+            position: absolute; width: 6px; height: 6px; margin: -5px;
+            background: #3F9FFF; border: 2px solid white; border-radius: 5px;
+            box-shadow: 0 2px 2px rgba(0, 0, 0, 0.5);
+            cursor: move;
+        }
+    </style>
+</head>
+<body>
+    <div class="videos">
+        <video-io id="video1" controls microphone="false"></video-io>
+        <video-io id="video2" controls autoenable="true"></video-io>
+        <div id="nubs"></div>
+    </div>
+    <video-mix id="mixer"></video-mix>
+    <table id="properties"><tbody><tr>
+        <th>Filter:</th>
+        <td><select id="filters"></select></td>
+    </tr><tr>
+        <th>Code:</th>
+        <td><code id="code"></code></td>
+    </tr></tbody></table>
+
+    <script type="text/javascript">
+let [video1, video2, mixer] = ["video1", "video2", "mixer"].map(n => document.getElementById(n));
+let canvas = null, fx_canvas = null, texture = null, func = null;
+
+window.onload = () => {
+    try {
+        fx_canvas = fx.canvas();
+    } catch (e) { // webGL not supported
+        console.error("failed to create webGL canvas", e);
+        return;
+    }
+
+    //fx_canvas.getContext("experimental-webgl", {preserveDrawingBuffer: true});
+    //document.body.appendChild(fx_canvas);
+    mixer.input = [video1];
+    video2.input = mixer;
+    video1.publish = video2.publish = true;
+
+    canvas = fx_canvas;
+    init();
+}
+
+var canvas_t = null;
+
+mixer.addEventListener("frame", event => {
+    let video = event.videos[0];
+    let canvas = event.canvas;
+    if (video && video.videoWidth && video.videoHeight) {
+        let target = video;
+        if (video.videoWidth == 640 && video.videoHeight == 480) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        } else {
+            if (!canvas_t) {
+                canvas_t = document.createElement("canvas");
+            }
+            canvas.width = canvas_t.width = 640;
+            canvas.height = canvas_t.height = 480;
+            canvas_t.getContext("2d").drawImage(video, 0, 0, canvas_t.width, canvas_t.height);
+            target = canvas_t;
+        }
+
+        if (!texture)
+            texture = fx_canvas.texture(target);
+        else
+            texture.loadContentsOf(target);
+        
+        if (func) {
+            fx_canvas.draw(texture)[func.name].apply(fx_canvas, func.args).update();
+        }
+        //fx_canvas.draw(texture).ink(0.25).update();
+        //console.log("drawing done");
+        canvas.getContext("2d").drawImage(fx_canvas, 0, 0, canvas.width, canvas.height);
+    }
+});
+
+
+// see https://evanw.github.io/glfx.js/media/demo.js
+
+////////////////////////////////////////////////////////////////////////////////
+// Filter object
+////////////////////////////////////////////////////////////////////////////////
+
+function Filter(name, func, init, update, imageFile) {
+    this.name = name;
+    this.func = func;
+    this.update = update;
+    this.imageFile = imageFile;
+    this.sliders = [];
+    this.nubs = [];
+    init.call(this);
+}
+
+Filter.prototype.addNub = function(name, x, y) {
+    this.nubs.push({ name: name, x: x, y: y });
+};
+
+Filter.prototype.addSlider = function(name, label, min, max, value, step) {
+    this.sliders.push({ name: name, label: label, min: min, max: max, value: value, step: step });
+};
+
+Filter.prototype.setCode = function(code) {
+    document.querySelector('#code').innerText = code;
+    var match = code.match(/canvas.draw\(texture\).(\w+)\((.*)\).update\(\);/);
+    if (match) {
+        func = {name: match[1], args: JSON.parse(`[${match[2]}]`)};
+        console.log(`${func.name}(${func.args.map(x => "" + x).join(", ")})`);
+    }
+    //eval(code);
+};
+
+Filter.prototype.use = function() {
+    // // Load the texture from the image and draw it to the canvas
+    // var image = images[this.imageFile || 'image.jpg'];
+    // texture = image.texture;
+    // document.querySelector('#container').setAttribute("style", `width: ${texture._.width}; height: ${texture._.height};`);
+    // document.querySelector('#label').innerHTML = 'Image credit: <a href="' + image.url + '">' + image.credit + '</a>';
+    // canvas.draw(image.texture).update();
+
+    // Clear all rows but the first two (which contain the filter selector and code sample)
+    var tbody = document.querySelector('#properties').firstChild;
+    for (var tr = tbody.firstChild.nextSibling.nextSibling; tr; tr = next) {
+        var next = tr.nextSibling;
+        tbody.removeChild(tr);
+    }
+
+    // Add a row for each slider
+    this.sliders.forEach((slider, i) => {
+    //for (var i = 0; i < this.sliders.length; i++) {
+    //    var slider = this.sliders[i];
+        //tbody.innerHTML += '<tr><th>' + slider.label.replace(/ /g, '&nbsp;') + ':</th><td><div id="slider' + i + '"></div></td></tr>';
+        var tr = document.createElement("tr");
+        tr.innerHTML = `<th>${slider.label.replace(/ /g, '&nbsp;')}:</th><td><input id="slider${i}" type="range" min="${slider.min}" max="${slider.max}" value="${slider.value}" step="${slider.step}"/></td>`;
+        tbody.appendChild(tr);
+        // var onchange = (function(this_, slider) { return function(event, ui) {
+        //     this_[slider.name] = ui.value;
+        //     this_.update();
+        //     console.log("value=", ui.value);
+        // }; })(this, slider);
+        // document.querySelector('#slider' + i).slider({
+        //     slide: onchange,
+        //     change: onchange,
+        //     min: slider.min,
+        //     max: slider.max,
+        //     value: slider.value,
+        //     step: slider.step
+        // });
+        document.querySelector("#slider" + i).onchange = event => {
+            this[slider.name] = event.currentTarget.value;
+            console.log("value=", this[slider.name]);
+            this.update();
+        };
+
+        this[slider.name] = slider.value;
+    });
+    //}
+
+    // Add a div for each nub
+    document.querySelector('#nubs').innerHTML = '';
+    this.nubs.forEach((nub, i) => {
+    //for (var i = 0; i < this.nubs.length; i++) {
+    //    var nub = this.nubs[i];
+        var x = nub.x * canvas.width;
+        var y = nub.y * canvas.height;
+        var div = document.createElement("div");
+        div.className = "nub";
+        div.id = "nub" + i;
+        //document.querySelector("#nubs").innerHTML += '<div class="nub" id="nub' + i + '"></div>';
+        document.querySelector("#nubs").appendChild(div);
+
+        div.onmousedown = event => {
+            var nubs = document.querySelector('#nubs');
+            nubs.onmouseup = nubs.onmousemove = ev => {
+                if (ev.target === ev.currentTarget) {
+                    //console.log(ev);
+                    var x = ev.offsetX, y = ev.offsetY;
+                    this[nub.name] = {x, y};
+                    div.style.left = x + "px";
+                    div.style.top = y + "px";
+                    this.update();
+                }
+                if (ev.type == "mouseup") {
+                    nubs.onmouseup = nubs.onmousemove = null;
+                }
+            };
+        };
+        // document.ondrag = event => {
+        //     this[nub.name] = { x: event.clientX - 330, y: event.clientY };
+        //     this.update();
+        // };
+        // div.ondrop = event => {
+        //     event.preventDefault();
+        //     div.style.left = this[nub.name].x + "px";
+        //     div.style.top = this[nub.name].y + "px";
+
+        // };
+        div.style.left = x + "px";
+        div.style.top = y + "px";
+
+        // var ondrag = (function(this_, nub) { return function(event, ui) {
+        //     var offset = $(event.target.parentNode).offset();
+        //     this_[nub.name] = { x: ui.offset.left - offset.left, y: ui.offset.top - offset.top };
+        //     this_.update();
+        // }; })(this, nub);
+        // $('#nub' + i).draggable({
+        //     drag: ondrag,
+        //     containment: 'parent',
+        //     scroll: false
+        // }).css({ left: x, top: y });
+        this[nub.name] = { x: x, y: y };
+    });
+    //}
+
+    // // Provide a link to the documentation
+    // tbody.innerHTML += '<tr><th></th><td><br>See the documentation for <kbd><a href="/glfx.js/docs/#' + this.func + '">' + this.func + '()</a></kbd> for more information.</td></tr>';
+
+    this.update();
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// Initialization code
+////////////////////////////////////////////////////////////////////////////////
+
+// var canvas;
+// var texture;
+
+// var initCount = 0, loadCount = 1;
+// var images = {
+//     'image.jpg': { credit: 'matthigh', url: 'https://www.flickr.com/photos/matthigh/2125630879/' },
+//     'lighthouse.jpg': { credit: 'renet', url: 'https://www.flickr.com/photos/renet/12135813/' },
+//     'perspective.jpg': { credit: 'stuckincustoms', url: 'https://www.flickr.com/photos/stuckincustoms/1213760517/' }
+// };
+// for (var file in images) {
+//     var image = images[file].image = new Image();
+//     image.onload = init;
+//     image.src = file;
+//     loadCount++;
+// }
+
+
+function init() {
+    // // Count the images as they load and only initialize when they are all loaded
+    // if (++initCount < loadCount) return;
+
+    // // Try to get a WebGL canvas
+    // var placeholder = document.getElementById('placeholder');
+    // try {
+    //     canvas = fx.canvas();
+    // } catch (e) {
+    //     placeholder.innerHTML = e;
+    //     return;
+    // }
+    // canvas.replace(placeholder);
+
+    // // Load the textures
+    // for (var file in images) {
+    //     images[file].texture = canvas.texture(images[file].image);
+    // }
+
+    // Create the filter selector
+    var html = '';
+    for (var category in filters) {
+        var list = filters[category];
+        html += '<option disabled="true">---- ' + category + ' -----</option>';
+        for (var i = 0; i < list.length; i++) {
+            html += '<option>' + list[i].name + '</option>';
+        }
+    }
+    document.querySelector('#filters').innerHTML = html;
+
+    // Call use() on the currently selected filter when the selection is changed
+    var select = document.querySelector('#filters');
+    function switchToFilter(index) {
+        if (select.selectedIndex != index) select.selectedIndex = index;
+        for (var category in filters) {
+            index--;
+            var list = filters[category];
+            //console.log("list", list);
+            for (var i = 0; i < list.length; i++) {
+                if (index-- == 0) list[i].use();
+            }
+        }
+    }
+    //setTimeout(() => {
+        var select = document.querySelector("#filters");
+        select.onchange = function() {
+            console.log("switchToFilter", select.selectedIndex);
+            switchToFilter(select.selectedIndex);
+        };
+    //}, 1000);
+    switchToFilter(1);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Filter definitions
+////////////////////////////////////////////////////////////////////////////////
+
+var perspectiveNubs = [175, 156, 496, 55, 161, 279, 504, 330];
+var filters = {
+    'Adjust': [
+        new Filter('Brightness / Contrast', 'brightnessContrast', function() {
+            this.addSlider('brightness', 'Brightness', -1, 1, 0, 0.01);
+            this.addSlider('contrast', 'Contrast', -1, 1, 0, 0.01);
+        }, function() {
+            this.setCode('canvas.draw(texture).brightnessContrast(' + this.brightness + ', ' + this.contrast + ').update();');
+        }),
+        new Filter('Hue / Saturation', 'hueSaturation', function() {
+            this.addSlider('hue', 'Hue', -1, 1, 0, 0.01);
+            this.addSlider('saturation', 'Saturation', -1, 1, 0, 0.01);
+        }, function() {
+            this.setCode('canvas.draw(texture).hueSaturation(' + this.hue + ', ' + this.saturation + ').update();');
+        }),
+        new Filter('Vibrance', 'vibrance', function() {
+            this.addSlider('amount', 'Amount', -1, 1, 0.5, 0.01);
+        }, function() {
+            this.setCode('canvas.draw(texture).vibrance(' + this.amount + ').update();');
+        }),
+        new Filter('Denoise', 'denoise', function() {
+            this.addSlider('exponent', 'Exponent', 0, 50, 20, 1);
+        }, function() {
+            this.setCode('canvas.draw(texture).denoise(' + this.exponent + ').update();');
+        }),
+        new Filter('Unsharp Mask', 'unsharpMask', function() {
+            this.addSlider('radius', 'Radius', 0, 200, 20, 1);
+            this.addSlider('strength', 'Strength', 0, 5, 2, 0.01);
+        }, function() {
+            this.setCode('canvas.draw(texture).unsharpMask(' + this.radius + ', ' + this.strength + ').update();');
+        }),
+        new Filter('Noise', 'noise', function() {
+            this.addSlider('amount', 'Amount', 0, 1, 0.5, 0.01);
+        }, function() {
+            this.setCode('canvas.draw(texture).noise(' + this.amount + ').update();');
+        }),
+        new Filter('Sepia', 'sepia', function() {
+            this.addSlider('amount', 'Amount', 0, 1, 1, 0.01);
+        }, function() {
+            this.setCode('canvas.draw(texture).sepia(' + this.amount + ').update();');
+        }),
+        new Filter('Vignette', 'vignette', function() {
+            this.addSlider('size', 'Size', 0, 1, 0.5, 0.01);
+            this.addSlider('amount', 'Amount', 0, 1, 0.5, 0.01);
+        }, function() {
+            this.setCode('canvas.draw(texture).vignette(' + this.size + ', ' + this.amount + ').update();');
+        })
+    ],
+    'Blur': [
+        new Filter('Zoom Blur', 'zoomBlur', function() {
+            this.addNub('center', 0.5, 0.5);
+            this.addSlider('strength', 'Strength', 0, 1, 0.3, 0.01);
+        }, function() {
+            this.setCode('canvas.draw(texture).zoomBlur(' + this.center.x + ', ' + this.center.y + ', ' + this.strength + ').update();');
+        }),
+        new Filter('Triangle Blur', 'triangleBlur', function() {
+            this.addSlider('radius', 'Radius', 0, 200, 50, 1);
+        }, function() {
+            this.setCode('canvas.draw(texture).triangleBlur(' + this.radius + ').update();');
+        }),
+        new Filter('Tilt Shift', 'tiltShift', function() {
+            this.addNub('start', 0.15, 0.75);
+            this.addNub('end', 0.75, 0.6);
+            this.addSlider('blurRadius', 'Blur Radius', 0, 50, 15, 1);
+            this.addSlider('gradientRadius', 'Gradient Radius', 0, 400, 200, 1);
+        }, function() {
+            this.setCode('canvas.draw(texture).tiltShift(' + this.start.x + ', ' + this.start.y + ', ' + this.end.x + ', ' + this.end.y + ', ' + this.blurRadius + ', ' + this.gradientRadius + ').update();');
+        }),
+        new Filter('Lens Blur', 'lensBlur', function() {
+            this.addSlider('radius', 'Radius', 0, 50, 10, 1);
+            this.addSlider('brightness', 'Brightness', -1, 1, 0.75, 0.01);
+            this.addSlider('angle', 'Angle', -Math.PI, Math.PI, 0, 0.01);
+        }, function() {
+            this.setCode('canvas.draw(texture).lensBlur(' + this.radius + ', ' + this.brightness + ', ' + this.angle + ').update();');
+        }, 'lighthouse.jpg')
+    ],
+    'Warp': [
+        new Filter('Swirl', 'swirl', function() {
+            this.addNub('center', 0.5, 0.5);
+            this.addSlider('angle', 'Angle', -25, 25, 3, 0.1);
+            this.addSlider('radius', 'Radius', 0, 600, 200, 1);
+        }, function() {
+            this.setCode('canvas.draw(texture).swirl(' + this.center.x + ', ' + this.center.y + ', ' + this.radius + ', ' + this.angle + ').update();');
+        }),
+        new Filter('Bulge / Pinch', 'bulgePinch', function() {
+            this.addNub('center', 0.5, 0.5);
+            this.addSlider('strength', 'Strength', -1, 1, 0.5, 0.01);
+            this.addSlider('radius', 'Radius', 0, 600, 200, 1);
+        }, function() {
+            this.setCode('canvas.draw(texture).bulgePinch(' + this.center.x + ', ' + this.center.y + ', ' + this.radius + ', ' + this.strength + ').update();');
+        }),
+        new Filter('Perspective', 'perspective', function() {
+            var w = 640, h = 425;
+            this.addNub('a', perspectiveNubs[0] / w, perspectiveNubs[1] / h);
+            this.addNub('b', perspectiveNubs[2] / w, perspectiveNubs[3] / h);
+            this.addNub('c', perspectiveNubs[4] / w, perspectiveNubs[5] / h);
+            this.addNub('d', perspectiveNubs[6] / w, perspectiveNubs[7] / h);
+        }, function() {
+            var before = perspectiveNubs;
+            var after = [this.a.x, this.a.y, this.b.x, this.b.y, this.c.x, this.c.y, this.d.x, this.d.y];
+            this.setCode('canvas.draw(texture).perspective([' + before + '], [' + after + ']).update();');
+        }, 'perspective.jpg')
+    ],
+    'Fun': [
+        new Filter('Ink', 'ink', function() {
+            this.addSlider('strength', 'Strength', 0, 1, 0.25, 0.01);
+        }, function() {
+            this.setCode('canvas.draw(texture).ink(' + this.strength + ').update();');
+        }),
+        new Filter('Edge Work', 'edgeWork', function() {
+            this.addSlider('radius', 'Radius', 0, 200, 10, 1);
+        }, function() {
+            this.setCode('canvas.draw(texture).edgeWork(' + this.radius + ').update();');
+        }),
+        new Filter('Hexagonal Pixelate', 'hexagonalPixelate', function() {
+            this.addNub('center', 0.5, 0.5);
+            this.addSlider('scale', 'Scale', 10, 100, 20, 1);
+        }, function() {
+            this.setCode('canvas.draw(texture).hexagonalPixelate(' + this.center.x + ', ' + this.center.y + ', ' + this.scale + ').update();');
+        }),
+        new Filter('Dot Screen', 'dotScreen', function() {
+            this.addNub('center', 0.5, 0.5);
+            this.addSlider('angle', 'Angle', 0, Math.PI / 2, 1.1, 0.01);
+            this.addSlider('size', 'Size', 3, 20, 3, 0.01);
+        }, function() {
+            this.setCode('canvas.draw(texture).dotScreen(' + this.center.x + ', ' + this.center.y + ', ' + this.angle + ', ' + this.size + ').update();');
+        }),
+        new Filter('Color Halftone', 'colorHalftone', function() {
+            this.addNub('center', 0.5, 0.5);
+            this.addSlider('angle', 'Angle', 0, Math.PI / 2, 0.25, 0.01);
+            this.addSlider('size', 'Size', 3, 20, 4, 0.01);
+        }, function() {
+            this.setCode('canvas.draw(texture).colorHalftone(' + this.center.x + ', ' + this.center.y + ', ' + this.angle + ', ' + this.size + ').update();');
+        })
+    ]
+};
+    </script>
+</body>
+</html>

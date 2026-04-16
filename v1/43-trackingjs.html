@@ -1,0 +1,61 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/tracking.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/data/face.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/data/eye.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/data/mouth.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+    <named-stream id="stream"></named-stream>
+    <video-io id="video1" microphone="false" controls desiredframerate="5" camdimension="320x240"></video-io>
+    <video-io id="video2" autoenable="true" controls style="--preview-transform: scaleX(-1);"></video-io>
+    <video-mix id="mixer"></video-mix>
+    <script type="text/javascript">
+        window.onload = async () => {
+            let [video1, video2, mixer] = ["video1", "video2", "mixer"].map(id => document.getElementById(id));
+
+            video2.input = mixer;
+            mixer.input = [video1];
+            video1.publish = video2.publish = true;
+
+            let tracker = new tracking.ObjectTracker(["face", "eye", "mouth"]);
+            tracker.setStepSize(1.7);
+
+            let data = null;
+
+            tracker.on('track', function(event) {
+                if (event.data.length > 0) {
+                    data = JSON.parse(JSON.stringify(event.data));
+                }
+            });
+
+            mixer.addEventListener("frame", async (event) => {
+                if (event.videos[0] && event.videos[0].videoWidth && event.videos[0].videoHeight) {
+                    canvas = event.canvas;
+                    const video = event.videos[0];
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+
+                    ctx = canvas.getContext("2d");
+                    ctx.drawImage(video, 0, 0);
+                    tracking.track(canvas, tracker);
+
+                    if (data) {
+                        data.forEach(function(rect) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = "yellow";
+                            ctx.lineWidth = "2";
+                            ctx.rect(rect.x, rect.y, rect.width, rect.height);
+                            ctx.stroke();
+                        });
+                    }
+                }
+            });
+        };
+    </script>
+</body>
+</html>

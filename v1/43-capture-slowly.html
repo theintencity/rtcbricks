@@ -1,0 +1,133 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+    <!-- modified from https://github.com/theintencity/samples to use video-mix -->
+    <video-io id="video1" controls microphone="false"></video-io>
+    <video-io id="video2" controls autoenable="true" style="--preview-transform: scaleX(-1);"></video-io>
+    <video-mix id="mixer" style="display: none;"></video-mix>
+    <br/>
+    <button id="start" title="start or pause slow capture">Start</button>
+    <button id="download" disabled title="download slow captured image">Download</button>
+    <button id="clear" title="stop slow capture and discard image">Clear</button>
+
+    <script type="text/javascript">
+        let video1 = document.querySelector("#video1"), 
+            video2 = document.querySelector("#video2"), 
+            mixer = document.querySelector("#mixer"),
+            start = document.querySelector("button#start"),
+            download = document.querySelector("button#download"),
+            clear = document.querySelector("button#clear");
+
+        mixer.input = [video1];
+        video2.input = mixer;
+        video1.publish = video2.publish = true;
+
+        let action = null;
+        let index = 0;
+        const canvas0 = document.createElement("canvas");
+        const ctx0 = canvas0.getContext("2d");
+        const w = 3;
+
+        start.onclick = event => {
+            download.disabled = true;
+            if (event.currentTarget.innerText == "Start") {
+                event.currentTarget.innerText = "Pause";
+                action = "start";
+            } else {
+                event.currentTarget.innerText = "Start";
+                action = "pause";
+            }
+        };
+
+        clear.onclick = event => {
+            if (action == "done") {
+            }
+            if (action == "active" || action == "pause" || action == "done") {
+                action = null;
+                index = canvas0.width;
+                start.innerText = "Start";
+                download.disabled = true;
+            }
+        };
+
+        download.onclick = event => {
+            if (action == "done") {
+                const a = document.createElement("a");
+                a.style.display = "none";
+                a.href = canvas0.toDataURL("image/jpeg", 0.95);
+                a.download = "image-" + ("" + Math.random()).substr(2,3) + ".jpg";
+                document.body.append(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                }, 100);
+            }
+        };
+
+        mixer.addEventListener("frame", event => {
+            const video = event.videos[0], canvas = event.canvas;
+            //console.log("video=" + video.videoWidth + "x" + video.videoHeight);
+            if (video.videoWidth && video.videoHeight && canvas.width != video.videoWidth || canvas.height != video.videoHeight) {
+                canvas0.width = canvas.width = video.videoWidth; 
+                canvas0.height = canvas.height = video.videoHeight;
+                const ctx = canvas.getContext("2d");
+                ctx.strokeStyle = "yellow";
+                ctx.lineWidth = w;
+                index = canvas.width;
+            }
+
+            if (canvas.width && canvas.height) {
+                if (action == "start") {
+                    action = "active";
+                }
+
+                const ctx = canvas.getContext("2d");
+
+                // if (index >= 3)
+                //     ctx.drawImage(canvas0, index-3, 0, 3, video.videoHeight, index-3, 0, 3, video.videoHeight);
+                // ctx0.drawImage(video, index, 0, 4, video.videoHeight, index, 0, 4, video.videoHeight);
+                // ctx.drawImage(video, index, 0, video.videoWidth-index, video.videoHeight, index, 0, video.videoWidth-index, video.videoHeight);
+
+                // ctx.beginPath();
+                // ctx.moveTo(index, 0);
+                // ctx.lineTo(index, video.videoHeight);
+                // ctx.stroke();
+
+                // index = (index + 1) % video.videoWidth;
+
+                if (action == "active" || action == "pause") {
+                    if (index < canvas.width - w)
+                        ctx.drawImage(canvas0, index, 0, w, video.videoHeight, index, 0, w, video.videoHeight);
+                    ctx0.drawImage(video, index, 0, w+1, video.videoHeight, index, 0, w+1, video.videoHeight);
+                }
+                if (action != "done") {
+                    ctx.drawImage(video, 0, 0, index, video.videoHeight, 0, 0, index, video.videoHeight);
+                }
+
+                if (action == "active" || action == "pause") {
+                    ctx.beginPath();
+                    ctx.moveTo(index-w/2, 0);
+                    ctx.lineTo(index-w/2, video.videoHeight);
+                    ctx.stroke();
+                }
+
+                if (action == "active") {
+                    index = index - 1;
+                    if (index <= 0) {
+                        start.innerText = "Start";
+                        action = "done";
+                        download.disabled = false;
+                        index = canvas.width;
+                    }
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,638 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <!-- based on https://p5js.org/examples/ ... 
+        simulate-particle-system.html, simulate-snowflakes.html, dom-video-pixels.html -->
+    <script type="text/javascript" src="video-io.js"></script>
+    <!-- uses an older version, for compatibility with some third party samples and older test machine. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js" integrity="sha512-3RlxD1bW34eFKPwj9gUXEWtdSMC59QqIqHnD8O/NoTwSJhgxRizdcFVQhUMFyTp5RwLTDL0Lbcqtl8b7bFAzog==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!--<script type="text/javascript" src="p5js/p5.js"></script>-->
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
+    <style type="text/css">
+        div.content {
+            display: none;
+        }
+        form.controls {
+            display: inline-grid;
+            grid-template-columns: 40px 1fr;
+            gap: 8px;
+            box-sizing: border-box;
+            padding: 8px;
+            vertical-align: top;
+        }
+        input {
+            outline: none; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="content"></div>
+    <video-io id="video1" microphone="false"></video-io>
+    <video-io id="video2" autoenable="true"></video-io>
+    <form class="controls" onsubmit="return false;">
+        <button class="start">Start</button>
+        <span></span>
+        <input name="effect" type="radio" checked/>
+        <label>video</label>
+        <input name="effect" type="radio" />
+        <label>snowflakes</label>
+        <input name="effect" type="radio" />
+        <label>pixels</label>
+        <input name="effect" type="radio" />
+        <label>particles</label>
+        <input name="effect" type="radio" />
+        <label>rain</label>
+        <input name="effect" type="radio" />
+        <label>bouncy</label>
+        <input name="effect" type="radio" />
+        <label>explosion</label>
+        <input name="effect" type="radio" />
+        <label>fire</label>
+    </form>
+
+    <script type="text/javascript">
+        let video1 = document.querySelector("#video1"), 
+            video2 = document.querySelector("#video2");
+        let mode = null;
+
+
+        document.querySelector("button.start").onclick = event => {
+            if (event.currentTarget.innerText == "Start") {
+                video1.publish = true;
+                const input = document.querySelector('input[type="radio"]:checked');
+                mode = input ? input.nextElementSibling.innerText : null;
+                event.currentTarget.innerText = "Stop";
+            } else {
+                video1.publish = false;
+                mode = null;
+                event.currentTarget.innerText = "Start";
+            }
+        };
+        document.querySelector("button.start").click();
+
+        [].slice.call(document.querySelectorAll('input[type="radio"]')).forEach(input => {
+            input.onclick = event => {
+                mode = input.nextElementSibling.innerText;
+            };
+        });
+
+        const sketch = p => {
+
+            let el = null;
+
+            p.setup = () => {
+                let cn = p.createCanvas(320, 240);
+
+                // use p5's canvas as input to video2.
+                video2.input = cn.elt;
+                video2.publish = true;
+                p.frameRate(15);
+
+                // wrap video1's <video> as element in p5.
+                el = new p5.MediaElement(video1.video, this);
+                el.width = video1.video.width = 320;
+                el.height = video1.video.height = 240;
+                el.loadedmetadata = true;
+
+                setup_particles();
+                setup_rain();
+                setup_bouncy();
+                setup_explosion();
+                setup_fire();
+            }
+
+            p.draw = () => {
+                if (!mode) {
+                    return;
+                } else if (mode == "video") {
+                    p.image(el, 0, 0);
+                } else if (mode == "snowflakes") {
+                    p.image(el, 0, 0);
+                    draw_snowflakes();
+                } else if (mode == "pixels") {
+                    draw_pixels();
+                } else if (mode == "particles") {
+                    p.image(el, 0, 0);
+                    draw_particles();
+                } else if (mode == "rain") {
+                    p.image(el, 0, 0);
+                    draw_rain();
+                } else if (mode == "bouncy") {
+                    p.image(el, 0, 0);
+                    draw_bouncy();
+                } else if (mode == "explosion") {
+                    p.image(el, 0, 0);
+                    draw_explosion();
+                } else if (mode == "fire") {
+                    p.image(el, 0, 0);
+                    draw_fire();
+                }
+            };
+
+            // snowflakes
+            let snowflakes = []; // array to hold snowflake objects
+
+            function draw_snowflakes() {
+                    //p.clear();
+                    //p.background("brown");
+                    p.noStroke();
+                    p.fill(240);
+                    let t = p.frameCount / 15; // update time
+
+                    // create a random number of snowflakes each frame
+                    for (let i = 0; i < p.random(5); i++) {
+                        snowflakes.push(new snowflake()); // append snowflake object
+                    }
+
+                    // loop through snowflakes with a for..of loop
+                    for (let flake of snowflakes) {
+                        flake.update(t); // update snowflake position
+                        flake.display(); // draw snowflake
+                    }
+            }
+
+            // snowflake class
+            function snowflake() {
+                // initialize coordinates
+                this.posX = 0;
+                this.posY = p.random(-50, 0);
+                this.initialangle = p.random(0, 2 * p.PI);
+                this.size = p.random(2, 5);
+
+                // radius of snowflake spiral
+                // chosen so the snowflakes are uniformly spread out in area
+                this.radius = p.sqrt(p.random(p.pow(p.width / 2, 2)));
+
+                this.update = function(time) {
+                    // x position follows a circle
+                    let w = 0.6; // angular speed
+                    let angle = w * time + this.initialangle;
+                    this.posX = p.width / 2 + this.radius * p.sin(angle);
+
+                    // different size snowflakes fall at slightly different y speeds
+                    this.posY += p.pow(this.size, 0.5);
+
+                    // delete snowflake if past end of screen
+                    if (this.posY > p.height) {
+                        let index = snowflakes.indexOf(this);
+                        snowflakes.splice(index, 1);
+                    }
+                };
+
+                this.display = function() {
+                    p.ellipse(this.posX, this.posY, this.size);
+                };
+            }
+
+            // pixels
+            function draw_pixels() {
+                    //p.clear();
+                    p.background(255);
+                    p.noStroke();
+                    p.fill(0);
+                    el.loadPixels();
+                    const stepSize = 6; //p.round(p.constrain(p.mouseX / 8, 6, 32));
+                    for (let y = 0; y < p.height; y += stepSize) {
+                        for (let x = 0; x < p.width; x += stepSize) {
+                            const i = y * p.width + x;
+                            const darkness = (255 - el.pixels[i * 4]) / 255;
+                            const radius = stepSize * darkness;
+                            p.ellipse(x, y, radius, radius);
+                        }
+                    }
+            }
+
+            // particles
+            let system;
+            function setup_particles() {
+                system = new ParticleSystem(p.createVector(p.width / 2, 50));
+            }
+
+            function draw_particles() {
+                    system.addParticle();
+                    system.run();
+            }
+
+            // A simple Particle class
+            let Particle = function(position) {
+                this.acceleration = p.createVector(0, 0.05);
+                this.velocity = p.createVector(p.random(-1, 1), p.random(-1, 0));
+                this.position = position.copy();
+                this.lifespan = 255;
+            };
+
+            Particle.prototype.run = function() {
+                this.update();
+                this.display();
+            };
+
+            // Method to update position
+            Particle.prototype.update = function(){
+                this.velocity.add(this.acceleration);
+                this.position.add(this.velocity);
+                this.lifespan -= 2;
+            };
+
+            // Method to display
+            Particle.prototype.display = function() {
+                //p.stroke(200, this.lifespan);
+                p.stroke(0,255,0, this.lifespan);
+                p.strokeWeight(2);
+                //p.fill(127, this.lifespan);
+                p.fill(255,255,0, this.lifespan);
+                p.ellipse(this.position.x, this.position.y, 12, 12);
+            };
+
+            // Is the particle still useful?
+            Particle.prototype.isDead = function(){
+                return this.lifespan < 0;
+            };
+
+            let ParticleSystem = function(position) {
+                this.origin = position.copy();
+                this.particles = [];
+            };
+
+            ParticleSystem.prototype.addParticle = function() {
+                this.particles.push(new Particle(this.origin));
+            };
+
+            ParticleSystem.prototype.run = function() {
+                for (let i = this.particles.length-1; i >= 0; i--) {
+                    let p = this.particles[i];
+                    p.run();
+                    if (p.isDead()) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+            };
+
+
+            // rain from https://raw.githubusercontent.com/jopcode/p5js-rain/master/sketch.js
+
+            var rains = [];
+            var acceleration = 0.98; // 0.0098;
+            function setup_rain() {
+                var rainNumber = p.floor(p.random(200,400)); // 600, 1000
+            	for (var i = 0; i < rainNumber; i++) {	
+		            rains.push(new Rain());
+	            }
+            }
+
+            function draw_rain() {
+                    //p.clear();
+                    rains.forEach((r) => {
+                        r.drawAndDrop();
+                    });
+            }
+
+            var Rain = function() {
+                
+                this.yVelocity = p.random();
+
+                this.initX = () => {
+                    this.x = p.random() * p.width;
+                }
+                this.initY = () => {
+                    this.y = -p.random() * p.height / 3; 
+                };
+                this.initX();
+                this.y = p.random() * p.height;
+
+                this.drawAndDrop = () => {
+                    this.fall();
+                    this.show();
+                }
+                this.fall = () => {
+                    if(this.y < p.height) {
+                        this.y += this.yVelocity;
+                        this.yVelocity += acceleration;
+                    } else {
+                        this.yVelocity = p.random();
+                        this.initY();
+                        this.initX();
+                    }
+                
+                }
+                
+                this.show = () => {
+                    
+                    p.stroke(this.randomColor());
+                    p.line(this.x,this.y,this.x,this.y +(p.random() * 10));
+                    
+                }
+                this.randomColor = () => {
+                    this.colors = [
+                        (236, 240, 241),
+                        (240, 243, 244),
+                        (244, 246, 247),
+                        (247, 249, 249),
+                        (251, 252, 252),
+                        (253, 254, 254)
+                    ];
+                    return this.colors[p.floor(p.random(0,this.colors.length))];
+                }
+            }
+
+
+            // bouncy bubbles
+            let numBalls = 6;
+            let spring = 0.05;
+            let gravity = 0.03;
+            let friction = -0.9;
+            let balls = [];
+
+            function setup_bouncy() {
+                for (let i = 0; i < numBalls; i++) {
+                    balls[i] = new Ball(
+                        p.random(p.width),
+                        p.random(p.height),
+                        p.random(30, 70),
+                        i,
+                        balls
+                    );
+                }
+                // noStroke();
+                // fill(255, 204);
+            }
+
+            function draw_bouncy() {
+                p.noStroke();
+                p.fill(255, 128); // alpha was 204
+                //p.background(0);
+                balls.forEach(ball => {
+                    ball.collide();
+                    ball.move();
+                    ball.display();
+                });
+            }
+
+            class Ball {
+                constructor(xin, yin, din, idin, oin) {
+                    this.x = xin;
+                    this.y = yin;
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.diameter = din;
+                    this.id = idin;
+                    this.others = oin;
+                }
+
+                collide() {
+                    for (let i = this.id + 1; i < numBalls; i++) {
+                        // console.log(others[i]);
+                        let dx = this.others[i].x - this.x;
+                        let dy = this.others[i].y - this.y;
+                        let distance = p.sqrt(dx * dx + dy * dy);
+                        let minDist = this.others[i].diameter / 2 + this.diameter / 2;
+                        //   console.log(distance);
+                        //console.log(minDist);
+                        if (distance < minDist) {
+                            //console.log("2");
+                            let angle = p.atan2(dy, dx);
+                            let targetX = this.x + p.cos(angle) * minDist;
+                            let targetY = this.y + p.sin(angle) * minDist;
+                            let ax = (targetX - this.others[i].x) * spring;
+                            let ay = (targetY - this.others[i].y) * spring;
+                            this.vx -= ax;
+                            this.vy -= ay;
+                            this.others[i].vx += ax;
+                            this.others[i].vy += ay;
+                        }
+                    }
+                }
+
+                move() {
+                    this.vy += gravity;
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    if (this.x + this.diameter / 2 > p.width) {
+                        this.x = p.width - this.diameter / 2;
+                        this.vx *= friction;
+                    } else if (this.x - this.diameter / 2 < 0) {
+                        this.x = this.diameter / 2;
+                        this.vx *= friction;
+                    }
+                    if (this.y + this.diameter / 2 > p.height) {
+                        this.y = p.height - this.diameter / 2;
+                        this.vy *= friction;
+                    } else if (this.y - this.diameter / 2 < 0) {
+                        this.y = this.diameter / 2;
+                        this.vy *= friction;
+                    }
+                }
+
+                display() {
+                    p.ellipse(this.x, this.y, this.diameter, this.diameter);
+                }
+            }
+
+
+            // explosion from https://www.youtube.com/watch?v=H5M_5SSa0F8
+            let explosion, count;
+
+            function setup_explosion() {
+                explosion = new Explosion();
+                count = 0;
+            }
+
+            function draw_explosion() {
+                if (count === 50) {
+                    explosion = new Explosion();
+                    count = 0;
+                }
+                explosion.draw();
+                count += 1;
+            }
+
+            class Explosion {
+                constructor() {
+                    this.pos = p.createVector(p.random(0,p.width), p.random(0,p.height));
+                    this.particles = [];
+                    for (let i=0; i<500; ++i) {
+                        this.particles.push(new Particle1(this.pos.x, this.pos.y));
+                    }
+                }
+
+                draw() {
+                    for (let i=0; i<this.particles.length; ++i) {
+                        this.particles[i].draw();
+                        this.particles[i].update();
+                    }
+                }
+            }
+            class Particle1 {
+                constructor(x, y) {
+                    this.pos = p.createVector(x, y);
+                    this.vel = p.createVector(p.random(-10,10), p.random(-10,10));
+                    if (this.vel.mag() > 10) {
+                        this.vel.mult(10/this.vel.mag());
+                    }
+                    this.dampener = 0.92;
+                    this.color = p.createVector(p.color(p.random(0,255), p.random(0,255), p.random(0,255)));
+                    this.alpha = 255;
+                }
+
+                update() {
+                    this.pos.add(this.vel);
+                    this.vel.mult(this.dampener);
+                    this.alpha *= this.dampener;
+                }
+
+                draw() {
+                    p.stroke(this.color.x, this.color.y, this.color.z, this.alpha);
+                    p.strokeWeight(3);
+                    p.point(this.pos.x, this.pos.y);
+                }
+            }
+
+
+            // fire from https://kampeki-factory.blogspot.com/2018/03/set-your-browser-on-fire-with-p5js.html
+            var fireElemLength  = 2;
+            var elemOpacity     = 255;
+
+            var fireLines   = [];
+            var fireWidth   = 0;
+            var fireHeight  = 0;
+
+            var nbColors    = 255;  // Nb Colors in the palette
+            var palette     = [];   // our color palette for the fire
+
+            function setup_fire() {
+                // 2D Fire: init size of fire
+                fireWidth   = p.int(p.width / fireElemLength);
+                fireHeight  = p.int(p.height / fireElemLength);
+                
+                // for each fire's 'lines'
+                for(var i= 0; i < fireHeight; i++)
+                {
+                    fireLines[i] = [];      // create the new line of fire pixels
+                    
+                    for(var x=0; x < fireWidth; x++)
+                        fireLines[i][x] = 0;  // Initialize to black
+                }
+                
+                // generate fire colors palette
+                initializePalette();
+                
+                // // set black background
+                // background(0,0,0);
+                // noStroke();
+            }
+
+            // ======================================
+            // DRAW method
+            // called in the drawing process loop 
+            // ======================================
+            function draw_fire() {
+                p.noStroke();
+            
+                // // We clean the background each time
+                // background(0,0,0);
+            
+                // We generate a new base fire line (to make it 'move')
+                initFireLine();
+            
+                // Compute the whole fire pixels
+                fireGrow();
+            
+                // Display the result
+                drawFire();
+            }
+
+            function initializePalette() {
+                // generate our 255 color palette
+                // try to change colors composing the fire
+                for(var i=0; i<nbColors; i++) {
+                    var val   = p.exp(i/10) - 1;
+
+                    var red   = p.map(val, 0, p.exp(7.5), 0, 255);
+                    var green = p.map(val, 0, p.exp(10), 0, 255);
+                    var blue  = p.random(50);
+                    
+                    if(green > 254) { // check for colors range
+                        red   = 255;
+                        green = 255;
+                        blue  = 255;
+                    }
+                    
+                    // check/erase for 'noisy' blue pixels
+                    if(red < 20 && green < 20) {
+                        red = green = blue = 0;
+                    }
+                    let alpha = (red + green + blue)/3;
+
+                    // add new color
+                    palette[i]  = p.color(red, green, blue, alpha);
+                }
+            }
+
+
+            function initFireLine() {
+                // generate fire base (1st line) color ('randomly')
+                for(var x=0; x<fireWidth; x++)
+                {
+                    fireLines[fireHeight-1][x] = p.random(0,nbColors);
+                    fireLines[fireHeight-2][x] = p.random(0,nbColors);
+                    fireLines[fireHeight-3][x] = p.random(0,100);
+                }
+            }
+
+
+            function fireGrow(){
+                for(var y=fireHeight-2; y>=1; y--) {
+
+                    // compute new fire color line 
+                    // based on the bottom &amp; top lines
+                    for(var x=1; x<fireWidth-1; x++) {
+                        // Get neighbors colors
+                        var c1 = fireLines[y+1][x];
+                        var c2 = fireLines[y][x-1];
+                        var c3 = fireLines[y][x+1];
+                        var c4 = fireLines[y-1][x];
+                        var c5 = fireLines[y][x];
+
+                        // We make a 'median' color
+                        var newCol = p.int((c1 + c2 + c3 + c4 + c5) / 5) - 1;
+                        fireLines[y - 1][x] = newCol;
+                    }
+                }
+            }
+
+
+            function drawFire(){
+
+                // foreach fire lines
+                for(var y=fireHeight-1; y>0; y--) {
+                    // foreach pixel in the line
+                    for(var x=0; x<fireWidth-1; x++) {
+                    // get current pixel color index
+                    var idx = p.int(fireLines[y][x]);
+
+                    // check for color index limits
+                    if(idx<0) idx = 0;
+                    if(idx >= nbColors) idx = nbColors-1;
+                    
+                    // apply current pixel color
+                    p.fill(palette[idx]); 
+
+                    // Draw a square representing the current fire's pixel
+                    p.rect(p.int(x * fireElemLength - (fireElemLength / 2)),
+                        p.int(y * fireElemLength + (fireElemLength / 2)),
+                        fireElemLength * 2 , 
+                        fireElemLength * 2);
+                    }
+
+                }
+
+            }            
+        };
+
+
+        new p5(sketch, document.querySelector("div.content"));
+
+    </script>
+</body>
+</html>

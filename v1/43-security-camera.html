@@ -1,0 +1,206 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <!-- pixelmatch is loaded later in inline script -->
+    <!-- <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/pixelmatch/7.1.0/index.js"></script> -->
+    <!-- <script type="module" src="pixelmatch.js"></script> -->
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+    video, video-io, img, canvas {
+        width: 640px; height: 360px;
+        background: transparent;
+        zoom: 0.3333;
+    }
+    input[type="checkbox"]:after {
+        content: attr(value);
+        margin-left: 16px;
+    }
+    input[type="checkbox"] {
+        margin-right: 60px;
+    }
+    div.history {
+        position: relative;
+    }
+    div.history > div {
+        position: relative;
+        display: flex; flex-flow: row nowrap;
+        padding-top: 24px;
+        padding-bottom: 4px;
+        overflow: auto;
+    }
+    div.history > div > div:first-child {
+        position: absolute; top: 4px;
+        white-space: nowrap;
+    }
+    div.history > div > div:not(:first-child) {
+        position: relative;
+        overflow: visible;
+        width: 10px; min-width: 0px;
+        height: 72px;
+        border: solid 1px white;
+        transition: width 0.3s linear, min-width 0.3s linear;
+    }
+    div.history > div:hover > div:not(:first-child),
+    div.history > div > div.video {
+        width: 128px;
+        min-width: 128px;
+    }
+    div.history > div > div.video video {
+        width: 100%; height: 100%;
+        zoom: 1;
+    }
+    div.history img {
+        position: absolute;
+        width: 640px; height: 360px;
+        zoom: 0.2;
+    }
+    </style>
+</head>
+<body>
+    <video-io camdimension="640x360" mirrored="false" recordmax="-10"></video-io>
+    <canvas></canvas>
+    <canvas></canvas>
+    <canvas></canvas>
+    <video autoplay></video>
+
+    <div>
+        <button>Start</button>
+        <button>Play</button>
+        <span></span>
+    </div>
+    <div class="history"></div>
+
+    <script type="module">
+import pixelmatch from "https://cdnjs.cloudflare.com/ajax/libs/pixelmatch/7.1.0/index.js";
+
+let [video1, canvas1, canvas2, canvas3, player, button0, button1, span, history] = 
+    ["video-io", "canvas:nth-of-type(1)", "canvas:nth-of-type(2)", "canvas:nth-of-type(3)", "video", "button:nth-of-type(1)", "button:nth-of-type(2)", "span", "div.history"].map(selector => document.querySelector(selector));
+let recordeddata = null;
+let interval = null;
+let first_time = true;
+let W = 640, H = 360;
+let state = "idle";
+
+[canvas1, canvas2, canvas3].forEach(c => { c.width = W; c.height = H; });
+
+button0.onclick = e => {
+    let button = e.currentTarget;
+    if (button.innerText == "Start") {
+        button.innerText = "Stop";
+        recordeddata = null;
+        video1.record = true;
+        video1.publish = true;
+        first_time = true;
+        interval = setInterval(capture, 5000);
+        capture();
+    } else {
+        button.innerText = "Start";
+        video1.publish = false;
+        video1.record = false;
+        if (interval) {
+            clearInterval(interval);
+            interval = null;
+            first_time = true;
+        }
+    }
+};
+button1.onclick = e => {
+    let blob = video1.recordeddata;
+    if (!blob) {
+        blob = recordeddata;
+    } else {
+        recordeddata = blob;
+    }
+    if (blob) {
+        Promise.resolve(blob).then(blob => {
+            const url = URL.createObjectURL(blob);
+            player.src = url;
+            player.controls = true;
+        });
+    }
+};
+
+const options = {
+    threshold: 0.1, alpha: 0, diffColor: [0,0,0],
+};
+function capture() {
+    if (first_time) {
+        first_time = false;
+        setTimeout(() => {
+            canvas2.getContext("2d").drawImage(video1.video, 0, 0, W, H);
+        }, 3000)
+    } else {
+        canvas1.getContext("2d").drawImage(canvas2, 0, 0, W, H);
+        canvas2.getContext("2d").drawImage(video1.video, 0, 0, W, H);
+        const img1 = canvas1.getContext("2d", {willReadFrequently: true}).getImageData(0, 0, W, H);
+        const img2 = canvas2.getContext("2d", {willReadFrequently: true}).getImageData(0, 0, W, H);
+        const ctx = canvas3.getContext("2d", {willReadFrequently: true});
+        const diff = ctx.createImageData(W, H);
+        const count = pixelmatch(img1.data, img2.data, diff.data, W, H, options);
+        const f = Math.round(count*1000/(W*H))/10;
+        ctx.putImageData(diff, 0, 0);
+
+        const old = state;
+        if (state == "idle" && f > 0) {
+            state = "active";
+        } else if (state == "active" && f == 0) {
+            state = "idle";
+        }
+        span.innerText = state;
+
+        if (state != old) {
+            if (state == "idle") {
+                history.children[0].children[0].innerText += " to " + (new Date()).toLocaleString();
+
+                let blob = video1.recordeddata;
+                if (blob) {
+                    Promise.resolve(blob).then(blob => {
+                        const url = URL.createObjectURL(blob);
+                        const video = document.createElement("video");
+                        video.src = url;
+                        video.controls = true;
+                        const div1 = document.createElement("div");
+                        div1.className = "video";
+                        div1.appendChild(video);
+                        history.children[0].insertBefore(div1, history.children[0].children[1]);
+                        video.ondblclick = e => { console.log("ondblclick"); on_dblclick(e); };
+                        video.onclick = e => console.log("onclick");
+
+                        video1.recordmax = -10; // default
+                    });
+                }
+
+            } else if (state == "active") {
+                video1.recordmax = -600; // 10min for now.
+
+                const div = document.createElement("div");
+                const span = document.createElement("div");
+                span.innerText = "from " + (new Date()).toLocaleString();
+                div.appendChild(span);
+                history.insertBefore(div, history.firstChild);
+            }
+        }
+        if (state == "active") {
+            const img = document.createElement("img");
+            img.src = canvas2.toDataURL();
+            const div1 = document.createElement("div")
+            div1.appendChild(img)
+            history.children[0].appendChild(div1);
+            img.ondblclick = e => on_dblclick(e);
+        }
+    }
+}
+
+function on_dblclick(event) {
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    } else {
+        event.currentTarget.requestFullscreen().catch(err => console.error(err));
+    }
+}
+
+    </script>
+</body>
+</html>

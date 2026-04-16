@@ -1,0 +1,114 @@
+<!-- RTC Bricks, Copyright (c) 2026, Kundan Singh <theintencity@gmail.com>, See LICENSE. -->
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="video-io.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <style type="text/css">
+        span {
+            vertical-align: top; margin: 1ch;
+            font-size: 30px; line-height: 240px;
+        }
+        video-io {
+            background: black;
+        }
+        video-io#video1, video-io#video2 {
+            width: 180px; height: 240px;
+        }
+    </style>
+</head>
+<body>
+    <video-io id="video1" controls microphone="false" camdimension="360x480"></video-io>
+    <span>+</span>
+    <video-io id="video2" controls microphone="false" camdimension="360x480"></video-io>
+    <span>=</span>
+    <video-io id="video3" controls autoenable="true" style="--preview-transform: scaleX(-1);"></video-io>
+    <video-mix id="mixer"></video-mix>
+    <script type="text/javascript">
+        let video1 = document.querySelector("#video1"), 
+            video2 = document.querySelector("#video2"), 
+            video3 = document.querySelector("#video3"), 
+            mixer = document.querySelector("#mixer");
+
+        mixer.input = [video1, video2];
+        video3.input = mixer;
+
+        video1.publish = video2.publish = video3.publish = true;
+        Promise.resolve(video3.devices).then((devices) => {
+            let cameras = (devices || []).filter(device => device.type == "camera");
+            //cameras = cameras.filter(device => device.label.indexOf("CamTwist") < 0); // for local experiments
+
+            if (cameras.length < 2) {
+                alert("Not supported if less than two cameras found.");
+            } else {
+                video1.camname = cameras[0].name;
+                video2.camname = cameras[1].name;
+
+                const W = 640, W_ = 360, H = 480; 
+
+                // create masks
+                const [mask1, mask2, image1, image2] = [1,2,3,4].map(id => document.createElement("canvas"));
+                [mask1, mask2, image1, image2].forEach(canvas => {
+                    canvas.width = W_; canvas.height = H;
+                });
+
+                const array1 = new ArrayBuffer(W_ * H * 4);
+                const buffer1 = new Uint8ClampedArray(array1);
+                new Uint32Array(array1).fill(0xffffffff);
+                const array2 = new ArrayBuffer(W_ * H * 4);
+                const buffer2 = new Uint8ClampedArray(array2);
+                new Uint32Array(array2).fill(0xffffffff);
+                for (let i=0; i<H; ++i) {
+                    for (let j=0; j<W_; ++j) {
+                        let alpha = j<W/2 ? 1 : (W_-j)/(W_-W/2);
+                        buffer1[(i*W_+j)*4+3] = Math.min(Math.floor(256*alpha), 255);
+                        alpha = j>W/2 ? 1 : j/(W_-W/2);
+                        buffer2[(i*W_+j)*4+3] = Math.min(Math.floor(256*alpha), 255);
+                    }
+                }
+
+                mask1.getContext("2d").putImageData(new ImageData(buffer1, W_, H), 0, 0);
+                mask2.getContext("2d").putImageData(new ImageData(buffer2, W_, H), 0, 0);
+
+                const ctx1 = image1.getContext("2d"), ctx2 = image2.getContext("2d");
+
+                // process each frame.
+                mixer.addEventListener("frame", event => {
+                    const canvas = event.canvas, 
+                            video1 = event.videos[0], video2 = event.videos[1];
+
+                    let ctx = canvas.getContext("2d");
+
+                    const w1 = video1.videoWidth, h1 = video1.videoHeight,
+                            w2 = video2.videoWidth, h2 = video2.videoHeight;
+                    canvas.width = W; canvas.height = H;
+
+                    ctx1.clearRect(0, 0, W_, H);
+                    ctx1.globalCompositeOperation = "source-over";
+                    ctx1.drawImage(mask1, 0, 0);
+                    ctx1.globalCompositeOperation = "source-in";
+                    ctx1.drawImage(video1, w1/2-(h1*W_)/(H*2), 0, h1*W_/H, h1, 0, 0, W_, H);
+
+                    ctx2.clearRect(0, 0, W_, H);
+                    ctx2.globalCompositeOperation = "source-over";
+                    ctx2.drawImage(mask2, 0, 0);
+                    ctx2.globalCompositeOperation = "source-in";
+                    ctx2.drawImage(video2, w2/2-(h2*W_)/(H*2), 0, h2*W_/H, h2, 0, 0, W_, H);
+
+                    ctx.globalCompositeOperation = "source-over";
+                    ctx.drawImage(image1, 0, 0, W_, H);
+                    ctx.drawImage(image2, W-W_, 0, W_, H);
+
+                    // ctx.globalCompositeOperation = "source-over";
+                    // ctx.drawImage(mask, 0, 0);
+                    // ctx.globalCompositeOperation = "source-in";
+                    // ctx.drawImage(video1, w1/2-(h1*W_)/(H*2), 0, h1*W_/H, h1, 0, 0, W_, H);
+                    // ctx.globalCompositeOperation = "lighter";
+                    // ctx.drawImage(video2, w2/2-(h2*W_)/(H*2), 0, h2*W_/H, h2, W-W_, 0, W_, H);
+                });
+            }
+        });
+
+    </script>
+</body>
+</html>
