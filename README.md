@@ -22,6 +22,11 @@ complete comprehensive tutorial are also available below.
 | 32 min | 11 pages |
 | [![Demonstration](https://img.youtube.com/vi/AOIM0-C75y8/0.jpg)](https://youtu.be/AOIM0-C75y8) | [![Paper](page1.png)](https://arxiv.org/pdf/2602.22011) |
 
+| Second Demo | Third Demo | Fourth Demo |
+|:-----:|:-----:|:-----:|
+| 11 min |  |  |
+| [![Second Demo](https://img.youtube.com/vi/jDAMgT07wNY/0.jpg)](https://youtu.be/jDAMgT07wNY) | [![Third Demo](https://img.youtube.com/vi/JfSiFkArhx0/0.jpg)](https://youtu.be/JfSiFkArhx0) | [![Fourth Demo](https://img.youtube.com/vi/T14KfSE6lco/0.jpg)](https://youtu.be/T14KfSE6lco) |
+
 | Complete tutorial | Direct link |
 |:-----:|:-----:|
 | 383 pages | 50MB |
