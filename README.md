@@ -24,7 +24,7 @@ complete comprehensive tutorial are also available below.
 
 | Second Demo | Third Demo | Fourth Demo |
 |:-----:|:-----:|:-----:|
-| 11 min |  |  |
+| 11 min | 16 min | 34 min |
 | [![Second Demo](https://img.youtube.com/vi/jDAMgT07wNY/0.jpg)](https://youtu.be/jDAMgT07wNY) | [![Third Demo](https://img.youtube.com/vi/JfSiFkArhx0/0.jpg)](https://youtu.be/JfSiFkArhx0) | [![Fourth Demo](https://img.youtube.com/vi/T14KfSE6lco/0.jpg)](https://youtu.be/T14KfSE6lco) |
 
 | Complete tutorial | Direct link |
