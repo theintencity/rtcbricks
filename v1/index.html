@@ -10,6 +10,7 @@
 	<script src="prism.js"></script>
 
     <script type="text/javascript"src="webcomponents-lite.js"></script>
+    <script type="text/javascript"src="log-level.js"></script>
     <script type="text/javascript"src="video-io.js"></script>
     <script type="text/javascript"src="shared-storage.js"></script>
     <script type="text/javascript"src="flex-box.js"></script>
@@ -263,6 +264,58 @@ in HTML, e.g.,</p>
 
 <p>See <a href="#topic-api">How to use the video-io API?</a> for a complete list of attributes and properties.</p>
 
+
+
+<h3 id="log-level"short="log-level">Enable console logging</h3>
+
+<p>All the web components and sample apps defined in this project interpret 
+a consistent configuration for console logging. The included "log-level.js" script
+defines a global <code>log_level</code> function which can be used by any
+existing or new code to get a custom <code>console</code> object that adheres to
+the same consistent configuration. To use this, just include the script in
+the main HTML as follows.</p>
+
+<pre><code class="lang-html">&lt;script type="text/javascript" src="https://rtcbricks.kundansingh.com/v1/log-level.js"&gt;&lt;/script&gt;
+</code></pre>
+
+<p>Then, in the web component definition or in any other script code, 
+override the global <code>console</code> object with the one obtained from
+this customized logging as follows.</p>
+
+<pre><code class="lang-js">
+const console = (window || self).log_level();
+</code></pre>
+
+<p>It allows passing the log-level URL parameter to the main HTML page to configure the 
+console logging, e.g., "index.html?log-level=4". 
+The default in most cases is to enable level 3 (info) and lower. The
+allowed values for the URL parameter are number 0 to 5, which correspond to
+disable (0), error (1), warn (2), info (3), debug or log (4), and trace (5), respectively. 
+Any non-numeric value is interpreted as to enable all log levels.
+This tutorial's main web page also accepts the <code>log-level</code> URL parameter,
+and passes it to any included demo or test pages.</p>
+
+<p>Since the parent web app that uses our web component,
+may or may not include this script,
+all our web components include the following code, or its variation, to
+check if <code>log_level</code> is defined, and to fallback to the global <code>console</code>
+if not.</p>
+<pre><code class="lang-js">
+const console = (window || self).log_level?.(document.currentScript?.src.match(/\blog-level=(\d+)\b/)?.[1]) || (window || self).console;
+</code></pre>
+
+<p>This allows other web apps to define their own customization for 
+console logging if needed. 
+Furthermore, the above code allows enabling log level individually in a specific 
+script, e.g., the following shows logging enabled only for the <code>flex-box</code>
+component but not for the <code>video-io</code> component.</p>
+
+<pre><code class="lang-html">&lt;script type="text/javascript" src="video-io.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="flex-box.js?log-level=5"&gt;&lt;/script&gt;
+</code></pre>
+
+<p>For the purpose of this tutorial, just supplying the log-level URL parameter
+should be enough to control the console logging in various demo and test apps.</p>
 
 
 

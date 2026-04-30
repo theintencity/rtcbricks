@@ -1,0 +1,2 @@
+/* RTC Bricks, Copyright (c) 2026 Kundan Singh <theintencity@gmail.com>, See LICENSE. */
+!function(){(window||self).console;const c=new URLSearchParams(window?.location?.search).get("log-level")||document.currentScript?.src.match(/\blog-level=(\d+)\b/)?.[1],r=c?parseInt(c):3;(window||self).log_level=function(e,n){const o={};var l=()=>{};return(e=null!=e&&""!==e&&!isNaN(e)?e:c||void 0===n?r:n)<5&&(o.trace=l),e<4&&(o.debug=o.log=l),e<3&&(o.info=l),e<2&&(o.warn=l),e<1&&(o.error=l),Object.assign({},(window||self).console,o)}}();

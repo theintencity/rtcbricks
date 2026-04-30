@@ -3,6 +3,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <script type="text/javascript" src="log-level.js"></script>
     <script type="text/javascript" src="native-electron.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css" />
     <style type="text/css">
@@ -13,7 +14,6 @@
     <script type="text/javascript">
     (async () => {
         const electron = document.querySelector("native-electron");
-        //electron.debug_level = 5; // warn+
         const {main} = electron;
 
         let win2, win3;
