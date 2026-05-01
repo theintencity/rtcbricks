@@ -243,7 +243,7 @@ class InMemoryDatabase {
     }
 
     delete(rid) {
-        console.log(`delete ${rid}${this.toString()}`);
+        console.log(`delete ${rid instanceof Resource ? `Resource[${rid.id}]` : rid}${this.toString()}`);
         const resource = rid instanceof Resource ? rid : this.root.locate(rid);
         if (resource) {
             if (resource.context) {
@@ -285,7 +285,7 @@ class InMemoryDatabase {
                 if (cid === "xref:parent") {
                     const parent = this.root.locate(prid);
                     if (parent) {
-                        result = [...parent.xchildren.keys()].map(leaf => prid + "/" + leaf);
+                        result = [...parent.xchildren.keys()].map(leaf => [prid + "/" + leaf]);
                     }
                 } else {
                     throw new Error("context must be xref:parent");
@@ -293,12 +293,12 @@ class InMemoryDatabase {
             } else if (prid !== undefined) {
                 const parent = this.root.locate(prid);
                 if (parent) {
-                    result = [...parent.children.keys()].map(leaf => prid + "/" + leaf);
+                    result = [...parent.children.keys()].map(leaf => [prid + "/" + leaf]);
                 }
             } else if (cid !== undefined) {
                 if (this.context.resources.has(cid)) {
                     const resources = this.context.resources.get(cid);
-                    result = [...resources.keys()];
+                    result = [...resources.keys()].map(rid => [rid]);
                 }
             }
         } else {
